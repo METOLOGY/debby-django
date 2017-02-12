@@ -15,7 +15,9 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from line.views import callback
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^callback/', callback, name='line-callback')
 ]

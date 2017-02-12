@@ -25,12 +25,15 @@ SECRET_KEY = '*3p3z1xhkv=r&4(wntviuipv$44m_^-i21d&5!4=bjg4)b8p_1'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '67165202.ngrok.io',
+    'localhost',
+]
 
 
 # Application definition
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +42,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+THIRD_PARTY_APPS = [
+    'corsheaders',
+    'django_extensions',
+]
+
+BUILD_APPS = [
+    'line.apps.LineConfig',
+    'user.apps.UserConfig',
+]
+
+INSTALLED_APPS =  THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -46,7 +62,10 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # CROS middleware
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'debby.urls'
@@ -113,8 +132,16 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Custom user model
+AUTH_USER_MODEL = 'user.CustomUserModel'
+
+
+# CROS settings.
+CORS_ORIGIN_WHITELIST = (
+
+)
