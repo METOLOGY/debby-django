@@ -50,9 +50,10 @@ THIRD_PARTY_APPS = [
 BUILD_APPS = [
     'line.apps.LineConfig',
     'user.apps.UserConfig',
+    'exercise_record.apps.ExerciseRecordConfig',
 ]
 
-INSTALLED_APPS =  THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
+INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
 
 
 MIDDLEWARE = [
