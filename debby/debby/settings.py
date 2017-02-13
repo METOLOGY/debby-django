@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     '67165202.ngrok.io',
+    '2fafc85e.ngrok.io',
     'localhost',
 ]
 
@@ -50,6 +51,7 @@ THIRD_PARTY_APPS = [
 BUILD_APPS = [
     'line.apps.LineConfig',
     'user.apps.UserConfig',
+    'bg_record.apps.BgRecordConfig'
 ]
 
 INSTALLED_APPS =  THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS

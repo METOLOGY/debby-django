@@ -2,6 +2,7 @@ from django.shortcuts import Http404
 from django.http.response import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 from user.models import CustomUserModel
+from bg_record.models import BGModel
 import json
 
 from linebot import (
@@ -11,18 +12,18 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, JoinEvent
 )
 
 line_bot_api = LineBotApi('o95VkDv5wNpJGzWHATn8oMscgxR24ovtcs0GnXd8b79TNAXF6CEEbipeJf247YVsnu+weRqCKFhPw4hSsXoPTO+UOFlYcv5cSiXdVaVkfePs2sWBXQU5J8pfJWkPSHNqwD04umCN9mmSHUUYmls8+gdB04t89/1O/w1cDnyilFU=')
 handler = WebhookHandler('8800b2dbc38f81e3af174b9e3275eb1c')
 
-
+CurrentUser = ''
 
 @csrf_exempt
 def callback(request):
     if request.method == 'POST':
-        # the header field on tutorial of python-sdk is orignial, django middleware add 'HTTP_' to it.
+        # the header field on tutorial of python-sdk is original, django middleware add 'HTTP_' to it.
         signature = request.META['HTTP_X_LINE_SIGNATURE']
 
         # get request body as text
@@ -35,7 +36,9 @@ def callback(request):
             lineID = data['events'][0]['source']['userId']
             if CustomUserModel.objects.filter(line_id=lineID).exists() is False:
                 print('create a new user')
-                CustomUserModel.object.create_user(line_id=lineID)
+                CustomUserModel.objects.create_user(line_id=lineID)
+            global CurrentUser
+            CurrentUser = CustomUserModel.objects.get(line_id=lineID)
             handler.handle(body, signature)
         except InvalidSignatureError:
             return Http404
@@ -47,6 +50,21 @@ def callback(request):
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+
+    text = event.message.text
+    print(text)
+    print(CurrentUser)
+    # bg_value = int(text)
+    # BG = BGModel(user=CurrentUser, glucose=bg_value)
+    try:
+        bg_value = int(text)
+        BG = BGModel(user=CurrentUser, glucose_val=bg_value)
+        BG.save()
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='紀錄成功！'))
+    except ValueError:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
+
