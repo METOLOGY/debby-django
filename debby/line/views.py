@@ -12,7 +12,7 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage, JoinEvent
+    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ConfirmTemplate, PostbackTemplateAction, MessageTemplateAction, PostbackEvent
 )
 
 line_bot_api = LineBotApi('o95VkDv5wNpJGzWHATn8oMscgxR24ovtcs0GnXd8b79TNAXF6CEEbipeJf247YVsnu+weRqCKFhPw4hSsXoPTO+UOFlYcv5cSiXdVaVkfePs2sWBXQU5J8pfJWkPSHNqwD04umCN9mmSHUUYmls8+gdB04t89/1O/w1cDnyilFU=')
@@ -28,6 +28,7 @@ def callback(request):
 
         # get request body as text
         body = request.body.decode('utf-8') # this is a string
+        print(body)
         data = json.loads(body)
         # {'events': [{'replyToken': '7c43c1d1d46d49d0ba9293685eaa4306', 'source': {'type': 'user', 'userId': 'U60d5ecd2f4700b6310cee793e3c55ca0'}, 'type': 'message', 'message': {'type': 'text', 'text': '次', 'id': '5636084685569'}, 'timestamp': 1486886979585}]}
 
@@ -56,15 +57,74 @@ def handle_message(event):
     print(CurrentUser)
     # bg_value = int(text)
     # BG = BGModel(user=CurrentUser, glucose=bg_value)
-    try:
+
+    # template for recoring glucose
+    confirm_template_message = TemplateSendMessage(
+        alt_text='Confirm template',
+        template=ConfirmTemplate(
+            text='嗨，現在要記錄血糖嗎？',
+            actions=[
+                PostbackTemplateAction(
+                    label='好啊',
+                    text='好啊',
+                    # data='action=buy&itemid=1'
+                    data='action=record_bg'
+                ),
+                MessageTemplateAction(
+                    label='等等再說',
+                    text='等等再說'
+                )
+            ]
+        )
+    )
+
+    if check_is_number(text):
         bg_value = int(text)
         BG = BGModel(user=CurrentUser, glucose_val=bg_value)
         BG.save()
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text='紀錄成功！'))
-    except ValueError:
+    elif text == '好啊':
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
+            TextSendMessage(text='那們，輸入血糖～'))
+    elif text == '等等再說':
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！'))
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            confirm_template_message
+        )
 
+
+
+    # try:
+    #     bg_value = int(text)
+    #     BG = BGModel(user=CurrentUser, glucose_val=bg_value)
+    #     BG.save()
+    #     line_bot_api.reply_message(
+    #         event.reply_token,
+    #         TextSendMessage(text='紀錄成功！'))
+    # except ValueError:
+    #     line_bot_api.reply_message(
+    #         event.reply_token,
+    #         TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
+
+
+# @handler.add(PostbackEvent)
+# def postback(event):
+#     line_bot_api.reply_message(
+#         event.reply_token,
+#         TextSendMessage(text="123")
+#     )
+
+
+def check_is_number(string):
+    try:
+        int(string)
+        return True
+    except:
+        return False
