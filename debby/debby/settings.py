@@ -11,10 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+from debby.bot_settings import ngrok_key
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -26,11 +26,9 @@ SECRET_KEY = '*3p3z1xhkv=r&4(wntviuipv$44m_^-i21d&5!4=bjg4)b8p_1'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '67165202.ngrok.io',
-    '2fafc85e.ngrok.io',
+    ngrok_key,
     'localhost',
 ]
-
 
 # Application definition
 
@@ -56,7 +54,6 @@ BUILD_APPS = [
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -91,7 +88,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'debby.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
@@ -101,7 +97,6 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
@@ -120,7 +115,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -142,7 +136,6 @@ STATIC_URL = '/static/'
 
 # Custom user model
 AUTH_USER_MODEL = 'user.CustomUserModel'
-
 
 # CROS settings.
 CORS_ORIGIN_WHITELIST = (

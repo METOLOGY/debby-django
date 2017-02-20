@@ -12,3 +12,7 @@ class CustomUserAdmin(admin.ModelAdmin):
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ['date_joined']}),
     )
+
+    readonly_fields = (
+        'date_joined',
+    )

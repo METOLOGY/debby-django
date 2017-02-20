@@ -5,6 +5,8 @@ from user.models import CustomUserModel
 from bg_record.models import BGModel
 import json
 
+from debby.bot_settings import webhook_secret, webhook_token
+
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -15,8 +17,8 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ConfirmTemplate, PostbackTemplateAction, MessageTemplateAction, PostbackEvent
 )
 
-line_bot_api = LineBotApi('o95VkDv5wNpJGzWHATn8oMscgxR24ovtcs0GnXd8b79TNAXF6CEEbipeJf247YVsnu+weRqCKFhPw4hSsXoPTO+UOFlYcv5cSiXdVaVkfePs2sWBXQU5J8pfJWkPSHNqwD04umCN9mmSHUUYmls8+gdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('8800b2dbc38f81e3af174b9e3275eb1c')
+line_bot_api = LineBotApi(webhook_token)
+handler = WebhookHandler(webhook_secret)
 
 CurrentUser = ''
 
