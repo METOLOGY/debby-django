@@ -28,7 +28,7 @@ class CustomUserManager(BaseUserManager):
         superuser.save(using=self._db)
         return superuser
 
-class CustomUserModel(AbstractUser):
+class CustomUserModel(AbstractUser, PermissionsMixin):
     email = models.EmailField(blank=True)
     username = models.CharField(max_length=55)
     first_name = models.CharField(max_length=20)
@@ -45,4 +45,10 @@ class CustomUserModel(AbstractUser):
     USERNAME_FIELD = 'line_id'
     REQUIRED_FIELDS = []
 
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
 
+
+    def __str__(self):
+        return self.line_id
