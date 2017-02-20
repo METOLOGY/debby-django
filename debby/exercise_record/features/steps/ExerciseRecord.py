@@ -2,6 +2,7 @@
 
 from behave import *
 import urllib.request
+from django.apps import apps
 
 
 @given("a set of {model_name}s in Database")
@@ -9,16 +10,22 @@ def step_impl(context, model_name):
     """
     :type context: behave.runner.Context
     """
-    pass
 
+    model = apps.get_model(*model_name.split('.'))
+
+    for row in context.table:
+        model.objects.create(**row.as_dict())
+
+    data = model.objects.first()
+    assert data.id == 1
 
 @when("I go to {page_url}")
 def step_impl(context, page_url):
     """
     :type context: behave.runner.Context
     """
-    context.response = urllib.request.urlopen(context.test_case.live_server_url + page_url)
-
+    #context.response = urllib.request.urlopen(context.test_case.live_server_url + page_url)
+    assert False
 
 @then('the return includes "{text}"')
 def step_impl(context, text):
@@ -26,7 +33,7 @@ def step_impl(context, text):
     :type context: behave.runner.Context
     :type text: str
     """
-    pass
+    assert False
 
 
 @step('the return includes "{text}"')
