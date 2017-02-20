@@ -51,7 +51,7 @@ THIRD_PARTY_APPS = [
 BUILD_APPS = [
     'line.apps.LineConfig',
     'user.apps.UserConfig',
-    'bg_record.apps.BgRecordConfig'
+    'bg_record.apps.BgRecordConfig',
 ]
 
 INSTALLED_APPS =  THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
