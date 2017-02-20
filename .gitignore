@@ -2,6 +2,7 @@ env/
 migrations/
 db.sqlite3
 *.ipynb
+*.pyc
 
 # pycharm folder
 .idea/
