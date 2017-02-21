@@ -8,4 +8,4 @@ class BGModel(models.Model):
     glucose_val = models.IntegerField(blank=False)
 
     def __str__(self):
-        return self.user
+        return self.user.line_id
