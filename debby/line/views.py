@@ -87,7 +87,7 @@ def handle_message(event):
         )
     )
 
-    if check_is_number(text):
+    if text.isdigit():
         bg_value = int(text)
         bg = BGModel(user=current_user, glucose_val=bg_value)
         bg.save()
@@ -127,11 +127,3 @@ def postback(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！'))
-
-
-def check_is_number(string):
-    try:
-        int(string)
-        return True
-    except:
-        return False
