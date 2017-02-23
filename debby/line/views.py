@@ -75,12 +75,10 @@ def handle_message(event):
             actions=[
                 PostbackTemplateAction(
                     label='好啊',
-                    text='好啊',
                     data='action=record_bg&choice=true'
                 ),
-                MessageTemplateAction(
+                PostbackTemplateAction(
                     label='等等再說',
-                    text='等等再說',
                     data='action=record_bg&choice=false'
                 )
             ]
