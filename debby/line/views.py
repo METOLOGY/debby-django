@@ -1,8 +1,8 @@
-from django.shortcuts import Http404
-from django.http.response import HttpResponseNotAllowed
+from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from user.models import CustomUserModel
 from bg_record.models import BGModel
+from urllib.parse import parse_qs
 import json
 
 from debby.bot_settings import webhook_secret, webhook_token
@@ -11,10 +11,11 @@ from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError
-)
+    InvalidSignatureError,
+    LineBotApiError)
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ConfirmTemplate, PostbackTemplateAction, MessageTemplateAction, PostbackEvent
+    MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ConfirmTemplate, PostbackTemplateAction,
+    MessageTemplateAction, PostbackEvent
 )
 
 line_bot_api = LineBotApi(webhook_token)
@@ -22,17 +23,25 @@ handler = WebhookHandler(webhook_secret)
 
 CurrentUser = ''
 
+
 @csrf_exempt
 def callback(request):
     if request.method == 'POST':
         # the header field on tutorial of python-sdk is original, django middleware add 'HTTP_' to it.
+        if 'HTTP_X_LINE_SIGNATURE' not in request.META.keys():
+            return HttpResponseBadRequest()
+
         signature = request.META['HTTP_X_LINE_SIGNATURE']
 
         # get request body as text
-        body = request.body.decode('utf-8') # this is a string
+        body = request.body.decode('utf-8')  # this is a string
+
         print(body)
         data = json.loads(body)
-        # {'events': [{'replyToken': '7c43c1d1d46d49d0ba9293685eaa4306', 'source': {'type': 'user', 'userId': 'U60d5ecd2f4700b6310cee793e3c55ca0'}, 'type': 'message', 'message': {'type': 'text', 'text': '次', 'id': '5636084685569'}, 'timestamp': 1486886979585}]}
+        # {'events': [{'replyToken': '7c43c1d1d46d49d0ba9293685eaa4306',
+        #               'source': {'type': 'user', 'userId': 'U60d5ecd2f4700b6310cee793e3c55ca0'},
+        #               'type': 'message', 'message': {'type': 'text', 'text': '次', 'id': '5636084685569'},
+        #               'timestamp': 1486886979585}]}
 
         # handle webhook body
         try:
@@ -44,11 +53,13 @@ def callback(request):
             CurrentUser = CustomUserModel.objects.get(line_id=lineID)
             handler.handle(body, signature)
         except InvalidSignatureError:
-            return Http404
+            return HttpResponseForbidden()
+        except LineBotApiError:
+            return HttpResponseBadRequest()
 
-        return 'OK'
+        return HttpResponse()
     else:
-        return HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['POST'])
 
 
 @handler.add(MessageEvent, message=TextMessage)
