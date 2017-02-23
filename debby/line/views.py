@@ -76,12 +76,12 @@ def handle_message(event):
                 PostbackTemplateAction(
                     label='好啊',
                     text='好啊',
-                    # data='action=buy&itemid=1'
-                    data='action=record_bg'
+                    data='action=record_bg&choice=true'
                 ),
                 MessageTemplateAction(
                     label='等等再說',
-                    text='等等再說'
+                    text='等等再說',
+                    data='action=record_bg&choice=false'
                 )
             ]
         )
@@ -94,21 +94,11 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text='紀錄成功！'))
-    elif text == '好啊':
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text='那們，輸入血糖～'))
-    elif text == '等等再說':
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！'))
     else:
         line_bot_api.reply_message(
             event.reply_token,
             confirm_template_message
         )
-
-
 
     # try:
     #     bg_value = int(text)
@@ -123,12 +113,20 @@ def handle_message(event):
     #         TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
 
 
-# @handler.add(PostbackEvent)
-# def postback(event):
-#     line_bot_api.reply_message(
-#         event.reply_token,
-#         TextSendMessage(text="123")
-#     )
+@handler.add(PostbackEvent)
+def postback(event):
+    data = event.postback.data
+    query_string_dict = parse_qs(data) # e.g.: {'action': ['record_bg'], 'choice': ['true']}
+    qs = query_string_dict
+    if qs['action'][0] == 'record_bg':
+        if qs['choice'][0] == 'true':
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='那們，輸入血糖～'))
+        elif qs['choice'][0] == 'false':
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！'))
 
 
 def check_is_number(string):
