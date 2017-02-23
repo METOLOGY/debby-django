@@ -1,5 +1,6 @@
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+
 from user.models import CustomUserModel
 from bg_record.models import BGModel
 from urllib.parse import parse_qs
@@ -17,6 +18,9 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, TemplateSendMessage, ConfirmTemplate, PostbackTemplateAction,
     MessageTemplateAction, PostbackEvent
 )
+
+import bg_record.messages
+
 
 line_bot_api = LineBotApi(webhook_token)
 handler = WebhookHandler(webhook_secret)
@@ -68,24 +72,6 @@ def handle_message(event):
     print(current_user)
 
     # template for recording glucose
-    confirm_template_message = TemplateSendMessage(
-        alt_text='Confirm template',
-        template=ConfirmTemplate(
-            text='嗨，現在要記錄血糖嗎？',
-            actions=[
-                PostbackTemplateAction(
-                    label='好啊',
-                    text='好啊',
-                    data='action=record_bg&choice=true'
-                ),
-                MessageTemplateAction(
-                    label='等等再說',
-                    text='等等再說',
-                    data='action=record_bg&choice=false'
-                )
-            ]
-        )
-    )
 
     if text.isdigit():
         bg_value = int(text)
@@ -97,7 +83,7 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(
             event.reply_token,
-            confirm_template_message
+            bg_record.messages.confirm_template_message
         )
 
     # try:
@@ -117,13 +103,4 @@ def handle_message(event):
 def postback(event):
     data = event.postback.data
     query_string_dict = parse_qs(data) # e.g.: {'action': ['record_bg'], 'choice': ['true']}
-    qs = query_string_dict
-    if qs['action'][0] == 'record_bg':
-        if qs['choice'][0] == 'true':
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='那們，輸入血糖～'))
-        elif qs['choice'][0] == 'false':
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！'))
+    bg_record.messages.handle_postback(event, line_bot_api, query_string_dict)
