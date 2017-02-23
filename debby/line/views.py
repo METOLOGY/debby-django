@@ -21,8 +21,6 @@ from linebot.models import (
 line_bot_api = LineBotApi(webhook_token)
 handler = WebhookHandler(webhook_secret)
 
-CurrentUser = ''
-
 
 @csrf_exempt
 def callback(request):
@@ -45,12 +43,11 @@ def callback(request):
 
         # handle webhook body
         try:
-            lineID = data['events'][0]['source']['userId']
-            if CustomUserModel.objects.filter(line_id=lineID).exists() is False:
+            line_id = data['events'][0]['source']['userId']
+            if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
                 print('create a new user')
-                CustomUserModel.objects.create_user(line_id=lineID)
-            global CurrentUser
-            CurrentUser = CustomUserModel.objects.get(line_id=lineID)
+                CustomUserModel.objects.create_user(line_id=line_id)
+
             handler.handle(body, signature)
         except InvalidSignatureError:
             return HttpResponseForbidden()
@@ -67,11 +64,10 @@ def handle_message(event):
 
     text = event.message.text
     print(text)
-    print(CurrentUser)
-    # bg_value = int(text)
-    # BG = BGModel(user=CurrentUser, glucose=bg_value)
+    current_user = CustomUserModel.objects.get(line_id=event.source.sender_id)
+    print(current_user)
 
-    # template for recoring glucose
+    # template for recording glucose
     confirm_template_message = TemplateSendMessage(
         alt_text='Confirm template',
         template=ConfirmTemplate(
@@ -93,8 +89,8 @@ def handle_message(event):
 
     if check_is_number(text):
         bg_value = int(text)
-        BG = BGModel(user=CurrentUser, glucose_val=bg_value)
-        BG.save()
+        bg = BGModel(user=current_user, glucose_val=bg_value)
+        bg.save()
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text='紀錄成功！'))
