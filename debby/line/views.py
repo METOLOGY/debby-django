@@ -19,8 +19,7 @@ from linebot.models import (
     MessageTemplateAction, PostbackEvent
 )
 
-import bg_record.messages
-
+from bg_record.manager import BGRecordManager
 
 line_bot_api = LineBotApi(webhook_token)
 handler = WebhookHandler(webhook_secret)
@@ -65,8 +64,10 @@ def callback(request):
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    bg_manager = BGRecordManager(line_bot_api, event)
 
     text = event.message.text
+
     print(text)
     current_user = CustomUserModel.objects.get(line_id=event.source.sender_id)
     print(current_user)
@@ -75,32 +76,31 @@ def handle_message(event):
 
     if text.isdigit():
         bg_value = int(text)
-        bg = BGModel(user=current_user, glucose_val=bg_value)
-        bg.save()
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text='紀錄成功！'))
-    else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            bg_record.messages.confirm_template_message
-        )
+        bg_manager.record_bg_record(current_user, bg_value)
 
-    # try:
-    #     bg_value = int(text)
-    #     BG = BGModel(user=CurrentUser, glucose_val=bg_value)
-    #     BG.save()
-    #     line_bot_api.reply_message(
-    #         event.reply_token,
-    #         TextSendMessage(text='紀錄成功！'))
-    # except ValueError:
-    #     line_bot_api.reply_message(
-    #         event.reply_token,
-    #         TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
+        bg_manager.reply_record_success()
+    else:
+        bg_manager.ask_if_want_to_record_bg()
+
+        # try:
+        #     bg_value = int(text)
+        #     BG = BGModel(user=CurrentUser, glucose_val=bg_value)
+        #     BG.save()
+        #     line_bot_api.reply_message(
+        #         event.reply_token,
+        #         TextSendMessage(text='紀錄成功！'))
+        # except ValueError:
+        #     line_bot_api.reply_message(
+        #         event.reply_token,
+        #         TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
 
 
 @handler.add(PostbackEvent)
 def postback(event):
+    bg_manager = BGRecordManager(line_bot_api, event)
+
     data = event.postback.data
-    query_string_dict = parse_qs(data) # e.g.: {'action': ['record_bg'], 'choice': ['true']}
-    bg_record.messages.handle_postback(event, line_bot_api, query_string_dict)
+    query_string_dict = parse_qs(data)  # e.g.: {'action': ['record_bg'], 'choice': ['true']}
+    if query_string_dict['action'][0] == 'record_bg':
+        bg_manager.reply_to_input(query_string_dict)
+
