@@ -73,7 +73,6 @@ def handle_message(event):
     print(current_user)
 
     # template for recording glucose
-
     if text.isdigit():
         bg_value = int(text)
         bg_manager.record_bg_record(current_user, bg_value)
