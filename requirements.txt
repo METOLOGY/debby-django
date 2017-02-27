@@ -8,3 +8,4 @@ requests==2.13.0
 pytz==2016.10
 jupyter==1.0.0
 jieba==0.38
+celery==4.0.2
