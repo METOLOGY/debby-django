@@ -1,15 +1,9 @@
-from urllib.request import urlopen
-
-from django.core.files import File
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from io import BytesIO
-from linebot.models import Event
 from linebot.models import ImageMessage
 
-from food_record.models import FoodModel
+from food_record.manager import FoodRecordManager
 from user.models import CustomUserModel
-from bg_record.models import BGModel
 from urllib.parse import parse_qs
 import json
 
@@ -115,8 +109,7 @@ def postback(event):
 def handle_image(event: MessageEvent):
     current_user = CustomUserModel.objects.get(line_id=event.source.sender_id)
 
-    food_record = FoodModel()
+    fr_manager = FoodRecordManager(line_bot_api, event)
     message_id = event.message.id
     image_content = line_bot_api.get_message_content(message_id)
-    io = BytesIO(image_content.content)
-    food_record.food_image_upload.save('{0}_food_image.jpg'.format(current_user.line_id), File(io))
+    fr_manager.record_image(current_user, image_content.content)

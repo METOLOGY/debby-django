@@ -12,7 +12,7 @@ from .models import BGModel
 from user.models import CustomUserModel
 
 
-class BGRecordManager():
+class BGRecordManager:
     def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
         self.line_bot_api = line_bot_api
         self.event = event
