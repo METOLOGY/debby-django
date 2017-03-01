@@ -44,6 +44,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
+    'django_celery_beat',
 ]
 
 BUILD_APPS = [
@@ -53,7 +54,7 @@ BUILD_APPS = [
     'exercise_record.apps.ExerciseRecordConfig',
 ]
 
-INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
+INSTALLED_APPS = DJANGO_APPS + BUILD_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -121,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'
 
 USE_I18N = True
 
@@ -141,3 +142,9 @@ AUTH_USER_MODEL = 'user.CustomUserModel'
 CORS_ORIGIN_WHITELIST = (
 
 )
+
+# Celery settings
+CELERY_BROKER_URL = 'amqp://'
+CELERY_RESULT_BACKEND = 'amqp://'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
