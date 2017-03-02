@@ -1,8 +1,9 @@
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from linebot.models import ImageMessage
 
+from food_record.manager import FoodRecordManager
 from user.models import CustomUserModel
-from bg_record.models import BGModel
 from urllib.parse import parse_qs
 import json
 
@@ -63,7 +64,7 @@ def callback(request):
 
 
 @handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
+def handle_message(event: MessageEvent):
     bg_manager = BGRecordManager(line_bot_api, event)
 
     text = event.message.text
@@ -103,3 +104,12 @@ def postback(event):
     if query_string_dict['action'][0] == 'record_bg':
         bg_manager.reply_to_input(query_string_dict)
 
+
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event: MessageEvent):
+    current_user = CustomUserModel.objects.get(line_id=event.source.sender_id)
+
+    fr_manager = FoodRecordManager(line_bot_api, event)
+    message_id = event.message.id
+    image_content = line_bot_api.get_message_content(message_id)
+    fr_manager.record_image(current_user, image_content.content)
