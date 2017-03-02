@@ -12,7 +12,7 @@ from .models import BGModel
 from user.models import CustomUserModel
 
 
-class BGRecordManager():
+class BGRecordManager:
 
     confirm_template_message = TemplateSendMessage(
         alt_text='Confirm template',

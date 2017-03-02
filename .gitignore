@@ -13,3 +13,5 @@ debby/debby/bot_settings\.py
 debby/celerybeat-schedule
 debby/celerybeat\.pid
 debby/django
+# folder for all media 
+media/
