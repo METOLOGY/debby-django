@@ -15,6 +15,7 @@ from debby.bot_settings import ngrok_key
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.path.dirname(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -44,6 +45,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
+    'django_celery_beat',
 ]
 
 BUILD_APPS = [
@@ -51,9 +53,10 @@ BUILD_APPS = [
     'user.apps.UserConfig',
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
+    'food_record.apps.FoodRecordConfig'
 ]
 
-INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
+INSTALLED_APPS = DJANGO_APPS + BUILD_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -121,7 +124,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'
 
 USE_I18N = True
 
@@ -141,3 +144,13 @@ AUTH_USER_MODEL = 'user.CustomUserModel'
 CORS_ORIGIN_WHITELIST = (
 
 )
+
+# Celery settings
+CELERY_BROKER_URL = 'amqp://'
+CELERY_RESULT_BACKEND = 'amqp://'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
+
+MEDIA_ROOT = os.path.join(PROJECT_DIR, 'media')
+
+MEDIA_URL = '/media/'
