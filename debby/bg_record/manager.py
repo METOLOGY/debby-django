@@ -41,7 +41,7 @@ class BGRecordManager:
     def reply_to_input(self, query_string: Dict[str, list]):
         message = ''
         if query_string['choice'][0] == 'true':
-            message = '那們，輸入血糖～'
+            message = '那麼，輸入血糖～'
         elif query_string['choice'][0] == 'false':
             message = '好，要隨時注意自己的血糖狀況哦！'
         send_message = TextSendMessage(text=message)
