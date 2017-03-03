@@ -5,40 +5,40 @@ from django.contrib.auth.models import AbstractUser, User, Group, PermissionsMix
 # example from https://www.caktusgroup.com/blog/2013/08/07/migrating-custom-user-model-django/
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, line_id, password=None):
+    def _create_user(self, line_id, password, **extra_fields):
+        """
+        Creates and saves a User with the given email and password.
+        """
         if not line_id:
             raise ValueError('no line_id was given. failed to create user.')
-        else:
-            user = self.model(
-                line_id = line_id,
-            )
+        user = self.model(line_id=line_id, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
-            user.set_password(password)
-            user.save(using=self._db)
-            return user
+    def create_user(self, line_id=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(line_id, password, **extra_fields)
 
-    def create_superuser(self, line_id, password=None):
-        superuser = self.model(
-            line_id = line_id,
-            is_superuser = True,
-            is_staff = True,
-        )
+    def create_superuser(self, line_id, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
 
-        superuser.set_password(password)
-        superuser.save(using=self._db)
-        return superuser
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
 
-class CustomUserModel(AbstractUser, PermissionsMixin):
-    email = models.EmailField(blank=True)
-    username = models.CharField(max_length=55)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-    line_id = models.CharField(max_length=33, primary_key=True)
+        return self._create_user(line_id, password, **extra_fields)
+
+
+class CustomUserModel(AbstractUser):
+    username_validator = None
+    username = None
+
+    line_id = models.CharField(max_length=33, unique=True)
     line_token = models.CharField(max_length=100, blank=True)
-    date_joined = models.DateTimeField(auto_now_add=True)
-    groups = models.ForeignKey(Group, blank=True, default=0)
-    is_superuser = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
