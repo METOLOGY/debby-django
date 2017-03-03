@@ -3,7 +3,7 @@ from user.models import CustomUserModel
 
 
 class BGModel(models.Model):
-    user = models.ForeignKey(CustomUserModel, related_name='user')
+    user = models.ForeignKey(CustomUserModel)
     time = models.DateTimeField(auto_now_add=True)
     glucose_val = models.IntegerField(blank=False)
 
