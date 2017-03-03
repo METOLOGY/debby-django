@@ -1,8 +1,8 @@
+from django.core.cache import cache
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
-from food_record.manager import FoodRecordManager
 from user.models import CustomUserModel
 from urllib.parse import parse_qs
 import json
@@ -21,6 +21,7 @@ from linebot.models import (
 )
 
 from bg_record.manager import BGRecordManager
+from food_record.manager import FoodRecordManager
 
 line_bot_api = LineBotApi(webhook_token)
 handler = WebhookHandler(webhook_secret)
@@ -107,9 +108,13 @@ def postback(event):
 
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event: MessageEvent):
-    current_user = CustomUserModel.objects.get(line_id=event.source.sender_id)
+    line_id = event.source.sender_id
+    current_user = CustomUserModel.objects.get(line_id=line_id)
 
     fr_manager = FoodRecordManager(line_bot_api, event)
     message_id = event.message.id
     image_content = line_bot_api.get_message_content(message_id)
-    fr_manager.record_image(current_user, image_content.content)
+    if image_content:
+        fr_manager.ask_if_want_to_record_food()
+        cache.set(line_id, message_id, 600)  # cache for 2 min
+        fr_manager.record_image(current_user, image_content.content)

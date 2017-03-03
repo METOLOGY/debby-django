@@ -154,3 +154,10 @@ CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
 MEDIA_ROOT = os.path.join(PROJECT_DIR, 'media')
 
 MEDIA_URL = '/media/'
+
+# Caches
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
+    }
+}
