@@ -7,3 +7,7 @@ Feature: Food record
     When 我點擊了選單 "紀錄飲食"
     Then 他會回傳 "請上傳餐點的照片"
 
+  Scenario: 上傳照片並記錄飲食
+    When 我上傳了一張照片
+
+

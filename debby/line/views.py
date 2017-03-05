@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
 from user.models import CustomUserModel
-from urllib.parse import parse_qs
+from urllib.parse import parse_qsl
 import json
 
 from debby.bot_settings import webhook_secret, webhook_token
@@ -108,7 +108,7 @@ def postback(event):
     fr_manager = FoodRecordManager(line_bot_api, event)
 
     data = event.postback.data
-    query_string_dict = parse_qs(data)  # e.g.: {'action': ['record_bg'], 'choice': ['true']}
+    query_string_dict = dict(parse_qsl(data))  # e.g.: {'action': ['record_bg'], 'choice': ['true']}
     action = query_string_dict['action'][0]
     if action == 'record_bg':
         bg_manager.reply_to_input(query_string_dict)
