@@ -12,3 +12,4 @@ jupyter==1.0.0
 jieba==0.38
 celery==4.0.2
 django-celery-beat==1.0.1
+psycopg2==2.7
