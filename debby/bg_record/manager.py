@@ -13,7 +13,6 @@ from user.models import CustomUserModel
 
 
 class BGRecordManager:
-
     confirm_template_message = TemplateSendMessage(
         alt_text='Confirm template',
         template=ConfirmTemplate(
@@ -31,12 +30,16 @@ class BGRecordManager:
         )
     )
 
-    def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
-        self.line_bot_api = line_bot_api
-        self.event = event
+    #
+    # def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
+    #     self.line_bot_api = line_bot_api
+    #     self.event = event
 
-    def ask_if_want_to_record_bg(self):
-        self._reply_message(self.confirm_template_message)
+    # def ask_if_want_to_record_bg(self):
+    #     self._reply_message(self.confirm_template_message)
+
+    def reply_does_user_want_to_record(self):
+        return self.confirm_template_message
 
     def reply_to_input(self, query_string: Dict[str, list]):
         message = ''
