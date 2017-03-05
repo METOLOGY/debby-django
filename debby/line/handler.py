@@ -4,7 +4,7 @@ from bg_record.manager import BGRecordManager
 
 
 class InputHandler(object):
-    bg_manager = BGRecordManager('', '')
+    bg_manager = BGRecordManager()
 
     def __init__(self, input_text: str):
         self.input_text = input_text
@@ -23,7 +23,7 @@ class InputHandler(object):
 
 
 class CallbackHandler(object):
-    bg_manager = BGRecordManager('', '')
+    bg_manager = BGRecordManager()
 
     def __init__(self, data: dict):
         self.data = data
@@ -33,4 +33,4 @@ class CallbackHandler(object):
     def dispatch(self) -> SendMessage:
         if self.callback == 'BGRecord':
             if self.action == 'record_bg':
-                return self.bg_manager.reply_if_want_to_record(self.data)
+                return self.bg_manager.reply_to_user_choice(self.data)

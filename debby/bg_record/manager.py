@@ -36,7 +36,7 @@ class BGRecordManager:
         return TextSendMessage(text='紀錄成功！')
 
     @staticmethod
-    def reply_if_want_to_record(data) -> TextSendMessage:
+    def reply_to_user_choice(data) -> TextSendMessage:
         message = ''
         choice = data['choice']
         if choice == 'true':
