@@ -21,11 +21,11 @@ class BGRecordManager:
                 actions=[
                     PostbackTemplateAction(
                         label='好啊',
-                        data='action=record_bg&choice=true'
+                        data='callback=BGRecord&action=record_bg&choice=true'
                     ),
                     PostbackTemplateAction(
                         label='等等再說',
-                        data='action=record_bg&choice=false'
+                        data='callback=BGRecord&action=record_bg&choice=false'
                     )
                 ]
             )

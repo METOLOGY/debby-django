@@ -76,7 +76,7 @@ def step_impl(context):
     """
     :type context: behave.runner.Context
     """
-    bg_manager = BGRecordManager('', '')
+    bg_manager = BGRecordManager()
     context.given_template = bg_manager.reply_does_user_want_to_record().as_json_dict()
 
 
