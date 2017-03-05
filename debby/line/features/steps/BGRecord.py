@@ -24,7 +24,7 @@ def step_impl(context, input_text):
     context.template = input_handler.find_best_answer().as_json_dict()
 
 
-@then('debby會回我 "{answer}"')
+@then('debby會有個選單回我 "{answer}"')
 def step_impl(context, answer):
     """
     :type context: behave.runner.Context
@@ -34,7 +34,7 @@ def step_impl(context, answer):
     assert_that(message, equal_to(answer))
 
 
-@step('會有個選單問我是要 "{text}"')
+@step('並問我是要選項 "{text}"')
 def step_impl(context, text):
     """
     :type context: behave.runner.Context
@@ -44,10 +44,19 @@ def step_impl(context, text):
     assert_that(message, equal_to(text))
 
 
-@step('還是 "{text}"')
+@step('還是選項 "{text}"')
 def step_impl(context, text):
     """
     :type context: behave.runner.Context
     """
     message = context.template['template']['actions'][1]['label']
+    assert_that(message, equal_to(text))
+
+
+@then('debby會回我 "{text}"')
+def step_impl(context, text):
+    """
+    :type context: behave.runner.Context
+    """
+    message = context.template['text']
     assert_that(message, equal_to(text))

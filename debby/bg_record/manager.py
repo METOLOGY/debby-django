@@ -30,10 +30,9 @@ class BGRecordManager:
         )
     )
 
-    #
-    # def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
-    #     self.line_bot_api = line_bot_api
-    #     self.event = event
+    def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
+        self.line_bot_api = line_bot_api
+        self.event = event
 
     # def ask_if_want_to_record_bg(self):
     #     self._reply_message(self.confirm_template_message)
@@ -56,9 +55,12 @@ class BGRecordManager:
         bg = BGModel(user=current_user, glucose_val=bg_value)
         bg.save()
 
-    def reply_record_success(self):
-        send_message = TextSendMessage(text='紀錄成功！')
-        self._reply_message(send_message)
+    # def reply_record_success(self):
+    #     send_message = TextSendMessage(text='紀錄成功！')
+    #     self._reply_message(send_message)
+    @staticmethod
+    def reply_record_success():
+        return TextSendMessage(text='紀錄成功！')
 
     def _reply_message(self, send_message: SendMessage):
         self.line_bot_api.reply_message(
