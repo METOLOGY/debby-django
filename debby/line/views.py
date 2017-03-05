@@ -3,6 +3,7 @@ from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, 
 from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
+from line.handler import InputHandler
 from user.models import CustomUserModel
 from urllib.parse import parse_qsl
 import json
@@ -67,11 +68,10 @@ def callback(request):
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
-    bg_manager = BGRecordManager(line_bot_api, event)
+    bg_manager = BGRecordManager()
     fr_manager = FoodRecordManager(line_bot_api, event)
 
     text = event.message.text
-
     print(text)
     current_user = CustomUserModel.objects.get(line_id=line_id)
     print(current_user)
@@ -104,7 +104,7 @@ def handle_message(event: MessageEvent):
 
 @handler.add(PostbackEvent)
 def postback(event):
-    bg_manager = BGRecordManager(line_bot_api, event)
+    bg_manager = BGRecordManager()
     fr_manager = FoodRecordManager(line_bot_api, event)
 
     data = event.postback.data

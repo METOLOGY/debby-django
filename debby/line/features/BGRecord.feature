@@ -2,6 +2,9 @@
 Feature: 紀錄血糖
   身為一個糖尿病患，我希望對chatbot打入數字就可以記錄血糖，因為這樣感覺很方便
 
+  Background: 有個User 5566
+    Given 我的line_id是 5566
+
   Scenario: 隨便亂打字就會問我要不要紀錄血糖
     Given 我打開 debby 對話框
     When 我輸入 "嗨"
@@ -16,9 +19,10 @@ Feature: 紀錄血糖
     When 我選選項 "等等再說"
     Then debby會回我 "好，要隨時注意自己的血糖狀況哦！"
 
-  Scenario: 打數字會問我要不要記錄血糖
-    When 我輸入 "3"
+  Scenario: 打數字會幫我紀錄血糖
+    Given 有個DB
+    When 我輸入 "183"
     Then debby會回我 "紀錄成功！"
-
+    And 在DB bg_record.BGModel 中有這筆資料使用者 5566 血糖 183
 
 

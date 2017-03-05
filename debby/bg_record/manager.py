@@ -1,10 +1,5 @@
-from typing import Dict
-
-from linebot import LineBotApi
 from linebot.models import ConfirmTemplate
-from linebot.models import MessageEvent
 from linebot.models import PostbackTemplateAction
-from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
@@ -13,7 +8,8 @@ from user.models import CustomUserModel
 
 
 class BGRecordManager:
-    def reply_does_user_want_to_record(self) -> TemplateSendMessage:
+    @staticmethod
+    def reply_does_user_want_to_record() -> TemplateSendMessage:
         return TemplateSendMessage(
             alt_text='Confirm template',
             template=ConfirmTemplate(
@@ -21,11 +17,11 @@ class BGRecordManager:
                 actions=[
                     PostbackTemplateAction(
                         label='好啊',
-                        data='action=record_bg&choice=true'
+                        data='callback=BGRecord&action=record_bg&choice=true'
                     ),
                     PostbackTemplateAction(
                         label='等等再說',
-                        data='action=record_bg&choice=false'
+                        data='callback=BGRecord&action=record_bg&choice=false'
                     )
                 ]
             )
