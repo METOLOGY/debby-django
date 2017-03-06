@@ -3,7 +3,7 @@ from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, 
 from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
-from line.handler import InputHandler
+from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 from urllib.parse import parse_qsl
 import json
@@ -76,48 +76,49 @@ def handle_message(event: MessageEvent):
     current_user = CustomUserModel.objects.get(line_id=line_id)
     print(current_user)
 
-    user_cache = cache.get(line_id)
-    # template for recording glucose
-    if text.isdigit():
-        bg_value = int(text)
-        bg_manager.record_bg_record(current_user, bg_value)
+    input_handler = InputHandler(current_user,text)
+    send_message = input_handler.handle()
+    line_bot_api.reply_message(
+        event.reply_token,
+        send_message)
 
-        bg_manager.reply_record_success()
-    elif user_cache and 'event' in user_cache.keys():
-        if user_cache['event'] == 'record_food_detail':
-            fr_manager.record_food_extra_info(text)
-    else:
-        bg_manager.ask_if_want_to_record_bg()
-
-        # try:
-        #     bg_value = int(text)
-        #     BG = BGModel(user=CurrentUser, glucose_val=bg_value)
-        #     BG.save()
-        #     line_bot_api.reply_message(
-        #         event.reply_token,
-        #         TextSendMessage(text='紀錄成功！'))
-        # except ValueError:
-        #     line_bot_api.reply_message(
-        #         event.reply_token,
-        #         TextSendMessage(text='喂～ 要輸入數字才可以記錄血糖啦！'))
+    # user_cache = cache.get(line_id)
+    # # template for recording glucose
+    # if text.isdigit():
+    #     bg_value = int(text)
+    #     bg_manager.record_bg_record(current_user, bg_value)
+    #
+    #     bg_manager.reply_record_success()
+    # elif user_cache and 'event' in user_cache.keys():
+    #     if user_cache['event'] == 'record_food_detail':
+    #         fr_manager.record_food_extra_info(text)
+    # else:
+    #     bg_manager.ask_if_want_to_record_bg()
 
 
 @handler.add(PostbackEvent)
-def postback(event):
+def postback(event: PostbackEvent):
     bg_manager = BGRecordManager()
     fr_manager = FoodRecordManager(line_bot_api, event)
 
     data = event.postback.data
-    query_string_dict = dict(parse_qsl(data))  # e.g.: {'action': ['record_bg'], 'choice': ['true']}
-    action = query_string_dict['action'][0]
-    if action == 'record_bg':
-        bg_manager.reply_to_input(query_string_dict)
-    elif action == 'food_record':
-        if len(query_string_dict['action']) > 1:
-            if query_string_dict['action'][1] == 'write_other_notes':
-                fr_manager.reply_if_want_to_record_detail(query_string_dict)
 
-        fr_manager.handle_record(query_string_dict)
+    callback_handler = CallbackHandler(data)
+    send_message = callback_handler.handle()
+    line_bot_api.reply_message(
+        event.reply_token,
+        send_message
+    )
+    # query_string_dict = dict(parse_qsl(data))  # e.g.: {'action': ['record_bg'], 'choice': ['true']}
+    # action = query_string_dict['action'][0]
+    # if action == 'record_bg':
+    #     bg_manager.reply_to_input(query_string_dict)
+    # elif action == 'food_record':
+    #     if len(query_string_dict['action']) > 1:
+    #         if query_string_dict['action'][1] == 'write_other_notes':
+    #             fr_manager.reply_if_want_to_record_detail(query_string_dict)
+    #
+    #     fr_manager.handle_record(query_string_dict)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
