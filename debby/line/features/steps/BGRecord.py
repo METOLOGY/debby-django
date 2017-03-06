@@ -71,7 +71,7 @@ def step_impl(context):
 def step_impl(context, text):
     action = next((x for x in context.given_template['template']['actions']
                    if x['label'] == text), {'data': ''})
-    data = dict(parse_qsl(action['data']))
+    data = action['data']
 
     ih = CallbackHandler(data)
     context.send_message = ih.handle().as_json_dict()

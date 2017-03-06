@@ -1,3 +1,5 @@
+from urllib.parse import parse_qsl
+
 from linebot.models import SendMessage
 
 from bg_record.manager import BGRecordManager
@@ -28,7 +30,8 @@ class InputHandler(object):
 class CallbackHandler(object):
     bg_manager = BGRecordManager()
 
-    def __init__(self, data: dict):
+    def __init__(self, input_data):
+        data = dict(parse_qsl(input_data))
         self.data = data
         self.callback = data['callback']
         self.action = data['action']
