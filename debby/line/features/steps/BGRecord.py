@@ -1,17 +1,12 @@
 from urllib.parse import parse_qsl
 
 from behave import *
-from django.apps import apps
 from hamcrest import *
+from django.apps import apps
 
 from bg_record.manager import BGRecordManager
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
-
-
-@given("我的line_id是 {line_id}")
-def step_impl(context, line_id):
-    context.current_user, _ = CustomUserModel.objects.get_or_create(line_id=line_id)
 
 
 @given("我打開 debby 對話框")
@@ -35,30 +30,6 @@ def step_impl(context, input_text):
     #  'type': 'template'}
     input_handler = InputHandler(context.current_user, input_text)
     context.send_message = input_handler.find_best_answer_for_text().as_json_dict()
-
-
-@then('debby會有個選單回我 "{answer}"')
-def step_impl(context, answer):
-    message = context.send_message['template']['text']
-    assert_that(message, equal_to(answer))
-
-
-@step('並問我是要選項 "{text}"')
-def step_impl(context, text):
-    message = ''
-    for action in context.send_message['template']['actions']:
-        if action['label'] == text:
-            message = action['label']
-    assert_that(message, equal_to(text))
-
-
-@step('還是選項 "{text}"')
-def step_impl(context, text):
-    message = ''
-    for action in context.send_message['template']['actions']:
-        if action['label'] == text:
-            message = action['label']
-    assert_that(message, equal_to(text))
 
 
 @given('選單 "嗨，現在要記錄血糖嗎？"')
