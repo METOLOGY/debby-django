@@ -8,24 +8,25 @@ from user.models import CustomUserModel
 
 
 class BGRecordManager:
-    @staticmethod
-    def reply_does_user_want_to_record() -> TemplateSendMessage:
-        return TemplateSendMessage(
-            alt_text='Confirm template',
-            template=ConfirmTemplate(
-                text='嗨，現在要記錄血糖嗎？',
-                actions=[
-                    PostbackTemplateAction(
-                        label='好啊',
-                        data='callback=BGRecord&action=record_bg&choice=true'
-                    ),
-                    PostbackTemplateAction(
-                        label='等等再說',
-                        data='callback=BGRecord&action=record_bg&choice=false'
-                    )
-                ]
-            )
+    confirm_template_message = TemplateSendMessage(
+        alt_text='Confirm template',
+        template=ConfirmTemplate(
+            text='嗨，現在要記錄血糖嗎？',
+            actions=[
+                PostbackTemplateAction(
+                    label='好啊',
+                    data='callback=BGRecord&action=record_bg&choice=true'
+                ),
+                PostbackTemplateAction(
+                    label='等等再說',
+                    data='callback=BGRecord&action=record_bg&choice=false'
+                )
+            ]
         )
+    )
+
+    def reply_does_user_want_to_record(self) -> TemplateSendMessage:
+        return self.confirm_template_message
 
     @staticmethod
     def reply_record_success() -> TextSendMessage:
@@ -42,12 +43,12 @@ class BGRecordManager:
 
         return TextSendMessage(text=message)
 
-    # def record_reminder(self):
-    #     total_members_line_id = [x.line_id for x in CustomUserModel.objects.all() if len(x.line_id) == 33]
-    #     print(total_members_line_id)
-    #
-    #     for member in total_members_line_id:
-    #         self.line_bot_api.push_message(member, self.confirm_template_message)
+    def record_reminder(self, line_bot_api):
+        total_members_line_id = [x.line_id for x in CustomUserModel.objects.all() if len(x.line_id) == 33]
+        print(total_members_line_id)
+
+        for member in total_members_line_id:
+            line_bot_api.push_message(member, self.confirm_template_message)
 
     @staticmethod
     def record_bg_record(current_user: CustomUserModel, bg_value: int):
