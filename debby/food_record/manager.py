@@ -38,23 +38,24 @@ class FoodRecordManager:
         send_message = TextSendMessage(text=message)
         self._reply_message(send_message)
 
-    def ask_if_want_to_record_food(self):
-        self._reply_message(TemplateSendMessage(
+    @staticmethod
+    def reply_if_user_want_to_record():
+        return TemplateSendMessage(
             alt_text='Do you want to record food?',
             template=ConfirmTemplate(
                 text='請問是否要記錄飲食',
                 actions=[
                     PostbackTemplateAction(
                         label='好喔',
-                        data='action=food_record&choice=true'
+                        data='callback=FoodRecord&action=record&choice=true'
                     ),
                     PostbackTemplateAction(
-                        label='不是喔跟你玩玩的',
-                        data='action=food_record&choice=false'
+                        label='跟你玩玩的',
+                        data='callback=FoodRecord&action=record&choice=false'
                     )
                 ]
             )
-        ))
+        )
 
     def handle_record(self, query_string_dict):
         choice = query_string_dict['choice'][0]

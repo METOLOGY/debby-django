@@ -96,6 +96,20 @@ def handle_message(event: MessageEvent):
     #     bg_manager.ask_if_want_to_record_bg()
 
 
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event: MessageEvent):
+    line_id = event.source.sender_id
+    current_user = CustomUserModel.objects.get(line_id=line_id)
+    print(line_id)
+    fr_manager = FoodRecordManager(line_bot_api, event)
+    message_id = event.message.id
+    image_content = line_bot_api.get_message_content(message_id)
+    if image_content:
+        fr_manager.reply_if_user_want_to_record()
+        user_cache = {'event': 'record_food', 'message_id': message_id}
+        cache.set(line_id, user_cache, 120)  # cache for 2 min
+
+
 @handler.add(PostbackEvent)
 def postback(event: PostbackEvent):
     bg_manager = BGRecordManager()
@@ -119,17 +133,3 @@ def postback(event: PostbackEvent):
     #             fr_manager.reply_if_want_to_record_detail(query_string_dict)
     #
     #     fr_manager.handle_record(query_string_dict)
-
-
-@handler.add(MessageEvent, message=ImageMessage)
-def handle_image(event: MessageEvent):
-    line_id = event.source.sender_id
-    current_user = CustomUserModel.objects.get(line_id=line_id)
-    print(line_id)
-    fr_manager = FoodRecordManager(line_bot_api, event)
-    message_id = event.message.id
-    image_content = line_bot_api.get_message_content(message_id)
-    if image_content:
-        fr_manager.ask_if_want_to_record_food()
-        user_cache = {'event': 'record_food', 'message_id': message_id}
-        cache.set(line_id, user_cache, 120)  # cache for 2 min

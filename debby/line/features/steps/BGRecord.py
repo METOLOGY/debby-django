@@ -3,6 +3,8 @@ from urllib.parse import parse_qsl
 from behave import *
 from hamcrest import *
 from django.apps import apps
+from linebot.models import MessageEvent
+from linebot.models import TextMessage
 
 from bg_record.manager import BGRecordManager
 from line.handler import InputHandler, CallbackHandler
@@ -28,8 +30,10 @@ def step_impl(context, input_text):
     #               'text': '嗨，現在要記錄血糖嗎？',
     #               'type': 'confirm'},
     #  'type': 'template'}
-    input_handler = InputHandler(context.current_user, input_text)
-    context.send_message = input_handler.find_best_answer_for_text().as_json_dict()
+    tm = TextMessage(text=input_text)
+    event = MessageEvent(message=tm)
+    input_handler = InputHandler(context.current_user, event.message)
+    context.send_message = input_handler.handle()
 
 
 @given('選單 "嗨，現在要記錄血糖嗎？"')
@@ -45,12 +49,12 @@ def step_impl(context, text):
     data = action['data']
 
     ih = CallbackHandler(data)
-    context.send_message = ih.handle().as_json_dict()
+    context.send_message = ih.handle()
 
 
 @then('debby會回我 "{text}"')
 def step_impl(context, text):
-    message = context.send_message['text']
+    message = context.send_message.text
     assert_that(message, equal_to(text))
 
 
