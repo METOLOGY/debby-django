@@ -47,6 +47,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
     'django_celery_beat',
+    'grappelli',
 ]
 
 BUILD_APPS = [
@@ -57,7 +58,7 @@ BUILD_APPS = [
     'food_record.apps.FoodRecordConfig'
 ]
 
-INSTALLED_APPS = DJANGO_APPS + BUILD_APPS + THIRD_PARTY_APPS
+INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -141,6 +142,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+
 # Custom user model
 AUTH_USER_MODEL = 'user.CustomUserModel'
 
@@ -165,3 +168,5 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
     }
 }
+
+
