@@ -30,6 +30,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     ngrok_key,
     'localhost',
+    '140.114.71.167', # server ip for hsnl@NCHU
 ]
 
 # Application definition
