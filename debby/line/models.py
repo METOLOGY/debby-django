@@ -2,15 +2,15 @@ from django.db import models
 
 # Create your models here.
 class QAModel(models.Model):
-    category = models.CharField(max_length=20,
+    phrase = models.CharField(max_length=30, blank=False)
+    answer = models.TextField(max_length=200, blank=True)
+    callback = models.CharField(max_length=20,
                                 choices=(
-                                    ('bg', '血糖'),
-                                    ('sports', '運動'),
-                                    ('diet', '飲食'),
-                                    ('greeting', '招呼詞'),
-                                    ('other', '其他'),
+                                    ('BGRecord', '紀錄血糖'),
+                                    ('FoodRecord', '紀錄飲食'),
+                                    ('FoodQuery', '查詢食物熱量'),
+                                    ('DrugQuery', '查詢藥物'),
+                                    ('Chat', '閒聊'),
                                 ),
                                 blank=False
                                 )
-    keyword = models.CharField(max_length=30, blank=False)
-    answer = models.CharField(max_length=120, blank=True)
