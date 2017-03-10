@@ -9,7 +9,8 @@ from linebot.models import ImageMessage
 from linebot.models import MessageEvent
 
 from food_record.manager import FoodRecordManager
-from line.handler import InputHandler
+from food_record.models import FoodModel
+from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 
 
@@ -46,7 +47,6 @@ def step_impl(context, model_name, line_id):
     obj = model.objects.get(user=user)
     image = Image.open(obj.food_image_upload)
     context.pk = obj.pk
-    image2 = context.image
     assert_that(image.size, equal_to(context.image.size))
 
 
@@ -62,3 +62,12 @@ def step_impl(context, line_id):
 def step_impl(context):
     fr_manager = FoodRecordManager('', '')
     context.given_template = fr_manager.reply_record_success_and_if_want_more_detail()
+
+
+@step('"YOYOYO" 會跟照片記錄在同一筆中')
+def step_impl(context):
+    pk = context.pk
+    obj = FoodModel.objects.get(pk=pk)
+    image = Image.open(obj.food_image_upload)
+    assert_that(image.size, equal_to(context.image.size))
+    assert_that(obj.note, equal_to("YOYOYO"))

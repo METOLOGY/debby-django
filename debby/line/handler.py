@@ -17,10 +17,11 @@ from user.models import CustomUserModel
 
 class InputHandler(object):
     bg_manager = BGRecordManager()
-    fr_manager = FoodRecordManager
+    fr_manager = FoodRecordManager('', '')
 
-    def __init__(self, current_user: CustomUserModel, message: Message):
-        self.current_user = current_user
+    def __init__(self, line_id: str, message: Message):
+        self.line_id = line_id
+        self.current_user = CustomUserModel.objects.get(line_id=line_id)
         self.message = message
         self.text = ''
 
@@ -28,7 +29,12 @@ class InputHandler(object):
         return self.text.isdigit()
 
     def find_best_answer_for_text(self) -> SendMessage:
-        if self.is_input_a_bg_value():
+        user_cache = cache.get(self.line_id)
+
+        if user_cache and 'food_record_pk' in user_cache.keys():
+            self.fr_manager.record_extra_info(user_cache['food_record_pk'], self.text)
+            return self.fr_manager.reply_success()
+        elif self.is_input_a_bg_value():
             self.bg_manager.record_bg_record(self.current_user, int(self.text))
             return self.bg_manager.reply_record_success()
         else:

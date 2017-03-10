@@ -146,7 +146,8 @@ class FoodRecordManager:
         cache.delete(line_id)
         self._reply_text_send_message(message)
 
-    def reply_to_record_detail_template(self, data):
+    @staticmethod
+    def reply_to_record_detail_template(data):
         choice = data['choice']
         message = ''
 
@@ -160,4 +161,14 @@ class FoodRecordManager:
             message = '好的'
 
         return TextSendMessage(text=message)
+
+    @staticmethod
+    def reply_success():
+        return TextSendMessage(text="紀錄成功!")
+
+    @staticmethod
+    def record_extra_info(record_pk: str, text: str):
+        food_record = FoodModel.objects.get(pk=record_pk)
+        food_record.note = text
+        food_record.save()
 

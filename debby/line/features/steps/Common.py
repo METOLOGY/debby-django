@@ -5,6 +5,7 @@ from linebot.models import ConfirmTemplate
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
+from food_record.manager import FoodRecordManager
 from line.handler import CallbackHandler
 from user.models import CustomUserModel
 
@@ -20,7 +21,7 @@ def step_impl(context, answer):
     assert_that(context.send_message, instance_of(TemplateSendMessage))
     assert_that(context.send_message.template, instance_of(ConfirmTemplate))
     message = context.send_message.template.text
-    context.given_template = context.send_message
+    context.reply_template = context.send_message
 
     assert_that(message, equal_to(answer))
 
@@ -50,7 +51,8 @@ def step_impl(context, text):
 
 @when('我選選項 "{text}"')
 def step_impl(context, text):
-    action = next((x for x in context.given_template.template.actions
+    message_template = context.given_template if context.__contains__('given_template') else context.reply_template
+    action = next((x for x in message_template.template.actions
                    if x.label == text), None)
     data = action.data
 
@@ -67,4 +69,13 @@ def step_impl(context, text):
     send_message = context.send_message
     assert_that(send_message, instance_of(TextSendMessage))
     message = context.send_message.text
+    assert_that(message, equal_to(text))
+
+
+@given('debby回了我 "{text}"')
+def step_impl(context, text):
+    send_message = TextSendMessage(text=text)
+
+    assert_that(send_message, instance_of(TextSendMessage))
+    message = send_message.text
     assert_that(message, equal_to(text))

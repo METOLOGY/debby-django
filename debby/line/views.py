@@ -76,7 +76,7 @@ def handle_message(event: MessageEvent):
     current_user = CustomUserModel.objects.get(line_id=line_id)
     print(current_user)
 
-    input_handler = InputHandler(current_user, event.message)
+    input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()
     line_bot_api.reply_message(
         event.reply_token,
