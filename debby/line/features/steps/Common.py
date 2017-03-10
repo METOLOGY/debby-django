@@ -59,7 +59,7 @@ def step_impl(context, text):
     ch = CallbackHandler(context.line_id)
     ch.set_postback_data(data)
     if ch.is_callback_from_food_record():
-        assert_that(ch.action, is_not(equal_to('record')))
+        assert_that(ch.action, equal_to('record'))
         ch.setup_for_record_food_image(context.image_content)
     context.send_message = ch.handle()
 
