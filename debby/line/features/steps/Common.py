@@ -51,16 +51,16 @@ def step_impl(context, text):
 
 @when('我選選項 "{text}"')
 def step_impl(context, text):
-    message_template = context.given_template if context.__contains__('given_template') else context.reply_template
+    message_template = context.given_template if hasattr(context, 'given_template') else context.reply_template
     action = next((x for x in message_template.template.actions
                    if x.label == text), None)
     data = action.data
 
-    ch = CallbackHandler()
-    ch.set_user_line_id(context.line_id)
+    ch = CallbackHandler(context.line_id)
     ch.set_postback_data(data)
     if ch.is_callback_from_food_record():
-        ch.setup_for_record_food_image(context.current_user, context.image_content)
+        assert_that(ch.action, is_not(equal_to('record')))
+        ch.setup_for_record_food_image(context.image_content)
     context.send_message = ch.handle()
 
 

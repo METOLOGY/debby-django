@@ -34,12 +34,6 @@ def step_impl(context):
     context.send_message = ih.handle()
 
 
-@given('選單 "請問是否要紀錄飲食"')
-def step_impl(context):
-    fr_manager = FoodRecordManager('', '')
-    context.given_template = fr_manager.reply_if_user_want_to_record()
-
-
 @step("在DB {model_name} 中有這筆資料使用者 {line_id} 並且有我那張照片")
 def step_impl(context, model_name, line_id):
     model = apps.get_model(*model_name.split('.'))
@@ -60,7 +54,7 @@ def step_impl(context, line_id):
 
 @given('選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
 def step_impl(context):
-    fr_manager = FoodRecordManager('', '')
+    fr_manager = FoodRecordManager()
     context.given_template = fr_manager.reply_record_success_and_if_want_more_detail()
 
 
