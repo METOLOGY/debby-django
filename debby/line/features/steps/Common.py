@@ -1,13 +1,17 @@
+from PIL import Image
 from behave import *
 from hamcrest import *
 from linebot.models import ConfirmTemplate
 from linebot.models import TemplateSendMessage
+from linebot.models import TextSendMessage
 
+from line.handler import CallbackHandler
 from user.models import CustomUserModel
 
 
 @given("我的line_id是 {line_id}")
 def step_impl(context, line_id):
+    context.line_id = line_id
     context.current_user, _ = CustomUserModel.objects.get_or_create(line_id=line_id)
 
 
@@ -16,6 +20,8 @@ def step_impl(context, answer):
     assert_that(context.send_message, instance_of(TemplateSendMessage))
     assert_that(context.send_message.template, instance_of(ConfirmTemplate))
     message = context.send_message.template.text
+    context.given_template = context.send_message
+
     assert_that(message, equal_to(answer))
 
 
@@ -39,4 +45,26 @@ def step_impl(context, text):
     for action in context.send_message.template.actions:
         if action.label == text:
             message = action.label
+    assert_that(message, equal_to(text))
+
+
+@when('我選選項 "{text}"')
+def step_impl(context, text):
+    action = next((x for x in context.given_template.template.actions
+                   if x.label == text), None)
+    data = action.data
+
+    ch = CallbackHandler()
+    ch.set_user_line_id(context.line_id)
+    ch.set_postback_data(data)
+    if ch.is_callback_from_food_record():
+        ch.setup_for_record_food_image(context.current_user, context.image_content)
+    context.send_message = ch.handle()
+
+
+@then('debby會回我 "{text}"')
+def step_impl(context, text):
+    send_message = context.send_message
+    assert_that(send_message, instance_of(TextSendMessage))
+    message = context.send_message.text
     assert_that(message, equal_to(text))

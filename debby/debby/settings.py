@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-from debby.bot_settings import ngrok_key
+
+from linebot import LineBotApi
+
+from debby.bot_settings import ngrok_key, webhook_token
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -161,3 +164,5 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
     }
 }
+
+line_bot_api = LineBotApi(webhook_token)

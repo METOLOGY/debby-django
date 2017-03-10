@@ -1,5 +1,6 @@
 from urllib.parse import parse_qsl
 
+from PIL import Image
 from behave import *
 from hamcrest import *
 from django.apps import apps
@@ -39,28 +40,7 @@ def step_impl(context, input_text):
 @given('選單 "嗨，現在要記錄血糖嗎？"')
 def step_impl(context):
     bg_manager = BGRecordManager()
-    context.given_template = bg_manager.reply_does_user_want_to_record().as_json_dict()
-
-
-@when('我選選項 "{text}"')
-def step_impl(context, text):
-    action = next((x for x in context.given_template['template']['actions']
-                   if x['label'] == text), {'data': ''})
-    data = action['data']
-
-    ih = CallbackHandler(data)
-    context.send_message = ih.handle()
-
-
-@then('debby會回我 "{text}"')
-def step_impl(context, text):
-    message = context.send_message.text
-    assert_that(message, equal_to(text))
-
-
-@given("有個DB")
-def step_impl(context):
-    pass
+    context.given_template = bg_manager.reply_does_user_want_to_record()
 
 
 @step("在DB {model_name} 中有這筆資料使用者 {line_id} 血糖 {value:n}")

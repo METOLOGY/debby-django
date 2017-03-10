@@ -19,6 +19,13 @@ def before_all(context: Context):
 def after_all(context: Context):
     context.test_runner.teardown_databases(context.old_db_config)
     context.test_runner.teardown_test_environment()
+    from debby.settings import MEDIA_ROOT
+    from os import listdir, remove
+    from os.path import isfile, join
+    path = join(MEDIA_ROOT, 'FoodRecord')
+    only_5566_files = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('5566')]
+    for file in only_5566_files:
+        remove(join(path,file))
 
 
 def before_scenario(context: Context, scenario: Scenario):

@@ -16,13 +16,12 @@ from user.models import CustomUserModel
 
 
 class FoodRecordManager:
-
     def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
         self.line_bot_api = line_bot_api
         self.event = event
 
     @staticmethod
-    def record_image(current_user: CustomUserModel, image_content: MessageContent):
+    def record_image(current_user: CustomUserModel, image_content: bytes):
         food_record = FoodModel(user=current_user)
         io = BytesIO(image_content)
 
@@ -52,6 +51,25 @@ class FoodRecordManager:
                     PostbackTemplateAction(
                         label='跟你玩玩的',
                         data='callback=FoodRecord&action=record&choice=false'
+                    )
+                ]
+            )
+        )
+
+    @staticmethod
+    def reply_record_success_and_if_want_more_detail():
+        return TemplateSendMessage(
+            alt_text='ask if you want to write some note',
+            template=ConfirmTemplate(
+                text='紀錄成功! 請問是否要補充文字說明? 例如: 1.5份醣類',
+                actions=[
+                    PostbackTemplateAction(
+                        label='好啊',
+                        data='callback=FoodRecord&action=write_other_notes&choice=true'
+                    ),
+                    PostbackTemplateAction(
+                        label='不用了',
+                        data='callback=FoodRecord&action=write_other_notes&choice=false'
                     )
                 ]
             )
@@ -127,3 +145,19 @@ class FoodRecordManager:
         message = '紀錄成功!'
         cache.delete(line_id)
         self._reply_text_send_message(message)
+
+    def reply_to_record_detail_template(self, data):
+        choice = data['choice']
+        message = ''
+
+        if choice == 'true':
+            message = '請輸入補充說明'
+            # line_id = self._get_line_id()
+            # user_cache = cache.get(line_id)
+            # user_cache['event'] = 'record_food_detail'
+            # cache.set(line_id, user_cache, 300)
+        elif choice == 'false':
+            message = '好的'
+
+        return TextSendMessage(text=message)
+

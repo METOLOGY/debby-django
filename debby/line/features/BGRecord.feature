@@ -20,7 +20,6 @@ Feature: 紀錄血糖
     Then debby會回我 "好，要隨時注意自己的血糖狀況哦！"
 
   Scenario: 打數字會幫我紀錄血糖
-    Given 有個DB
     When 我輸入 "183"
     Then debby會回我 "紀錄成功！"
     And 在DB bg_record.BGModel 中有這筆資料使用者 5566 血糖 183
