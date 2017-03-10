@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, User, Group, PermissionsMixin, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+import datetime
 
 # Custom user model for line.
 # example from https://www.caktusgroup.com/blog/2013/08/07/migrating-custom-user-model-django/
@@ -51,3 +52,25 @@ class CustomUserModel(AbstractUser):
 
     def __str__(self):
         return self.line_id
+
+
+class UserSettingModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
+    unit = models.CharField(max_length=10,
+                            choices=(
+                                ('mg/dL', 'mg/dL'),
+                                ('mmol/L', 'mmol/L'),
+                            ),
+                            default='mg/dL'
+                            )
+
+    breakfast_reminder = models.TimeField(default=datetime.time(9,00))
+    breakfast_reminder_status = models.BooleanField(default=True)
+    lunch_reminder = models.TimeField(default=datetime.time(12,30))
+    lunch_reminder_status = models.BooleanField(default=True)
+    dinner_reminder = models.TimeField(default=datetime.time(7,30))
+    dinner_reminder_status = models.BooleanField(default=True)
+
+    late_reminder = models.TimeField()
+    height = models.FloatField()
+    weight = models.FloatField()
