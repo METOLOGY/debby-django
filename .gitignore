@@ -8,3 +8,10 @@ db.sqlite3
 .idea/
 
 debby/debby/bot_settings\.py
+
+# for celery-beat
+debby/celerybeat-schedule
+debby/celerybeat\.pid
+debby/django
+# folder for all media 
+media/

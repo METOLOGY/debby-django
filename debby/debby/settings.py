@@ -11,10 +11,14 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-from debby.bot_settings import ngrok_key
+
+from linebot import LineBotApi
+
+from debby.bot_settings import ngrok_key, webhook_token, postgres_host, postgres_name, postgres_password, postgres_user
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.path.dirname(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -28,6 +32,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     ngrok_key,
     'localhost',
+    '140.114.71.167', # server ip for hsnl@NCHU
 ]
 
 # Application definition
@@ -44,6 +49,8 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
+    'django_celery_beat',
+    'grappelli',
 ]
 
 BUILD_APPS = [
@@ -51,6 +58,7 @@ BUILD_APPS = [
     'user.apps.UserConfig',
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
+    'food_record.apps.FoodRecordConfig'
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -93,8 +101,11 @@ WSGI_APPLICATION = 'debby.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': postgres_name,
+        'USER': postgres_user,
+        'PASSWORD': postgres_password,
+        'HOST': postgres_host,
     }
 }
 
@@ -121,7 +132,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'
 
 USE_I18N = True
 
@@ -134,6 +145,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+
 # Custom user model
 AUTH_USER_MODEL = 'user.CustomUserModel'
 
@@ -141,3 +154,22 @@ AUTH_USER_MODEL = 'user.CustomUserModel'
 CORS_ORIGIN_WHITELIST = (
 
 )
+
+# Celery settings
+CELERY_BROKER_URL = 'amqp://'
+CELERY_RESULT_BACKEND = 'amqp://'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
+
+MEDIA_ROOT = os.path.join(PROJECT_DIR, 'media')
+
+MEDIA_URL = '/media/'
+
+# Caches
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
+    }
+}
+
+line_bot_api = LineBotApi(webhook_token)
