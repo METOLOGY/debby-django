@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-from debby.bot_settings import ngrok_key
+
+from linebot import LineBotApi
+
+from debby.bot_settings import ngrok_key, webhook_token, postgres_host, postgres_name, postgres_password, postgres_user
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +32,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     ngrok_key,
     'localhost',
+    '140.114.71.167', # server ip for hsnl@NCHU
 ]
 
 # Application definition
@@ -46,6 +50,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
     'django_celery_beat',
+    'grappelli',
 ]
 
 BUILD_APPS = [
@@ -56,7 +61,7 @@ BUILD_APPS = [
     'food_record.apps.FoodRecordConfig'
 ]
 
-INSTALLED_APPS = DJANGO_APPS + BUILD_APPS + THIRD_PARTY_APPS
+INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -96,8 +101,11 @@ WSGI_APPLICATION = 'debby.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': postgres_name,
+        'USER': postgres_user,
+        'PASSWORD': postgres_password,
+        'HOST': postgres_host,
     }
 }
 
@@ -137,6 +145,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+
 # Custom user model
 AUTH_USER_MODEL = 'user.CustomUserModel'
 
@@ -161,3 +171,5 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
     }
 }
+
+line_bot_api = LineBotApi(webhook_token)

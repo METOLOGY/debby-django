@@ -7,8 +7,11 @@ line-bot-sdk==1.1.0
 olefile==0.44
 requests==2.13.0
 Pillow==4.0.0
+pyhamcrest==1.9.0
 pytz==2016.10
 jupyter==1.0.0
 jieba==0.38
 celery==4.0.2
 django-celery-beat==1.0.1
+psycopg2==2.7
+django-grappelli==2.9.1
