@@ -4,6 +4,6 @@ from .models import BGModel
 # Register your models here.
 @admin.register(BGModel)
 class BGAdmin(admin.ModelAdmin):
-    list_display = ('user', 'glucose_val', 'time')
-    fields = ('user', 'glucose_val')
+    list_display = ('user', 'glucose_val', 'time', 'type')
+    fields = ('user', 'glucose_val', 'type')
 
