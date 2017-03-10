@@ -56,7 +56,8 @@ BUILD_APPS = [
     'user.apps.UserConfig',
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
-    'food_record.apps.FoodRecordConfig'
+    'food_record.apps.FoodRecordConfig',
+    'drug_ask.apps.DrugAskConfig'
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -104,6 +105,7 @@ DATABASES = {
         'USER': postgres_user,
         'PASSWORD': postgres_password,
         'HOST': postgres_host,
+        'PORT': '5566',
     }
 }
 
