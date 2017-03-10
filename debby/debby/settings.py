@@ -11,8 +11,10 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
-from debby.bot_settings import ngrok_key, postgres_host, postgres_name, postgres_password, postgres_user
 
+from linebot import LineBotApi
+
+from debby.bot_settings import ngrok_key, webhook_token, postgres_host, postgres_name, postgres_password, postgres_user
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -172,4 +174,4 @@ CACHES = {
     }
 }
 
-
+line_bot_api = LineBotApi(webhook_token)
