@@ -11,13 +11,6 @@ from user.models import CustomUserModel
 
 
 class FoodRecordManager:
-<<<<<<< Updated upstream
-=======
-    def __init__(self, line_bot_api: LineBotApi, event: MessageEvent):
-        self.line_bot_api = line_bot_api
-        self.event = event
->>>>>>> Stashed changes
-
     @staticmethod
     def record_image(current_user: CustomUserModel, image_content: bytes):
         food_record = FoodModel(user=current_user)
@@ -89,13 +82,3 @@ class FoodRecordManager:
         food_record = FoodModel.objects.get(pk=record_pk)
         food_record.note = text
         food_record.save()
-
-<<<<<<< Updated upstream
-=======
-        message = '紀錄成功!'
-        cache.delete(line_id)
-        self._reply_text_send_message(message)
-
-    def ask_user_upload_an_image(self):
-        self._reply_text_send_message('請上傳一張照片')
->>>>>>> Stashed changes
