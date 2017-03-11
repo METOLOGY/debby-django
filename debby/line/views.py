@@ -68,24 +68,11 @@ def handle_message(event: MessageEvent):
     current_user = CustomUserModel.objects.get(line_id=line_id)
     print(current_user)
 
-<<<<<<< Updated upstream
     input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
-=======
-    user_cache = cache.get(line_id)
-    # template for recording glucose
-
-    if text == '紀錄飲食':
-        fr_manager.ask_user_upload_an_image()
-        user_cache = {'event': 'record_food'}
-        cache.set(line_id, user_cache)
-    if text.isdigit():
-        bg_value = int(text)
-        bg_manager.record_bg_record(current_user, bg_value)
->>>>>>> Stashed changes
 
 
 @handler.add(MessageEvent, message=ImageMessage)
@@ -105,7 +92,6 @@ def postback(event: PostbackEvent):
     line_id = event.source.sender_id
     data = event.postback.data
 
-<<<<<<< Updated upstream
     ch = CallbackHandler(line_id)
     ch.set_postback_data(input_data=data)
     if ch.is_callback_from_food_record():
@@ -120,20 +106,3 @@ def postback(event: PostbackEvent):
         event.reply_token,
         send_message
     )
-=======
-
-@handler.add(MessageEvent, message=ImageMessage)
-def handle_image(event: MessageEvent):
-    line_id = event.source.sender_id
-    user_cache = cache.get(line_id)
-
-    fr_manager = FoodRecordManager(line_bot_api, event)
-    message_id = event.message.id
-    image_content = line_bot_api.get_message_content(message_id)
-
-    if image_content:
-        if not user_cache:
-            fr_manager.ask_if_want_to_record_food()
-        user_cache = {'event': 'record_food', 'message_id': message_id}
-        cache.set(line_id, user_cache, 120)  # cache for 2 min
->>>>>>> Stashed changes
