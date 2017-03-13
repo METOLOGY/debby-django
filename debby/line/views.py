@@ -3,6 +3,7 @@ from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, 
 from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
+from line.callback import FoodRecordCallback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 import json
@@ -79,9 +80,10 @@ def handle_message(event: MessageEvent):
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
     print(line_id)
+    c = FoodRecordCallback(line_id, action='reply_if_want_to_record').url
+    ch = CallbackHandler(c)
+    send_message = ch.handle()
 
-    ih = InputHandler(line_id, event.message)
-    send_message = ih.handle()
     line_bot_api.reply_message(
         event.reply_token,
         send_message)

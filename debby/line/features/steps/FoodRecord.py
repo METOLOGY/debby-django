@@ -10,6 +10,7 @@ from linebot.models import MessageEvent
 
 from food_record.manager import FoodRecordManager
 from food_record.models import FoodModel
+from line.callback import FoodRecordCallback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 
@@ -30,8 +31,8 @@ def step_impl(context):
     user_cache = {'event': 'record_food', 'message_id': im.id}
     cache.set(context.line_id, user_cache, 120)
 
-    ih = InputHandler(context.current_user, event.message)
-    context.send_message = ih.handle()
+    c = FoodRecordCallback(context.line_id, action='reply_if_want_to_record').url
+    context.send_message = CallbackHandler(c).handle()
 
 
 @step("在DB {model_name} 中有這筆資料使用者 {line_id} 並且有我那張照片")
