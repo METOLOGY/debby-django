@@ -69,10 +69,10 @@ class CallbackHandler(object):
 
     def handle(self) -> SendMessage:
         if self.callback == BGRecordCallback:
-            callback = self.callback.transfer_to(BGRecordCallback)
+            callback = self.callback.convert_to(FoodRecordCallback)
             bg_manager = BGRecordManager(callback)
             return bg_manager.handle()
         elif self.callback == FoodRecordCallback:
-            callback = self.callback.transfer_to(FoodRecordCallback)
+            callback = self.callback.convert_to(FoodRecordCallback)
             fr_manager = FoodRecordManager(callback, self.image_content)
             return fr_manager.handle()

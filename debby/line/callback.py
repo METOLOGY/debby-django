@@ -34,7 +34,7 @@ class Callback(object):
     def __eq__(self, other):
         return self.data.get('app') == other.app
 
-    def transfer_to(self, callback_cls: Type['Callback']):
+    def convert_to(self, callback_cls: Type['Callback']):
         return callback_cls(**self.data)
 
 

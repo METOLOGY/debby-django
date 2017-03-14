@@ -1,9 +1,11 @@
+from urllib.parse import parse_qsl
+
 from django.core.cache import cache
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from linebot.models import ImageMessage
 
-from line.callback import FoodRecordCallback
+from line.callback import FoodRecordCallback, Callback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 import json
@@ -93,8 +95,9 @@ def handle_image(event: MessageEvent):
 def postback(event: PostbackEvent):
     line_id = event.source.sender_id
     data = event.postback.data
-
-    ch = CallbackHandler(line_id)
+    data_dict = dict(parse_qsl(data))
+    c = Callback(**data_dict).url
+    ch = CallbackHandler(c)
     if ch.is_callback_from_food_record():
         user_cache = cache.get(line_id)
         if user_cache:
