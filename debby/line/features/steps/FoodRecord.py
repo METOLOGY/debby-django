@@ -55,7 +55,8 @@ def step_impl(context, line_id):
 
 @given('選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
 def step_impl(context):
-    fr_manager = FoodRecordManager()
+    callback = FoodRecordCallback(line_id=context.line_id, action='')
+    fr_manager = FoodRecordManager(callback)
     context.given_template = fr_manager.reply_record_success_and_if_want_more_detail()
 
 

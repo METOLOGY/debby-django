@@ -1,13 +1,11 @@
 from urllib.parse import parse_qsl
 
-from PIL import Image
 from behave import *
 from hamcrest import *
 from linebot.models import ConfirmTemplate
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
-from food_record.manager import FoodRecordManager
 from line.callback import Callback
 from line.handler import CallbackHandler
 from user.models import CustomUserModel

@@ -32,7 +32,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     ngrok_key,
     'localhost',
-    '140.114.71.167', # server ip for hsnl@NCHU
+    '140.114.71.167',  # server ip for hsnl@NCHU
 ]
 
 # Application definition
@@ -100,17 +100,22 @@ WSGI_APPLICATION = 'debby.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': postgres_name,
+#         'USER': postgres_user,
+#         'PASSWORD': postgres_password,
+#         'HOST': postgres_host,
+#         'PORT': '5566',
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': postgres_name,
-        'USER': postgres_user,
-        'PASSWORD': postgres_password,
-        'HOST': postgres_host,
-        'PORT': '5566',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
 

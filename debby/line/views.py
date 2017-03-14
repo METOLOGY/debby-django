@@ -95,7 +95,6 @@ def postback(event: PostbackEvent):
     data = event.postback.data
 
     ch = CallbackHandler(line_id)
-    ch.set_postback_data(input_data=data)
     if ch.is_callback_from_food_record():
         user_cache = cache.get(line_id)
         if user_cache:

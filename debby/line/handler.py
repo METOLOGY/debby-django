@@ -11,12 +11,11 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback
+from line.models import EventModel
 from user.models import CustomUserModel
 
 
 class InputHandler(object):
-    bg_manager = BGRecordManager()
-
     def __init__(self, line_id: str, message: Message):
         self.line_id = line_id
         self.current_user = CustomUserModel.objects.get(line_id=line_id)
@@ -28,19 +27,27 @@ class InputHandler(object):
 
     def find_best_answer_for_text(self) -> SendMessage:
         user_cache = cache.get(self.line_id)
+        event = EventModel.objects.get_or_none(phrase=self.text)
 
-        if user_cache and 'food_record_pk' in user_cache.keys():
-            callback = FoodRecordCallback(self.line_id, action='UPDATE', choice='true', text=self.text).url
-            return CallbackHandler(callback).handle()
+        callback_url = Callback(line_id=self.line_id).url
+        bg_manager = BGRecordManager(callback_url)
 
-        elif self.is_input_a_bg_value():
-            self.bg_manager.record_bg_record(self.current_user, int(self.text))
-            return self.bg_manager.reply_record_success()
+        if self.is_input_a_bg_value():
+            bg_manager.record_bg_record(self.current_user, int(self.text))
+            return bg_manager.reply_record_success()
+        elif event:
+            callback_url = Callback(line_id=self.line_id,
+                                    app=event.callback,
+                                    action=event.action).url
+            return CallbackHandler(callback_url).handle()
+        elif user_cache and 'food_record_pk' in user_cache.keys():
+            callback_url = FoodRecordCallback(self.line_id,
+                                              action='UPDATE',
+                                              choice='true',
+                                              text=self.text).url
+            return CallbackHandler(callback_url).handle()
         else:
-            return self.bg_manager.reply_does_user_want_to_record()
-
-    def trigger_manager_to_reply(self):
-        return self.fr_manager.reply_if_user_want_to_record()
+            return bg_manager.reply_does_user_want_to_record()
 
     def handle(self):
         if isinstance(self.message, TextMessage):
@@ -49,22 +56,10 @@ class InputHandler(object):
 
 
 class CallbackHandler(object):
-    bg_manager = BGRecordManager()
-
-    data = None
-    callback = None
-    action = None
-
     image_content = bytes()
 
-    def __init__(self, callback: str):
-        self.callback = Callback.decode(callback)
-
-    def set_postback_data(self, input_data):
-        data = dict(parse_qsl(input_data))
-        self.data = data
-        self.callback = data['callback']
-        self.action = data['action']
+    def __init__(self, callback_url: str):
+        self.callback = Callback.decode(callback_url)
 
     def is_callback_from_food_record(self):
         return self.callback == FoodRecordCallback and self.callback.action == 'CREATE'
@@ -74,8 +69,9 @@ class CallbackHandler(object):
 
     def handle(self) -> SendMessage:
         if self.callback == BGRecordCallback:
-            if self.action == 'CREATE':
-                return self.bg_manager.reply_to_user_choice(self.data)
+            callback = self.callback.transfer_to(BGRecordCallback)
+            bg_manager = BGRecordManager(callback)
+            return bg_manager.handle()
         elif self.callback == FoodRecordCallback:
             callback = self.callback.transfer_to(FoodRecordCallback)
             fr_manager = FoodRecordManager(callback, self.image_content)

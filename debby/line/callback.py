@@ -3,9 +3,11 @@ from urllib.parse import urlencode, parse_qsl
 
 
 class Callback(object):
-    def __init__(self, line_id: str = '', **kwargs):
+    def __init__(self, line_id: str = '', app='', action='', **kwargs):
         self.data = kwargs
         self.data['line_id'] = line_id
+        self.data['app'] = app
+        self.data['action'] = action
 
     @property
     def line_id(self):
@@ -58,6 +60,10 @@ class FoodRecordCallback(DerivedAppCallback):
 
 class BGRecordCallback(DerivedAppCallback):
     app = 'BGRecord'
+
+    @property
+    def choice(self):
+        return self.data.get('choice')
 
 
 class FoodQueryCallback(DerivedAppCallback):

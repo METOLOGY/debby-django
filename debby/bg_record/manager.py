@@ -3,11 +3,13 @@ from linebot.models import PostbackTemplateAction
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
+from line.callback import BGRecordCallback
 from .models import BGModel
 from user.models import CustomUserModel
 
 
 class BGRecordManager:
+    line_id = ''
     confirm_template_message = TemplateSendMessage(
         alt_text='Confirm template',
         template=ConfirmTemplate(
@@ -15,15 +17,22 @@ class BGRecordManager:
             actions=[
                 PostbackTemplateAction(
                     label='好啊',
-                    data='callback=BGRecord&action=record_bg&choice=true'
+                    data=BGRecordCallback(line_id=line_id,
+                                          action='CREATE',
+                                          choice='true').url
                 ),
                 PostbackTemplateAction(
                     label='等等再說',
-                    data='callback=BGRecord&action=record_bg&choice=false'
+                    data=BGRecordCallback(line_id=line_id,
+                                          action='CREATE',
+                                          choice='false').url
                 )
             ]
         )
     )
+
+    def __init__(self, callback: BGRecordCallback):
+        self.callback = callback
 
     def reply_does_user_want_to_record(self) -> TemplateSendMessage:
         return self.confirm_template_message
@@ -32,10 +41,9 @@ class BGRecordManager:
     def reply_record_success() -> TextSendMessage:
         return TextSendMessage(text='紀錄成功！')
 
-    @staticmethod
-    def reply_to_user_choice(data) -> TextSendMessage:
+    def reply_to_user_choice(self) -> TextSendMessage:
         message = ''
-        choice = data['choice']
+        choice = self.callback.choice
         if choice == 'true':
             message = '那麼，輸入血糖～'
         elif choice == 'false':
@@ -54,3 +62,7 @@ class BGRecordManager:
     def record_bg_record(current_user: CustomUserModel, bg_value: int):
         bg = BGModel(user=current_user, glucose_val=bg_value)
         bg.save()
+
+    def handle(self):
+        if self.callback.action == 'CREATE':
+            return self.reply_to_user_choice()

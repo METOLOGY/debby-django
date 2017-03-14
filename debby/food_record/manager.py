@@ -8,14 +8,13 @@ from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
-from debby.settings import line_bot_api
 from food_record.models import FoodModel
 from line.callback import FoodRecordCallback
 from user.models import CustomUserModel
 
 
 class FoodRecordManager:
-    def __init__(self, callback: FoodRecordCallback, image_content: bytes):
+    def __init__(self, callback: FoodRecordCallback, image_content: bytes = bytes()):
         self.callback = callback
         self.image_content = image_content
 
