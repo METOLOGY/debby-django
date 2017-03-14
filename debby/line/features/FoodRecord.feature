@@ -22,6 +22,7 @@ Feature: 紀錄飲食
 
     When 我選選項 "好啊"
     Then debby會回我 "請輸入補充說明"
+    Then debby在Log裡面記錄了剛剛我打的句子 "好啊", 跟回覆 "請輸入補充說明"
 
     When 我輸入 "YOYOYO"
     Then debby會回我 "紀錄成功!"
