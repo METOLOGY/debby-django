@@ -8,6 +8,7 @@ from linebot.models import ImageMessage
 from line.callback import FoodRecordCallback, Callback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
+from user.models import UserLogModel
 import json
 
 from debby.bot_settings import webhook_secret, webhook_token
@@ -48,8 +49,9 @@ def callback(request):
         # handle webhook body
         try:
             line_id = data['events'][0]['source']['userId']
+
+            ## create a new user in database.
             if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
-                print('create a new user')
                 CustomUserModel.objects.create_user(line_id=line_id)
 
             handler.handle(body, signature)
@@ -68,11 +70,18 @@ def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
     print(text)
-    current_user = CustomUserModel.objects.get(line_id=line_id)
-    print(current_user)
+
+    ### no need to query here, right?
+    # current_user = CustomUserModel.objects.get(line_id=line_id)
+    # print(current_user)
 
     input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()
+
+    # Save to log model.
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
+
+    # return to Line Server
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
@@ -86,6 +95,11 @@ def handle_image(event: MessageEvent):
     ch = CallbackHandler(c)
     send_message = ch.handle()
 
+    # Save to log model.
+    # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
+
+    # return to Line Server
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
@@ -106,6 +120,11 @@ def postback(event: PostbackEvent):
             ch.setup_for_record_food_image(image_content.content)
 
     send_message = ch.handle()
+
+    # Save to log model.
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text=data, send_message=send_message)
+
+    # return to Line Server
     line_bot_api.reply_message(
         event.reply_token,
         send_message
