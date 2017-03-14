@@ -1,11 +1,12 @@
-from PIL import Image
+from urllib.parse import parse_qsl
+
 from behave import *
 from hamcrest import *
 from linebot.models import ConfirmTemplate
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
-from food_record.manager import FoodRecordManager
+from line.callback import Callback
 from line.handler import CallbackHandler
 from user.models import CustomUserModel
 
@@ -56,10 +57,11 @@ def step_impl(context, text):
                    if x.label == text), None)
     data = action.data
 
-    ch = CallbackHandler(context.line_id)
-    ch.set_postback_data(data)
+    data_dict = dict(parse_qsl(data))
+    callback = Callback(**data_dict)
+    ch = CallbackHandler(callback.url)
     if ch.is_callback_from_food_record():
-        assert_that(ch.action, equal_to('record'))
+        assert_that(ch.callback.action, equal_to('CREATE'))
         ch.setup_for_record_food_image(context.image_content)
     context.send_message = ch.handle()
 

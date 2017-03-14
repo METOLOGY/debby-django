@@ -1,16 +1,25 @@
+from typing import Union
+
 from django.db import models
 
-# Create your models here.
-class QAModel(models.Model):
+
+class EventModelManager(models.Manager):
+    def get_or_none(self, **kwargs) -> Union['EventModel', None]:
+        try:
+            return self.get(**kwargs)
+        except self.model.DoesNotExist:
+            return None
+
+    def get_unique_or_none(self, *args, **kwargs)-> Union['EventModel', None]:
+        try:
+            return self.get(*args, **kwargs)
+        except (self.model.DoesNotExist, self.model.MultipleObjectsReturned):
+            return None
+
+
+class EventModel(models.Model):
     phrase = models.CharField(max_length=30, blank=False)
-    answer = models.TextField(max_length=200, blank=True)
-    callback = models.CharField(max_length=20,
-                                choices=(
-                                    ('BGRecord', '紀錄血糖'),
-                                    ('FoodRecord', '紀錄飲食'),
-                                    ('FoodQuery', '查詢食物熱量'),
-                                    ('DrugQuery', '查詢藥物'),
-                                    ('Chat', '閒聊'),
-                                ),
-                                blank=False
-                                )
+    callback = models.CharField(max_length=30, blank=False)
+    action = models.CharField(max_length=30, blank=False)
+
+    objects = EventModelManager()

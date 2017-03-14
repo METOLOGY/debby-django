@@ -1,6 +1,3 @@
-from urllib.parse import parse_qsl
-
-from PIL import Image
 from behave import *
 from hamcrest import *
 from django.apps import apps
@@ -8,6 +5,7 @@ from linebot.models import MessageEvent
 from linebot.models import TextMessage
 
 from bg_record.manager import BGRecordManager
+from line.callback import BGRecordCallback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 
@@ -39,7 +37,8 @@ def step_impl(context, input_text):
 
 @given('選單 "嗨，現在要記錄血糖嗎？"')
 def step_impl(context):
-    bg_manager = BGRecordManager()
+    callback = BGRecordCallback(line_id=context.line_id, action='')
+    bg_manager = BGRecordManager(callback)
     context.given_template = bg_manager.reply_does_user_want_to_record()
 
 

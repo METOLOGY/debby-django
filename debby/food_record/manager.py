@@ -1,26 +1,34 @@
 from io import BytesIO
 
+from django.core.cache import cache
 from django.core.files import File
 from linebot.models import ConfirmTemplate
 from linebot.models import PostbackTemplateAction
+from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
 from food_record.models import FoodModel
+from line.callback import FoodRecordCallback
 from user.models import CustomUserModel
 
 
 class FoodRecordManager:
+    def __init__(self, callback: FoodRecordCallback, image_content: bytes = bytes()):
+        self.callback = callback
+        self.image_content = image_content
+
     @staticmethod
     def record_image(current_user: CustomUserModel, image_content: bytes):
         food_record = FoodModel(user=current_user)
         io = BytesIO(image_content)
 
-        food_record.food_image_upload.save('{0}_food_image.jpg'.format(current_user.line_id), File(io))
+        file = '{0}_food_image.jpg'.format(current_user.line_id)
+        food_record.food_image_upload.save(file, File(io))
         return food_record.pk
 
-    @staticmethod
-    def reply_if_user_want_to_record():
+    def reply_if_user_want_to_record(self):
+        line_id = self.callback.line_id
         return TemplateSendMessage(
             alt_text='Do you want to record food?',
             template=ConfirmTemplate(
@@ -28,18 +36,18 @@ class FoodRecordManager:
                 actions=[
                     PostbackTemplateAction(
                         label='好喔',
-                        data='callback=FoodRecord&action=record&choice=true'
+                        data=FoodRecordCallback(line_id=line_id, action='CREATE', choice='true').url
                     ),
                     PostbackTemplateAction(
                         label='跟你玩玩的',
-                        data='callback=FoodRecord&action=record&choice=false'
+                        data=FoodRecordCallback(line_id=line_id, action='CREATE', choice='false').url
                     )
                 ]
             )
         )
 
-    @staticmethod
-    def reply_record_success_and_if_want_more_detail():
+    def reply_record_success_and_if_want_more_detail(self):
+        line_id = self.callback.line_id
         return TemplateSendMessage(
             alt_text='ask if you want to write some note',
             template=ConfirmTemplate(
@@ -47,28 +55,22 @@ class FoodRecordManager:
                 actions=[
                     PostbackTemplateAction(
                         label='好啊',
-                        data='callback=FoodRecord&action=write_other_notes&choice=true'
+                        data=FoodRecordCallback(line_id=line_id, action='write_detail_notes', choice='true').url
                     ),
                     PostbackTemplateAction(
                         label='不用了',
-                        data='callback=FoodRecord&action=write_other_notes&choice=false'
+                        data=FoodRecordCallback(line_id=line_id, action='write_detail_notes', choice='false').url
                     )
                 ]
             )
         )
 
-    @staticmethod
-    def reply_to_record_detail_template(data):
-        choice = data['choice']
+    def reply_to_record_detail_template(self):
         message = ''
 
-        if choice == 'true':
+        if self.callback.choice == 'true':
             message = '請輸入補充說明'
-            # line_id = self._get_line_id()
-            # user_cache = cache.get(line_id)
-            # user_cache['event'] = 'record_food_detail'
-            # cache.set(line_id, user_cache, 300)
-        elif choice == 'false':
+        elif self.callback.choice == 'false':
             message = '好的'
 
         return TextSendMessage(text=message)
@@ -82,3 +84,33 @@ class FoodRecordManager:
         food_record = FoodModel.objects.get(pk=record_pk)
         food_record.note = text
         food_record.save()
+
+    def store_to_user_cache(self, food_record_pk):
+        user_cache = cache.get(self.callback.line_id)
+        if user_cache:
+            user_cache['food_record_pk'] = food_record_pk
+            cache.set(self.callback.line_id, user_cache, 120)  # cache for 2 min
+
+    def handle(self) -> SendMessage:
+        if self.callback.action == 'reply_if_want_to_record':
+            return self.reply_if_user_want_to_record()
+        elif self.callback.action == 'CREATE':
+            if self.callback.choice == 'true':
+                user_cache = cache.get(self.callback.line_id)
+                if user_cache:
+                    current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+                    food_record_pk = self.record_image(current_user, self.image_content)
+                    self.store_to_user_cache(food_record_pk)
+
+                    return self.reply_record_success_and_if_want_more_detail()
+
+            elif self.callback.choice == 'false':
+                return TextSendMessage(text='什麼啊原來只是讓我看看啊')
+        elif self.callback.action == 'UPDATE':
+            if self.callback.choice == 'true':
+                user_cache = cache.get(self.callback.line_id)
+                if user_cache and 'food_record_pk' in user_cache.keys():
+                    self.record_extra_info(user_cache['food_record_pk'], self.callback.text)
+                    return self.reply_success()
+        elif self.callback.action == 'write_detail_notes':
+            return self.reply_to_record_detail_template()
