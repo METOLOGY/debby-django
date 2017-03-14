@@ -3,19 +3,16 @@ from urllib.parse import parse_qsl
 from django.core.cache import cache
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from linebot.models import ImageMessage
+from django.conf import settings
 
+from linebot.models import ImageMessage
 from line.callback import FoodRecordCallback, Callback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 from user.models import UserLogModel
 import json
 
-from debby.bot_settings import webhook_secret, webhook_token
 
-from linebot import (
-    LineBotApi, WebhookHandler
-)
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
@@ -23,8 +20,8 @@ from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
 
-line_bot_api = LineBotApi(webhook_token)
-handler = WebhookHandler(webhook_secret)
+line_bot_api = settings.line_bot_api
+handler = settings.handler
 
 
 @csrf_exempt
