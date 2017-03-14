@@ -4,5 +4,5 @@ from .models import EventModel
 
 # Register your models here.
 @admin.register(EventModel)
-class QAAdmin(admin.ModelAdmin):
+class Eventdmin(admin.ModelAdmin):
     list_display = ['phrase', 'callback', 'action']
