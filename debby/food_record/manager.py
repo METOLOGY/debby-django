@@ -30,7 +30,7 @@ class FoodRecordManager:
     def reply_if_user_want_to_record(self):
         line_id = self.callback.line_id
         return TemplateSendMessage(
-            alt_text='Do you want to record food?',
+            alt_text='請問是否要記錄飲食',
             template=ConfirmTemplate(
                 text='請問是否要記錄飲食',
                 actions=[

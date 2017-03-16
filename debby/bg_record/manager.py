@@ -11,7 +11,7 @@ from user.models import CustomUserModel
 class BGRecordManager:
     line_id = ''
     confirm_template_message = TemplateSendMessage(
-        alt_text='Confirm template',
+        alt_text='嗨，現在要記錄血糖嗎？',
         template=ConfirmTemplate(
             text='嗨，現在要記錄血糖嗎？',
             actions=[

@@ -10,6 +10,7 @@ from linebot.models import TextSendMessage
 from line.callback import Callback
 from line.handler import CallbackHandler
 from user.models import CustomUserModel
+from user.models import UserLogModel
 
 
 @given("我的line_id是 {line_id}")
@@ -82,6 +83,12 @@ def step_impl(context, text):
     assert_that(send_message, instance_of(TextSendMessage))
     message = send_message.text
     assert_that(message, equal_to(text))
+
+@then('debby在Log裡面記錄了剛剛我打的句子 "{request}", 跟回覆 "{response}"')
+def step_impl(context, request, response):
+    latest_log = UserLogModel.objects.latest(user=CustomUserModel.objects.get(context.line_id))
+    assert_that(request, equal_to(latest_log.request_text))
+    assert_that(response, equal_to(latest_log.response))
 
 
 @given('DB "{model_name}" 裡面有些data')
