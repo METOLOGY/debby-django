@@ -10,6 +10,7 @@ from line.callback import FoodRecordCallback, Callback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 from user.models import UserLogModel
+from food_record.models import FoodModel
 import json
 
 
@@ -20,8 +21,8 @@ from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
 
-line_bot_api = settings.line_bot_api
-handler = settings.handler
+line_bot_api = settings.LINE_BOT_API
+handler = settings.HANDLER
 
 
 @csrf_exempt
@@ -94,6 +95,7 @@ def handle_image(event: MessageEvent):
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+    food = FoodModel.objects.last(line_id=line_id)
     UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
 
     # return to Line Server
