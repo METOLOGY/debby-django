@@ -30,9 +30,27 @@ class BGRecordManager:
             ]
         )
     )
+    ranges = [70, 80, 130, 250, 600]
+    conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
+                  "請注意是否有低血糖不適症情況發生",
+                  "Good!血糖控制的還不錯喔!",
+                  "血糖還是稍微偏高,要多注意喔!",
+                  "注意是否有尿酮酸中毒,若有不適請盡速就醫!",
+                  "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
 
     def __init__(self, callback: BGRecordCallback):
         self.callback = callback
+
+    def reply_by_check_value(self, text: str) -> TextSendMessage:
+        value = float(text)
+        ind = 0
+        for ind, r in enumerate(self.ranges):
+            if value <= r:
+                break
+            elif ind == len(self.ranges) - 1:
+                ind += 1
+        message = self.conditions[ind]
+        return TextSendMessage(text=message)
 
     def reply_does_user_want_to_record(self) -> TemplateSendMessage:
         return self.confirm_template_message
