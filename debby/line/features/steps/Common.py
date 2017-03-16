@@ -81,3 +81,23 @@ def step_impl(context, text):
     assert_that(send_message, instance_of(TextSendMessage))
     message = send_message.text
     assert_that(message, equal_to(text))
+
+
+@given("一套有趣的回覆")
+def step_impl(context):
+    """
+    :type context: behave.runner.Context
+    """
+    pass
+
+
+@then('debby會回我以下裡面其中一樣')
+def step_impl(context):
+    """
+    :type context: behave.runner.Context
+    """
+    answers = [row['answer'] for row in context.table]
+
+    assert_that(context.send_message, instance_of(TextSendMessage))
+    message = context.send_message.text
+    assert_that(message, is_in(answers))
