@@ -1,6 +1,7 @@
 from urllib.parse import parse_qsl
 
 from behave import *
+from django.apps import apps
 from hamcrest import *
 from linebot.models import ConfirmTemplate
 from linebot.models import TemplateSendMessage
@@ -83,19 +84,15 @@ def step_impl(context, text):
     assert_that(message, equal_to(text))
 
 
-@given("一套有趣的回覆")
-def step_impl(context):
-    """
-    :type context: behave.runner.Context
-    """
-    pass
+@given('DB "{model_name}" 裡面有些data')
+def step_impl(context, model_name):
+    model = apps.get_model(*model_name.split('.'))
+    for row in context.table:
+        model.objects.create(**row.as_dict())
 
 
 @then('debby會回我以下裡面其中一樣')
 def step_impl(context):
-    """
-    :type context: behave.runner.Context
-    """
     answers = [row['answer'] for row in context.table]
 
     assert_that(context.send_message, instance_of(TextSendMessage))
