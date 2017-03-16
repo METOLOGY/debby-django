@@ -72,3 +72,7 @@ class FoodQueryCallback(DerivedAppCallback):
 
 class DrugQueryCallback(DerivedAppCallback):
     app = 'DrugQuery'
+
+
+class ChatCallback(DerivedAppCallback):
+    app = 'Chat'

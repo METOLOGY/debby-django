@@ -67,7 +67,8 @@ BUILD_APPS = [
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
     'food_record.apps.FoodRecordConfig',
-    'drug_ask.apps.DrugAskConfig'
+    'drug_ask.apps.DrugAskConfig',
+    'chat.apps.ChatConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS

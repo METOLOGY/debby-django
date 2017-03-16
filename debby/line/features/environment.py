@@ -25,7 +25,10 @@ def after_all(context: Context):
     path = join(MEDIA_ROOT, 'FoodRecord')
     only_5566_files = [f for f in listdir(path) if isfile(join(path, f)) and f.startswith('5566')]
     for file in only_5566_files:
-        remove(join(path,file))
+        try:
+            remove(join(path, file))
+        except PermissionError as e:
+            print(e)
 
 
 def before_scenario(context: Context, scenario: Scenario):
