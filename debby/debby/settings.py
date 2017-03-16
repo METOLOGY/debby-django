@@ -175,5 +175,5 @@ CACHES = {
     }
 }
 
-line_bot_api = LineBotApi(env('LINE_WEBHOOK_TOKEN'))
-handler = WebhookHandler(env('LINE_WEBHOOK_SECRET'))
+LINE_BOT_API = LineBotApi(env('LINE_WEBHOOK_TOKEN'))
+HANDLER = WebhookHandler(env('LINE_WEBHOOK_SECRET'))
