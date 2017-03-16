@@ -9,6 +9,7 @@ from linebot.models import TextMessage
 from linebot.models import TextSendMessage
 
 from bg_record.manager import BGRecordManager
+from chat.manager import ChatManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback
 from line.models import EventModel
@@ -32,6 +33,8 @@ class InputHandler(object):
         callback_url = Callback(line_id=self.line_id).url
         bg_manager = BGRecordManager(callback_url)
 
+        chat_manager = ChatManager(callback_url)
+
         if self.is_input_a_bg_value():
             bg_manager.record_bg_record(self.current_user, int(self.text))
             return bg_manager.reply_record_success()
@@ -40,6 +43,8 @@ class InputHandler(object):
                                     app=event.callback,
                                     action=event.action).url
             return CallbackHandler(callback_url).handle()
+        elif chat_manager.is_input_a_chat(self.text):
+            return chat_manager.reply_answer()
         elif user_cache and 'food_record_pk' in user_cache.keys():
             callback_url = FoodRecordCallback(self.line_id,
                                               action='UPDATE',

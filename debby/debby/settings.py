@@ -59,7 +59,8 @@ BUILD_APPS = [
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
     'food_record.apps.FoodRecordConfig',
-    'drug_ask.apps.DrugAskConfig'
+    'drug_ask.apps.DrugAskConfig',
+    'chat.apps.ChatConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -102,12 +103,8 @@ WSGI_APPLICATION = 'debby.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': postgres_name,
-        'USER': postgres_user,
-        'PASSWORD': postgres_password,
-        'HOST': postgres_host,
-        'PORT': '5566',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
