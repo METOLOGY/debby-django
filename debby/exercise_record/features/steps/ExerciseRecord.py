@@ -19,13 +19,15 @@ def step_impl(context, model_name):
     data = model.objects.first()
     assert data.id == 1
 
+
 @when("I go to {page_url}")
 def step_impl(context, page_url):
     """
     :type context: behave.runner.Context
     """
-    #context.response = urllib.request.urlopen(context.test_case.live_server_url + page_url)
+    # context.response = urllib.request.urlopen(context.test_case.live_server_url + page_url)
     assert False
+
 
 @then('the return includes "{text}"')
 def step_impl(context, text):

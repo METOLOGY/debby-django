@@ -68,7 +68,7 @@ def step_impl(context, text):
 
 
 @then('debby會回我 "{text}"')
-def step_impl(context, text):
+def step_impl(context, text: str):
     send_message = context.send_message
     assert_that(send_message, instance_of(TextSendMessage))
     message = context.send_message.text

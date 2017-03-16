@@ -37,7 +37,10 @@ class InputHandler(object):
 
         if self.is_input_a_bg_value():
             bg_manager.record_bg_record(self.current_user, int(self.text))
-            return bg_manager.reply_record_success()
+            text1 = bg_manager.reply_record_success()
+            text2 = bg_manager.reply_by_check_value(self.text)
+            text1.text += " " + text2.text
+            return text1
         elif event:
             callback_url = Callback(line_id=self.line_id,
                                     app=event.callback,
