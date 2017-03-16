@@ -1,5 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import BaseUserManager
+from linebot.models import TextMessage
+from linebot.models import TemplateSendMessage
 import datetime
 
 # Custom user model for line.
@@ -74,3 +77,37 @@ class UserSettingModel(models.Model):
     late_reminder = models.TimeField()
     height = models.FloatField()
     weight = models.FloatField()
+
+
+class UserLogManger(models.Manager):
+    """
+    handling the logging of conversation between user and debby.
+    """
+
+    def save_to_log(self, line_id, input_text, send_message):
+        if isinstance(send_message, TextMessage):
+            log = self.model(
+                user=CustomUserModel.objects.get(line_id=line_id),
+                request_text=input_text,
+                response=send_message.text,
+            )
+            log.save()
+        elif isinstance(send_message, TemplateSendMessage):
+            log = self.model(
+                user=CustomUserModel.objects.get(line_id=line_id),
+                request_text=input_text,
+                response=send_message.alt_text,
+            )
+            log.save()
+
+
+
+class UserLogModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
+    request_text = models.CharField(max_length=50,
+                                    verbose_name=('Request from user.'))
+    response = models.CharField(max_length=50,
+                                verbose_name=('Response from debby.'))
+    time = models.DateTimeField(auto_now_add=True)
+
+    objects = UserLogManger()

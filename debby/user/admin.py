@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import CustomUserModel, UserSettingModel
+from .models import CustomUserModel
+from .models import UserSettingModel
+from .models import UserLogModel
 
 # Register your models here.
 @admin.register(CustomUserModel)
@@ -30,3 +32,8 @@ class UserSettingsAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ('user', )
+
+@admin.register(UserLogModel)
+class UserLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'request_text', 'response', 'time',)
+    readonly_fields = ('user', 'request_text', 'response', 'time',)
