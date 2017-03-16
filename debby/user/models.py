@@ -110,4 +110,4 @@ class UserLogModel(models.Model):
                                 verbose_name=('Response from debby.'))
     time = models.DateTimeField(auto_now_add=True)
 
-    objects = UserLogManger
+    objects = UserLogManger()
