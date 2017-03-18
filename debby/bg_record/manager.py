@@ -67,6 +67,7 @@ class BGRecordManager:
         elif choice == 'false':
             message = '好，要隨時注意自己的血糖狀況哦！'
 
+        print(message)
         return TextSendMessage(text=message)
 
     def record_reminder(self, line_bot_api):
@@ -84,3 +85,5 @@ class BGRecordManager:
     def handle(self):
         if self.callback.action == 'CREATE':
             return self.reply_to_user_choice()
+        if self.callback.action == 'CONFIRM_RECORD':
+            return self.reply_does_user_want_to_record()
