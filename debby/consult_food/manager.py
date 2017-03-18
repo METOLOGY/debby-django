@@ -4,13 +4,13 @@ from consult_food.models import ConsultFoodModel
 from line.callback import ConsultFoodCallback
 
 
-class ConsultFood(object):
-    def __init__(self, callback: ConsultFoodCallback):
+class ConsultFoodManager(object):
+    def __init__(self, callback: ConsultFoodCallback, input_text: str):
         self.callback = callback
+        self.text = input_text
 
-    @staticmethod
-    def reply_answer(text: str):
-        food = ConsultFoodModel.objects.get(sample_name=text)
+    def reply_answer(self):
+        food = ConsultFoodModel.objects.get(sample_name=self.text)
         sample_name = food.sample_name
         modified_calorie = food.modified_calorie
         metabolic_carbohydrates = food.metabolic_carbohydrates
@@ -22,3 +22,6 @@ class ConsultFood(object):
                                                                         carbohydrates_equivalent,
                                                                         white_rice_equivalent)
         return TextSendMessage(text=message)
+
+    def handle(self):
+        self.reply_answer()

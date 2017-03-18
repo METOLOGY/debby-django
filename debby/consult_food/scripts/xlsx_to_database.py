@@ -1,5 +1,6 @@
 import openpyxl
 from consult_food.models import ConsultFoodModel
+from line.models import EventModel
 
 wb = openpyxl.load_workbook("./chat_table/FoodQuery_database.xlsx", data_only=True)
 ws = wb.active
@@ -24,3 +25,9 @@ for i in range(2, ws.max_row + 1):
     food['white_rice_equivalent'] = ws.cell(row=i, column=7).value
     food.update((k, v) for k, v in food.items() if v is not None)  # remove none key value pairs
     ConsultFoodModel.objects.get_or_create(**food)
+    # Event model
+    event = EventModel()
+    event.phrase = food['sample_name']
+    event.callback = 'ConsultFood'
+    event.action = 'READ'
+    event.save()
