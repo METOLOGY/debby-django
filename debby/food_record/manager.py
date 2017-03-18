@@ -101,7 +101,7 @@ class FoodRecordManager:
                 if user_cache:
                     current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
                     food_record_pk = self.record_image(current_user, self.image_content)
-                    self.sdetore_to_user_cache(food_record_pk)
+                    self.store_to_user_cache(food_record_pk)
                     print('in')
                     return self.reply_record_success_and_if_want_more_detail()
                 else:
