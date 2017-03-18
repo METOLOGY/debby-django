@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import BaseUserManager
-from linebot.models import TextMessage
+from linebot.models import TextSendMessage
 from linebot.models import TemplateSendMessage
 import datetime
 
@@ -85,7 +85,7 @@ class UserLogManger(models.Manager):
     """
 
     def save_to_log(self, line_id, input_text, send_message):
-        if isinstance(send_message, TextMessage):
+        if isinstance(send_message, TextSendMessage):
             log = self.model(
                 user=CustomUserModel.objects.get(line_id=line_id),
                 request_text=input_text,
