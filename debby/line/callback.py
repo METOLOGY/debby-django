@@ -66,8 +66,8 @@ class BGRecordCallback(DerivedAppCallback):
         return self.data.get('choice')
 
 
-class FoodQueryCallback(DerivedAppCallback):
-    app = 'FoodQuery'
+class ConsultFoodCallback(DerivedAppCallback):
+    app = 'ConsultFood'
 
 
 class DrugQueryCallback(DerivedAppCallback):

@@ -10,8 +10,9 @@ from linebot.models import TextSendMessage
 
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
+from consult_food.manager import ConsultFoodManager
 from food_record.manager import FoodRecordManager
-from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback
+from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback
 from line.models import EventModel
 from user.models import CustomUserModel
 
@@ -29,7 +30,7 @@ class InputHandler(object):
         We defined the blood value is between 20 to 999
         :return: boolean
         """
-        return self.text.isdigit() and int(self.text) > 20 and int(self.text) < 999
+        return self.text.isdigit() and 20 < int(self.text) < 999
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
@@ -124,5 +125,9 @@ class CallbackHandler(object):
             chat_manager = ChatManager(callback, input_text=self.text)
             print(type(chat_manager.handle()))
             return chat_manager.handle()
+        elif self.callback == ConsultFoodCallback:
+            callback = self.callback.convert_to(ConsultFoodCallback)
+            cf_manager = ConsultFoodManager(callback, input_text=self.text)
+            return cf_manager.handle()
         else:
             print('not find corresponding app.')

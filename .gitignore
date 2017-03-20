@@ -15,3 +15,7 @@ debby/celerybeat\.pid
 debby/django
 # folder for all media 
 media/
+# files
+*.xlsx
+
+debby/debby/settings\.env
