@@ -31,7 +31,7 @@ def step_impl(context):
     user_cache = {'event': 'record_food', 'message_id': im.id}
     cache.set(context.line_id, user_cache, 120)
 
-    c = FoodRecordCallback(context.line_id, action='reply_if_want_to_record').url
+    c = FoodRecordCallback(context.line_id, action='CONFIRM_RECORD').url
     context.send_message = CallbackHandler(c).handle()
 
 
