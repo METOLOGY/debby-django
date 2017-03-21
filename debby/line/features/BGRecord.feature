@@ -5,12 +5,12 @@ Feature: 紀錄血糖
   Background: 有個User 5566
     Given 我的line_id是 5566
 
-  Scenario: 隨便亂打字就會問我要不要紀錄血糖
-    Given 我打開 debby 對話框
-    When 我輸入 "嗨"
-    Then debby會有個選單回我 "嗨，現在要記錄血糖嗎？"
-    And 並問我是要選項 "好啊"
-    And 還是選項 "等等再說"
+#  Scenario: 隨便亂打字就會問我要不要紀錄血糖
+#    Given 我打開 debby 對話框
+#    When 我輸入 "嗨"
+#    Then debby會有個選單回我 "嗨，現在要記錄血糖嗎？"
+#    And 並問我是要選項 "好啊"
+#    And 還是選項 "等等再說"
 
   Scenario: 回應要記錄血糖嗎的選單
     Given 選單 "嗨，現在要記錄血糖嗎？"
