@@ -43,7 +43,7 @@ class InputHandler(object):
         callback_url = Callback(line_id=self.line_id).url
 
         # managers
-        bg_manager = BGRecordManager(callback_url)
+        bg_manager = BGRecordManager(BGRecordCallback(line_id=self.line_id))
         # chat_manager = ChatManager(callback_url)
         # food_manager = FoodRecordManager(callback_url)
 
@@ -52,11 +52,11 @@ class InputHandler(object):
             event = random.choice(events)
             print(event.callback, event.action)
 
-            # 這裡是把它轉成url然後又在deurl一次嗎XD
-            callback_url = Callback(line_id=self.line_id,
-                                    app=event.callback,
-                                    action=event.action).url
-            return CallbackHandler(callback_url, text=self.text).handle()
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
+            return CallbackHandler(callback).handle()
 
         # user might input number directly.
         elif self.is_input_a_bg_value():
@@ -70,11 +70,11 @@ class InputHandler(object):
 
         # user type the description after uploading a food image.
         elif user_cache and 'food_record_pk' in user_cache.keys():
-            callback_url = FoodRecordCallback(self.line_id,
-                                              action='UPDATE',
-                                              choice='true',
-                                              text=self.text).url
-            return CallbackHandler(callback_url).handle()
+            callback = FoodRecordCallback(self.line_id,
+                                          action='UPDATE',
+                                          choice='true',
+                                          text=self.text)
+            return CallbackHandler(callback).handle()
 
         # Debby can't understand what user saying.
         else:
@@ -95,12 +95,8 @@ class CallbackHandler(object):
     """
     image_content = bytes()
 
-    def __init__(self, callback_url: str, **kwargs):
-        self.callback = Callback.decode(callback_url)
-        if kwargs:
-            self.text = kwargs['text']
-        else:
-            self.text = ''
+    def __init__(self, callback: Callback):
+        self.callback = callback
 
     def is_callback_from_food_record(self):
         return self.callback == FoodRecordCallback and self.callback.action == 'CREATE'
