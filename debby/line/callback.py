@@ -41,8 +41,8 @@ class Callback(object):
 class DerivedAppCallback(Callback):
     app = ''
 
-    def __init__(self, line_id: str, action: str, **kwargs):
-        super().__init__(line_id, action=action, **kwargs)
+    def __init__(self, line_id: str, **kwargs):
+        super().__init__(line_id, **kwargs)
         self.data['app'] = self.app
 
 

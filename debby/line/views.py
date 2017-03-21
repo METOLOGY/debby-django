@@ -13,7 +13,6 @@ from user.models import UserLogModel
 from food_record.models import FoodModel
 import json
 
-
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
@@ -93,7 +92,6 @@ def handle_image(event: MessageEvent):
     ch = CallbackHandler(c)
     send_message = ch.handle()
 
-
     user_cache = {'event': 'record_food', 'message_id': event.message.id}
     cache.set(line_id, user_cache, 120)  # cache for 2 min
 
@@ -106,6 +104,7 @@ def handle_image(event: MessageEvent):
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
+
 
 @handler.add(PostbackEvent)
 def postback(event: PostbackEvent):
