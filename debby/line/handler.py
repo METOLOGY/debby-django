@@ -40,10 +40,9 @@ class InputHandler(object):
         """
         user_cache = cache.get(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
-        callback_url = Callback(line_id=self.line_id).url
 
         # managers
-        bg_manager = BGRecordManager(BGRecordCallback(line_id=self.line_id))
+        bg_manager = BGRecordManager(BGRecordCallback(line_id=self.line_id, text=self.text))
         # chat_manager = ChatManager(callback_url)
         # food_manager = FoodRecordManager(callback_url)
 
@@ -120,12 +119,12 @@ class CallbackHandler(object):
             return fr_manager.handle()
         elif self.callback == ChatCallback:
             callback = self.callback.convert_to(ChatCallback)
-            chat_manager = ChatManager(callback, input_text=self.text)
+            chat_manager = ChatManager(callback)
             print(type(chat_manager.handle()))
             return chat_manager.handle()
         elif self.callback == ConsultFoodCallback:
             callback = self.callback.convert_to(ConsultFoodCallback)
-            cf_manager = ConsultFoodManager(callback, input_text=self.text)
+            cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
         else:
             print('not find corresponding app.')

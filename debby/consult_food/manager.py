@@ -5,12 +5,11 @@ from line.callback import ConsultFoodCallback
 
 
 class ConsultFoodManager(object):
-    def __init__(self, callback: ConsultFoodCallback, input_text: str):
+    def __init__(self, callback: ConsultFoodCallback):
         self.callback = callback
-        self.text = input_text
 
     def reply_answer(self):
-        food = ConsultFoodModel.objects.get(sample_name=self.text)
+        food = ConsultFoodModel.objects.get(sample_name=self.callback.text)
         sample_name = food.sample_name
         modified_calorie = food.modified_calorie
         metabolic_carbohydrates = food.metabolic_carbohydrates

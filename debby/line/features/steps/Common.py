@@ -61,7 +61,7 @@ def step_impl(context, text):
 
     data_dict = dict(parse_qsl(data))
     callback = Callback(**data_dict)
-    ch = CallbackHandler(callback.url)
+    ch = CallbackHandler(callback)
     if ch.is_callback_from_food_record():
         assert_that(ch.callback.action, equal_to('CREATE'))
         ch.setup_for_record_food_image(context.image_content)

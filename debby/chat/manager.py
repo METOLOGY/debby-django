@@ -9,9 +9,8 @@ from line.callback import ChatCallback
 class ChatManager(object):
     chats = []
 
-    def __init__(self, callback: ChatCallback, input_text: str):
+    def __init__(self, callback: ChatCallback):
         self.callback = callback
-        self.input_text = input_text
 
     def is_input_a_chat(self, text: str):
         chats = ChatModel.objects.filter(phrase=text)
@@ -28,5 +27,5 @@ class ChatManager(object):
 
     def handle(self):
         if self.callback.action == 'READ':
-            if self.is_input_a_chat(self.input_text):
+            if self.is_input_a_chat(self.callback.text):
                 return self.reply_answer()

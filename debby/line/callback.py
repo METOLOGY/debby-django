@@ -69,6 +69,10 @@ class BGRecordCallback(DerivedAppCallback):
 class ConsultFoodCallback(DerivedAppCallback):
     app = 'ConsultFood'
 
+    @property
+    def text(self):
+        return self.data.get('text')
+
 
 class DrugQueryCallback(DerivedAppCallback):
     app = 'DrugQuery'
@@ -76,3 +80,7 @@ class DrugQueryCallback(DerivedAppCallback):
 
 class ChatCallback(DerivedAppCallback):
     app = 'Chat'
+
+    @property
+    def text(self):
+        return self.data.get('text')
