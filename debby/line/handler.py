@@ -1,3 +1,4 @@
+import random
 from urllib.parse import parse_qsl
 
 from django.core.cache import cache
@@ -38,7 +39,7 @@ class InputHandler(object):
         :return: SendMessage
         """
         user_cache = cache.get(self.line_id)
-        event = EventModel.objects.get_or_none(phrase=self.text)
+        events = EventModel.objects.filter(phrase=self.text)
         callback_url = Callback(line_id=self.line_id).url
 
         # managers
@@ -47,7 +48,8 @@ class InputHandler(object):
         # food_manager = FoodRecordManager(callback_url)
 
         # event founded in event model(app, action)
-        if event:
+        if events:
+            event = random.choice(events)
             print(event.callback, event.action)
 
             # 這裡是把它轉成url然後又在deurl一次嗎XD

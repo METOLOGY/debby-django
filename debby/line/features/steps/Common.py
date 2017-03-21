@@ -66,6 +66,8 @@ def step_impl(context, text):
         assert_that(ch.callback.action, equal_to('CREATE'))
         ch.setup_for_record_food_image(context.image_content)
     context.send_message = ch.handle()
+    UserLogModel.objects.save_to_log(line_id=context.line_id, input_text=action.label,
+                                     send_message=context.send_message)
 
 
 @then('debby會回我 "{text}"')
@@ -84,18 +86,21 @@ def step_impl(context, text):
     message = send_message.text
     assert_that(message, equal_to(text))
 
+
 @then('debby在Log裡面記錄了剛剛我打的句子 "{request}", 跟回覆 "{response}"')
 def step_impl(context, request, response):
-    latest_log = UserLogModel.objects.latest(user=CustomUserModel.objects.get(context.line_id))
+    latest_log = UserLogModel.objects.filter(user=CustomUserModel.objects.get(line_id=context.line_id)).last()
     assert_that(request, equal_to(latest_log.request_text))
     assert_that(response, equal_to(latest_log.response))
 
 
-@given('DB "{model_name}" 裡面有些data')
-def step_impl(context, model_name):
+@given('DB "{model_name}" 和 "{event_model_name}" 裡面有些data')
+def step_impl(context, model_name, event_model_name):
     model = apps.get_model(*model_name.split('.'))
+    event_model = apps.get_model(*event_model_name.split('.'))
     for row in context.table:
-        model.objects.create(**row.as_dict())
+        model.objects.create(phrase=row['phrase'], answer=row['answer'])
+        event_model.objects.create(phrase=row['phrase'], callback=row['callback'], action=row['action'])
 
 
 @then('debby會回我以下裡面其中一樣')
