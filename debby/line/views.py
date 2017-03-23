@@ -68,10 +68,6 @@ def handle_message(event: MessageEvent):
     text = event.message.text
     print(text)
 
-    ### no need to query here, right?
-    # current_user = CustomUserModel.objects.get(line_id=line_id)
-    # print(current_user)
-
     input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()
 
@@ -93,7 +89,7 @@ def handle_image(event: MessageEvent):
     send_message = ch.handle()
 
     user_cache = {'event': 'record_food', 'message_id': event.message.id}
-    cache.set(line_id, user_cache, 120)  # cache for 2 min
+    cache.set(line_id, user_cache, 500)  # cache for 2 min
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'

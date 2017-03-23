@@ -67,3 +67,10 @@ def step_impl(context):
     image = Image.open(obj.food_image_upload)
     assert_that(image.size, equal_to(context.image.size))
     assert_that(obj.note, equal_to("YOYOYO"))
+
+
+@step('在DB 中有這筆資料使用者 {line_id} 並且記錄 "{record_text}"')
+def step_impl(context, line_id, record_text):
+    record_text = record_text.replace("\\n", "\n")
+    obj = FoodModel.objects.get(user__line_id=line_id)
+    assert_that(obj.note, equal_to(record_text))

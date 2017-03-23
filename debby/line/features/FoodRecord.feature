@@ -21,12 +21,17 @@ Feature: 紀錄飲食
     And 系統暫存了我的line_id 5566 和我那筆資料的 id
 
     When 我選選項 "好啊"
-    Then debby會回我 "請輸入補充說明"
-    Then debby在Log裡面記錄了剛剛我打的句子 "好啊", 跟回覆 "請輸入補充說明"
+    Then debby會回我 "您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )"
+    Then debby在Log裡面記錄了剛剛我打的句子 "好啊", 跟回覆 "您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )"
 
     When 我輸入 "YOYOYO"
-    Then debby會回我 "紀錄成功!"
+    Then debby會回我 "繼續說"
     And "YOYOYO" 會跟照片記錄在同一筆中
+    When 我輸入 "YOYOYOYO"
+    Then debby會回我 "繼續說"
+    When 我輸入 "N"
+    Then debby會回我 "記錄成功!"
+    And 在DB 中有這筆資料使用者 5566 並且記錄 "YOYOYO\nYOYOYOYO"
 
   Scenario: 上傳照片並記錄飲食回應
     When 我上傳了一張照片
