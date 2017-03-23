@@ -85,6 +85,11 @@ class FoodRecordManager:
         food_record.note = text
         food_record.save()
 
+    def delete_cache(self):
+        user_cache = cache.get(self.callback.line_id)
+        if user_cache:
+            cache.delete(self.callback.line_id)
+
     def store_to_user_cache(self, food_record_pk):
         user_cache = cache.get(self.callback.line_id)
         if user_cache:
@@ -115,6 +120,7 @@ class FoodRecordManager:
                 user_cache = cache.get(self.callback.line_id)
                 if user_cache and 'food_record_pk' in user_cache.keys():
                     self.record_extra_info(user_cache['food_record_pk'], self.callback.text)
+                    self.delete_cache()
                     return self.reply_success()
         elif self.callback.action == 'write_detail_notes':
             return self.reply_to_record_detail_template()
