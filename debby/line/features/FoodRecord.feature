@@ -32,6 +32,8 @@ Feature: 紀錄飲食
     When 我輸入 "N"
     Then debby會回我 "記錄成功!"
     And 在DB 中有這筆資料使用者 5566 並且記錄 "YOYOYO\nYOYOYOYO"
+    When 我輸入 "YO"
+    Then debby會回我 "哎呀，我不太清楚你說了什麼，你可以換句話說嗎 ~ "
 
   Scenario: 上傳照片並記錄飲食回應
     When 我上傳了一張照片

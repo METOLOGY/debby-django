@@ -141,6 +141,7 @@ class FoodRecordManager:
                             message = self.reply_keep_recording()
                         else:
                             message = self.reply_record_success()
+                            self.delete_cache()
                         return message
 
         elif self.callback.action == 'write_detail_notes':
