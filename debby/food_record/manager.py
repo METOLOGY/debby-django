@@ -98,12 +98,6 @@ class FoodRecordManager:
         if user_cache:
             cache.delete(self.callback.line_id)
 
-    def store_to_user_cache(self, food_record_pk):
-        user_cache = cache.get(self.callback.line_id)
-        if user_cache:
-            user_cache['food_record_pk'] = food_record_pk
-            cache.set(self.callback.line_id, user_cache, 120)  # cache for 2 min
-
     def let_cache_record(self, key: str, value, time: int=60):
         """
         Keep status in cache, identify user by line_id
@@ -127,7 +121,7 @@ class FoodRecordManager:
                 if user_cache:
                     current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
                     food_record_pk = self.record_image(current_user, self.image_content)
-                    self.store_to_user_cache(food_record_pk)
+                    self.let_cache_record(key='food_record_pk', value=food_record_pk, time=120)
                     print('in\n')
                     return self.reply_record_success_and_if_want_more_detail()
                 else:
