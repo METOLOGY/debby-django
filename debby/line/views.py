@@ -88,7 +88,7 @@ def handle_message(event: MessageEvent):
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
     print(line_id)
-    c = FoodRecordCallback(line_id, action='CONFIRM_RECORD').url
+    c = FoodRecordCallback(line_id, action='CONFIRM_RECORD')
     ch = CallbackHandler(c)
     send_message = ch.handle()
 
@@ -111,7 +111,7 @@ def postback(event: PostbackEvent):
     line_id = event.source.sender_id
     data = event.postback.data
     data_dict = dict(parse_qsl(data))
-    c = Callback(**data_dict).url
+    c = Callback(**data_dict)
     ch = CallbackHandler(c)
     if ch.is_callback_from_food_record():
         user_cache = cache.get(line_id)
