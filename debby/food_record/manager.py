@@ -27,52 +27,9 @@ class FoodRecordManager:
         food_record.food_image_upload.save(file, File(io))
         return food_record.pk
 
-    def reply_if_user_want_to_record(self):
-        line_id = self.callback.line_id
-        return TemplateSendMessage(
-            alt_text='請問是否要記錄飲食',
-            template=ConfirmTemplate(
-                text='請問是否要記錄飲食',
-                actions=[
-                    PostbackTemplateAction(
-                        label='好喔',
-                        data=FoodRecordCallback(line_id=line_id, action='CREATE', choice='true').url
-                    ),
-                    PostbackTemplateAction(
-                        label='跟你玩玩的',
-                        data=FoodRecordCallback(line_id=line_id, action='CREATE', choice='false').url
-                    )
-                ]
-            )
-        )
-
-    def reply_record_success_and_if_want_more_detail(self):
-        line_id = self.callback.line_id
-        return TemplateSendMessage(
-            alt_text='ask if you want to write some note',
-            template=ConfirmTemplate(
-                text='紀錄成功! 請問是否要補充文字說明? 例如: 1.5份醣類',
-                actions=[
-                    PostbackTemplateAction(
-                        label='好啊',
-                        data=FoodRecordCallback(line_id=line_id, action='write_detail_notes', choice='true').url
-                    ),
-                    PostbackTemplateAction(
-                        label='不用了',
-                        data=FoodRecordCallback(line_id=line_id, action='write_detail_notes', choice='false').url
-                    )
-                ]
-            )
-        )
-
-    def reply_to_record_detail_template(self):
-        message = ''
-
-        if self.callback.choice == 'true':
-            message = '您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )'
-        elif self.callback.choice == 'false':
-            message = '好的'
-
+    @staticmethod
+    def reply_to_record_detail_template():
+        message = '您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )'
         return TextSendMessage(text=message)
 
     @staticmethod
@@ -98,7 +55,7 @@ class FoodRecordManager:
         if user_cache:
             cache.delete(self.callback.line_id)
 
-    def let_cache_record(self, key: str, value, time: int=60):
+    def let_cache_record(self, key: str, value, time: int = 60):
         """
         Keep status in cache, identify user by line_id
         :param key: key in cache, must in str
@@ -112,24 +69,13 @@ class FoodRecordManager:
             cache.set(self.callback.line_id, user_cache, time)
 
     def handle(self) -> SendMessage:
-        if self.callback.action == 'CONFIRM_RECORD':
-            return self.reply_if_user_want_to_record()
-        elif self.callback.action == 'CREATE':
-            if self.callback.choice == 'true':
-                user_cache = cache.get(self.callback.line_id)
-                print(user_cache)
-                if user_cache:
-                    current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                    food_record_pk = self.record_image(current_user, self.image_content)
-                    self.let_cache_record(key='food_record_pk', value=food_record_pk, time=120)
-                    print('in\n')
-                    return self.reply_record_success_and_if_want_more_detail()
-                else:
-                    print('passed\n')
-                    pass
+        if self.callback.action == 'CREATE':
+            current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            food_record_pk = self.record_image(current_user, self.image_content)
+            self.let_cache_record(key='food_record_pk', value=food_record_pk, time=120)
+            print('in\n')
+            return self.reply_to_record_detail_template()
 
-            elif self.callback.choice == 'false':
-                return TextSendMessage(text='什麼啊原來只是讓我看看啊')
         elif self.callback.action == 'UPDATE':
             if self.callback.choice == 'true':
                 user_cache = cache.get(self.callback.line_id)

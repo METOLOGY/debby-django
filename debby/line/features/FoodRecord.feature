@@ -9,20 +9,10 @@ Feature: 紀錄飲食
 
   Scenario: 上傳照片並記錄飲食
     When 我上傳了一張照片
-    Then debby會有個選單回我 "請問是否要記錄飲食"
-    And 並問我是要選項 "好喔"
-    And 還是選項 "跟你玩玩的"
-
-    When 我選選項 "好喔"
-    Then debby會有個選單回我 "紀錄成功! 請問是否要補充文字說明? 例如: 1.5份醣類"
-    And 並問我是要選項 "好啊"
-    And 還是選項 "不用了"
-    And 在DB food_record.FoodModel 中有這筆資料使用者 5566 並且有我那張照片
+    Then 在DB food_record.FoodModel 中有這筆資料使用者 5566 並且有我那張照片
     And 系統暫存了我的line_id 5566 和我那筆資料的 id
 
-    When 我選選項 "好啊"
-    Then debby會回我 "您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )"
-    Then debby在Log裡面記錄了剛剛我打的句子 "好啊", 跟回覆 "您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )"
+    And debby會回我 "您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )"
 
     When 我輸入 "YOYOYO"
     Then debby會回我 "繼續說"
@@ -34,17 +24,3 @@ Feature: 紀錄飲食
     And 在DB 中有這筆資料使用者 5566 並且記錄 "YOYOYO\nYOYOYOYO"
     When 我輸入 "YO"
     Then debby會回我 "哎呀，我不太清楚你說了什麼，你可以換句話說嗎 ~ "
-
-  Scenario: 上傳照片並記錄飲食回應
-    When 我上傳了一張照片
-    Then debby會有個選單回我 "請問是否要記錄飲食"
-    And 並問我是要選項 "好喔"
-    And 還是選項 "跟你玩玩的"
-
-    When 我選選項 "跟你玩玩的"
-    Then debby會回我 "什麼啊原來只是讓我看看啊"
-
-  Scenario: 紀錄完成的後續回應
-    Given 選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"
-    When 我選選項 "不用了"
-    Then debby會回我 "好的"

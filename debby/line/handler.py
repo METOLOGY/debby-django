@@ -106,7 +106,6 @@ class CallbackHandler(object):
     def handle(self) -> SendMessage:
         """
         First convert the input Callback to proper type of Callback, then run the manager.
-        :return:
         """
         print("{}, {}\n".format(self.callback.app, self.callback.action))
         if self.callback == BGRecordCallback:

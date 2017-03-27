@@ -84,12 +84,11 @@ def handle_message(event: MessageEvent):
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
     print(line_id)
-    c = FoodRecordCallback(line_id, action='CONFIRM_RECORD')
+    c = FoodRecordCallback(line_id, action='CREATE')
     ch = CallbackHandler(c)
+    image_content = line_bot_api.get_message_content(message_id=event.message.id)
+    ch.setup_for_record_food_image(image_content.content)
     send_message = ch.handle()
-
-    user_cache = {'event': 'record_food', 'message_id': event.message.id}
-    cache.set(line_id, user_cache, 500)  # cache for 2 min
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
@@ -109,12 +108,6 @@ def postback(event: PostbackEvent):
     data_dict = dict(parse_qsl(data))
     c = Callback(**data_dict)
     ch = CallbackHandler(c)
-    if ch.is_callback_from_food_record():
-        user_cache = cache.get(line_id)
-        if user_cache:
-            message_id = user_cache['message_id']
-            image_content = line_bot_api.get_message_content(message_id=message_id)
-            ch.setup_for_record_food_image(image_content.content)
 
     send_message = ch.handle()
 
