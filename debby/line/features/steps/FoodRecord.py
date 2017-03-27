@@ -27,12 +27,13 @@ def step_impl(context):
 def step_impl(context):
     # https://devdocs.line.me/en/#webhook-event-object
     im = ImageMessage(id='55669487')
-    event = MessageEvent(message=im)
-    user_cache = {'event': 'record_food', 'message_id': im.id}
-    cache.set(context.line_id, user_cache, 120)
+    user_cache = {'message_id': im.id}
+    cache.set(context.line_id, user_cache, 500)
 
-    c = FoodRecordCallback(context.line_id, action='CONFIRM_RECORD')
-    context.send_message = CallbackHandler(c).handle()
+    c = FoodRecordCallback(context.line_id, action='CREATE')
+    ch = CallbackHandler(c)
+    ch.setup_for_record_food_image(context.image_content)
+    context.send_message = ch.handle()
 
 
 @step("在DB {model_name} 中有這筆資料使用者 {line_id} 並且有我那張照片")
@@ -67,3 +68,10 @@ def step_impl(context):
     image = Image.open(obj.food_image_upload)
     assert_that(image.size, equal_to(context.image.size))
     assert_that(obj.note, equal_to("YOYOYO"))
+
+
+@step('在DB 中有這筆資料使用者 {line_id} 並且記錄 "{record_text}"')
+def step_impl(context, line_id, record_text):
+    record_text = record_text.replace("\\n", "\n")
+    obj = FoodModel.objects.get(user__line_id=line_id)
+    assert_that(obj.note, equal_to(record_text))

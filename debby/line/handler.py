@@ -106,9 +106,8 @@ class CallbackHandler(object):
     def handle(self) -> SendMessage:
         """
         First convert the input Callback to proper type of Callback, then run the manager.
-        :return:
         """
-        print(self.callback.app, self.callback.action)
+        print("{}, {}\n".format(self.callback.app, self.callback.action))
         if self.callback == BGRecordCallback:
             callback = self.callback.convert_to(FoodRecordCallback)
             bg_manager = BGRecordManager(callback)
