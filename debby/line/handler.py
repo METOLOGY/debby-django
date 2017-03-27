@@ -12,8 +12,10 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
+from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
-from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback
+from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
+    DrugAskCallback
 from line.models import EventModel
 from user.models import CustomUserModel
 
@@ -125,5 +127,9 @@ class CallbackHandler(object):
             callback = self.callback.convert_to(ConsultFoodCallback)
             cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
+        elif self.callback == DrugAskCallback:
+            callback = self.callback.convert_to(DrugAskCallback)
+            da_manager = DrugAskManager(callback)
+            da_manager.handle()
         else:
             print('not find corresponding app.')

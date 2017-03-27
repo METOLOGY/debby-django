@@ -74,8 +74,8 @@ class ConsultFoodCallback(DerivedAppCallback):
         return self.data.get('text')
 
 
-class DrugQueryCallback(DerivedAppCallback):
-    app = 'DrugQuery'
+class DrugAskCallback(DerivedAppCallback):
+    app = 'DrugAsk'
 
 
 class ChatCallback(DerivedAppCallback):

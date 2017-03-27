@@ -88,9 +88,12 @@ class BGRecordManager:
         bg.save()
 
     def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
         if self.callback.action == 'CREATE':
-            return self.reply_to_user_choice()
+            reply = self.reply_to_user_choice()
         elif self.callback.action == 'CREATE_FROM_MENU':
-            return self.reply_please_enter_bg()
+            reply = self.reply_please_enter_bg()
         elif self.callback.action == 'CONFIRM_RECORD':
-            return self.reply_does_user_want_to_record()
+            reply = self.reply_does_user_want_to_record()
+
+        return reply

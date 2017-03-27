@@ -1,5 +1,6 @@
 import random
 
+from linebot.models import SendMessage
 from linebot.models import TextSendMessage
 
 from chat.models import ChatModel
@@ -25,7 +26,9 @@ class ChatManager(object):
         message = chat.answer
         return TextSendMessage(text=message)
 
-    def handle(self) -> TextSendMessage:
+    def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
         if self.callback.action == 'READ':
             if self.is_input_a_chat(self.callback.text):
-                return self.reply_answer()
+                reply = self.reply_answer()
+        return reply
