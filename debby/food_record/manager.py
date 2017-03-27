@@ -64,9 +64,11 @@ class FoodRecordManager:
         :return: None
         """
         user_cache = cache.get(self.callback.line_id)
-        if user_cache:
+        if not user_cache:
+            user_cache = {key: value}
+        else:
             user_cache[key] = value
-            cache.set(self.callback.line_id, user_cache, time)
+        cache.set(self.callback.line_id, user_cache, time)
 
     def handle(self) -> SendMessage:
         if self.callback.action == 'CREATE':
@@ -77,18 +79,17 @@ class FoodRecordManager:
             return self.reply_to_record_detail_template()
 
         elif self.callback.action == 'UPDATE':
-            if self.callback.choice == 'true':
-                user_cache = cache.get(self.callback.line_id)
-                if user_cache:
-                    if 'food_record_pk' in user_cache.keys():
-                        if self.callback.text != 'N':
-                            self.record_extra_info(user_cache['food_record_pk'], self.callback.text)
-                            self.let_cache_record(key='KEEP_RECORDING', value=True, time=60)
-                            message = self.reply_keep_recording()
-                        else:
-                            message = self.reply_record_success()
-                            self.delete_cache()
-                        return message
+            user_cache = cache.get(self.callback.line_id)
+            if user_cache:
+                if 'food_record_pk' in user_cache.keys():
+                    if self.callback.text.upper() != 'N':
+                        self.record_extra_info(user_cache['food_record_pk'], self.callback.text)
+                        self.let_cache_record(key='KEEP_RECORDING', value=True, time=60)
+                        message = self.reply_keep_recording()
+                    else:
+                        message = self.reply_record_success()
+                        self.delete_cache()
+                    return message
 
         elif self.callback.action == 'write_detail_notes':
             return self.reply_to_record_detail_template()
