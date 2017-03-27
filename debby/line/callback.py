@@ -50,7 +50,7 @@ class FoodRecordCallback(DerivedAppCallback):
     app = 'FoodRecord'
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.data.get('text')
 
     @property
