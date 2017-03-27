@@ -78,6 +78,9 @@ class FoodRecordManager:
             print('in\n')
             return self.reply_to_record_detail_template()
 
+        elif self.callback.action == 'CREATE_FROM_MENU':
+            return TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字: ')
+
         elif self.callback.action == 'UPDATE':
             user_cache = cache.get(self.callback.line_id)
             if user_cache:

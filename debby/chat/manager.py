@@ -20,12 +20,12 @@ class ChatManager(object):
         else:
             return False
 
-    def reply_answer(self):
+    def reply_answer(self) -> TextSendMessage:
         chat = random.choice(self.chats)  # type: ChatModel
         message = chat.answer
         return TextSendMessage(text=message)
 
-    def handle(self):
+    def handle(self) -> TextSendMessage:
         if self.callback.action == 'READ':
             if self.is_input_a_chat(self.callback.text):
                 return self.reply_answer()

@@ -47,7 +47,7 @@ def callback(request):
         try:
             line_id = data['events'][0]['source']['userId']
 
-            ## create a new user in database.
+            # create a new user in database.
             if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
                 CustomUserModel.objects.create_user(line_id=line_id)
 
