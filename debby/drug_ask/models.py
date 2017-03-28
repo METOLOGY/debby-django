@@ -16,7 +16,7 @@ class DrugTypeModel(models.Model):
     type = models.CharField(max_length=100)
 
 
-class DrugDetail(models.Model):
+class DrugDetailModel(models.Model):
     type = models.CharField(max_length=100, unique=True)
     mechanism = models.CharField(max_length=200)
     side_effect = models.CharField(max_length=200)
