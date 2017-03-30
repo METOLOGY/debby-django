@@ -31,7 +31,7 @@ class UserSettingsAdmin(admin.ModelAdmin):
         ('延後提醒時間', {'fields': ('late_reminder',)}),
     )
 
-    readonly_fields = ('user', )
+    # readonly_fields = ('user', )
 
 @admin.register(UserLogModel)
 class UserLogAdmin(admin.ModelAdmin):

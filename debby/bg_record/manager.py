@@ -70,12 +70,13 @@ class BGRecordManager:
         print(message)
         return TextSendMessage(text=message)
 
-    def record_reminder(self, line_bot_api):
-        total_members_line_id = [x.line_id for x in CustomUserModel.objects.all() if len(x.line_id) == 33]
-        print(total_members_line_id)
+    @classmethod
+    def record_reminder(cls, line_bot_api, line_id):
+        # total_members_line_id = [x.line_id for x in CustomUserModel.objects.all() if len(x.line_id) == 33]
+        # print(total_members_line_id)
 
-        for member in total_members_line_id:
-            line_bot_api.push_message(member, self.confirm_template_message)
+        # for member in total_members_line_id:
+        line_bot_api.push_message(line_id, cls.confirm_template_message)
 
     @staticmethod
     def record_bg_record(current_user: CustomUserModel, bg_value: int):
