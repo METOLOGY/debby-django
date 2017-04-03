@@ -84,3 +84,10 @@ class ChatCallback(DerivedAppCallback):
     @property
     def text(self):
         return self.data.get('text')
+
+class ReminderCallback(DerivedAppCallback):
+    app = 'Reminder'
+
+    @property
+    def choice(self) -> str:
+        return self.data.get('choice')
