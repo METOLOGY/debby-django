@@ -71,12 +71,16 @@ class FoodRecordManager:
         cache.set(self.callback.line_id, user_cache, time)
 
     def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
         if self.callback.action == 'CREATE':
             current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
             food_record_pk = self.record_image(current_user, self.image_content)
             self.let_cache_record(key='food_record_pk', value=food_record_pk, time=120)
             print('in\n')
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+
+        elif self.callback.action == 'CREATE_FROM_MENU':
+            reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字: ')
 
         elif self.callback.action == 'UPDATE':
             user_cache = cache.get(self.callback.line_id)
@@ -89,7 +93,9 @@ class FoodRecordManager:
                     else:
                         message = self.reply_record_success()
                         self.delete_cache()
-                    return message
+                    reply = message
 
         elif self.callback.action == 'write_detail_notes':
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+            
+        return reply

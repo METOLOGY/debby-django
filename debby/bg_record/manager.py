@@ -1,5 +1,6 @@
 from linebot.models import ConfirmTemplate
 from linebot.models import PostbackTemplateAction
+from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
@@ -57,7 +58,7 @@ class BGRecordManager:
 
     @staticmethod
     def reply_record_success() -> TextSendMessage:
-        return TextSendMessage(text='紀錄成功！')
+        return TextSendMessage(text='記錄成功！')
 
     def reply_to_user_choice(self) -> TextSendMessage:
         message = ''
@@ -69,6 +70,10 @@ class BGRecordManager:
 
         print(message)
         return TextSendMessage(text=message)
+
+    @staticmethod
+    def reply_please_enter_bg() -> TextSendMessage:
+        return TextSendMessage(text='請輸入血糖數字:')
 
     def record_reminder(self, line_bot_api):
         total_members_line_id = [x.line_id for x in CustomUserModel.objects.all() if len(x.line_id) == 33]
@@ -82,8 +87,13 @@ class BGRecordManager:
         bg = BGModel(user=current_user, glucose_val=bg_value)
         bg.save()
 
-    def handle(self):
+    def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
         if self.callback.action == 'CREATE':
-            return self.reply_to_user_choice()
-        if self.callback.action == 'CONFIRM_RECORD':
-            return self.reply_does_user_want_to_record()
+            reply = self.reply_to_user_choice()
+        elif self.callback.action == 'CREATE_FROM_MENU':
+            reply = self.reply_please_enter_bg()
+        elif self.callback.action == 'CONFIRM_RECORD':
+            reply = self.reply_does_user_want_to_record()
+
+        return reply

@@ -1,3 +1,4 @@
+from linebot.models import SendMessage
 from linebot.models import TextSendMessage
 
 from consult_food.models import ConsultFoodModel
@@ -8,7 +9,7 @@ class ConsultFoodManager(object):
     def __init__(self, callback: ConsultFoodCallback):
         self.callback = callback
 
-    def reply_answer(self):
+    def reply_answer(self) -> TextSendMessage:
         food = ConsultFoodModel.objects.get(sample_name=self.callback.text)
         sample_name = food.sample_name
         modified_calorie = food.modified_calorie
@@ -22,5 +23,11 @@ class ConsultFoodManager(object):
                                                                           white_rice_equivalent)
         return TextSendMessage(text=message)
 
-    def handle(self):
-        self.reply_answer()
+    def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
+        if self.callback.action == 'READ_FROM_MENU':
+            reply = TextSendMessage(text="請輸入食品名稱:")
+        else:
+            reply = self.reply_answer()
+
+        return reply
