@@ -21,7 +21,7 @@ Feature: 紀錄血糖
 
   Scenario: 打數字會幫我紀錄血糖
     When 我輸入 "183"
-    Then debby會回我 "紀錄成功！ 血糖還是稍微偏高,要多注意喔!"
+    Then debby會回我 "記錄成功！ 血糖還是稍微偏高,要多注意喔!"
     And 在DB bg_record.BGModel 中有這筆資料使用者 5566 血糖 183
 
 

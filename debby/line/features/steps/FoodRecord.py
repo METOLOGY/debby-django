@@ -12,6 +12,7 @@ from food_record.manager import FoodRecordManager
 from food_record.models import FoodModel
 from line.callback import FoodRecordCallback
 from line.handler import InputHandler, CallbackHandler
+from user.cache import AppCache
 from user.models import CustomUserModel
 
 
@@ -48,10 +49,8 @@ def step_impl(context, model_name, line_id):
 
 @step("系統暫存了我的line_id {line_id} 和我那筆資料的 id")
 def step_impl(context, line_id):
-    user_cache = cache.get(line_id)
-    assert_that(user_cache, not_none())
-    food_record_pk = user_cache['food_record_pk']
-    assert_that(food_record_pk, equal_to(context.pk))
+    app_cache = AppCache(line_id)  # type: AppCache
+    assert_that(app_cache.data.food_record_pk, equal_to(context.pk))
 
 
 @given('選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
