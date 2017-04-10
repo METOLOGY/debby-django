@@ -1,4 +1,9 @@
+from abc import ABCMeta
+from typing import Type, TypeVar
+
 from django.core.cache import cache
+
+
 
 
 class AppCache(object):
@@ -21,7 +26,7 @@ class AppCache(object):
         self.app = app
         self.action = action
 
-    def set_data(self, data):
+    def set_data(self, data: "C"):
         self.data = data
 
     def delete(self):
@@ -30,12 +35,19 @@ class AppCache(object):
     def commit(self):
         cache.set(self.line_id, self, self.expired_time)
 
-    def save_data(self, app: str, action: str, data):
+    def save_data(self, app: str, action: str, data: "C"):
         self.set_app(app, action)
         self.set_data(data)
         self.commit()
 
 
-class FoodData(object):
+class CacheData(metaclass=ABCMeta):
+    pass
+
+
+class FoodData(CacheData):
     food_record_pk = ''
     keep_recording = False
+
+
+C = TypeVar("C", bound=CacheData)
