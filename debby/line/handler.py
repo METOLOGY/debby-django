@@ -15,6 +15,7 @@ from consult_food.manager import ConsultFoodManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback
 from line.models import EventModel
+from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
 
@@ -38,7 +39,7 @@ class InputHandler(object):
         Mainly response for replying.
         :return: SendMessage
         """
-        user_cache = cache.get(self.line_id)
+        app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
 
         # managers
@@ -68,7 +69,7 @@ class InputHandler(object):
         #     return chat_manager.reply_answer()
 
         # user type the description after uploading a food image.
-        elif user_cache and 'food_record_pk' in user_cache.keys():
+        elif app_cache.is_app_running() and type(app_cache.data) is FoodData:
             callback = FoodRecordCallback(self.line_id,
                                           action='UPDATE',
                                           choice='true',
