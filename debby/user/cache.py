@@ -1,16 +1,15 @@
 from abc import ABCMeta
-from typing import Type, TypeVar
 
 from django.core.cache import cache
-
-
+from django.db.models import QuerySet
+from typing import TypeVar
 
 
 class AppCache(object):
-    def __init__(self, line_id: str):
+    def __init__(self, line_id: str, app: str = '', action: str = ''):
         self.line_id = line_id
-        self.app = ''
-        self.action = ''
+        self.app = app
+        self.action = action
         self.expired_time = 120  # in seconds
         self.data = None
 
@@ -19,11 +18,15 @@ class AppCache(object):
         if user_cache and type(user_cache) is AppCache:
             self.__dict__.update(user_cache.__dict__)
 
-    def is_app_running(self) -> bool:
+    def is_app_running(self, app: str = None) -> bool:
+        if app:
+            return bool(app)
         return bool(self.app)
 
-    def set_app(self, app: str, action: str = ''):
+    def set_app(self, app: str):
         self.app = app
+
+    def set_action(self, action: str = ''):
         self.action = action
 
     def set_data(self, data: "C"):
@@ -35,8 +38,7 @@ class AppCache(object):
     def commit(self):
         cache.set(self.line_id, self, self.expired_time)
 
-    def save_data(self, app: str, action: str, data: "C"):
-        self.set_app(app, action)
+    def save_data(self, data: "C"):
         self.set_data(data)
         self.commit()
 
@@ -45,9 +47,13 @@ class CacheData(metaclass=ABCMeta):
     pass
 
 
-class FoodData(CacheData):
-    food_record_pk = ''
-    keep_recording = False
-
-
 C = TypeVar("C", bound=CacheData)
+
+
+class FoodData(CacheData):
+    food_record_pk = ''  # type: str
+    keep_recording = False  # type: bool
+
+
+class DrugAskData(CacheData):
+    drug_types = None  # type: QuerySet
