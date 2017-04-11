@@ -34,6 +34,12 @@ for i in range(2, ws.max_row):
     event.action = "READ"
     event.save()
 
+event = EventModel()
+event.phrase = "藥物資訊查詢"
+event.callback = "DrugAsk"
+event.action = "READ_FROM_MENU"
+event.save()
+
 ws = wb["Inquiry"]  # type: ReadOnlyWorksheet
 detail = {
     "type": "",
