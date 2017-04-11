@@ -106,7 +106,7 @@ def postback(event: PostbackEvent):
     line_id = event.source.sender_id
     data = event.postback.data
     data_dict = dict(parse_qsl(data))
-    c = Callback(**data_dict)
+    c = Callback(line_id=line_id, **data_dict)
     ch = CallbackHandler(c)
 
     send_message = ch.handle()

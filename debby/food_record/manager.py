@@ -49,9 +49,9 @@ class FoodRecordManager:
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id)
+        app_cache = AppCache(self.callback.line_id, app="FoodRecord")
         if self.callback.action == 'CREATE':
-            app_cache.set_app(app="FoodRecord", action="CREATE")
+            app_cache.set_action(action="CREATE")
 
             current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
             data = FoodData()

@@ -11,7 +11,7 @@ class DrugModel(models.Model):
 
 class DrugTypeModel(models.Model):
     question = models.CharField(max_length=100)
-    user_choice = models.CharField(max_length=100)
+    user_choice = models.CharField(max_length=100, blank=True, null=True)
     answer = models.CharField(max_length=100)
     type = models.CharField(max_length=100)
 

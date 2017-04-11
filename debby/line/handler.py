@@ -71,11 +71,18 @@ class InputHandler(object):
         #     return chat_manager.reply_answer()
 
         # user type the description after uploading a food image.
-        elif app_cache.is_app_running() and type(app_cache.data) is FoodData:
-            callback = FoodRecordCallback(self.line_id,
-                                          action='UPDATE',
-                                          choice='true',
-                                          text=self.text)
+        elif app_cache.is_app_running():
+            callback = None
+            if type(app_cache.data) is FoodData:
+                callback = FoodRecordCallback(self.line_id,
+                                              action='UPDATE',
+                                              choice='true',
+                                              text=self.text)
+            elif app_cache.app is "DrugAsk":
+                callback = DrugAskCallback(self.line_id,
+                                           action=app_cache.action,
+                                           text=self.text)
+
             return CallbackHandler(callback).handle()
 
         # Debby can't understand what user saying.
@@ -131,6 +138,6 @@ class CallbackHandler(object):
         elif self.callback == DrugAskCallback:
             callback = self.callback.convert_to(DrugAskCallback)
             da_manager = DrugAskManager(callback)
-            da_manager.handle()
+            return da_manager.handle()
         else:
             print('not find corresponding app.')

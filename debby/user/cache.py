@@ -1,4 +1,5 @@
 from abc import ABCMeta
+from enum import Enum, auto
 
 from django.core.cache import cache
 from django.db.models import QuerySet
@@ -18,7 +19,7 @@ class AppCache(object):
         if user_cache and type(user_cache) is AppCache:
             self.__dict__.update(user_cache.__dict__)
 
-    def is_app_running(self, app: str = None) -> bool:
+    def is_app_running(self, app: str = '') -> bool:
         if app:
             return bool(app)
         return bool(self.app)
@@ -43,6 +44,25 @@ class AppCache(object):
         self.commit()
 
 
+class App(metaclass=ABCMeta):
+    pass
+
+
+class FoodRecord(App):
+    class Action(Enum):
+        CREATE = auto()
+        CREATE_FROM_MENU = auto()
+        UPDATE = auto()
+
+
+class DrugAsk(App):
+    class Action(Enum):
+        READ = auto()
+        READ_FROM_MENU = auto()
+        WAIT_DRUG_TYPE_CHOICE = auto()
+        READ_DRUG_DETAIL = auto()
+
+
 class CacheData(metaclass=ABCMeta):
     pass
 
@@ -57,3 +77,4 @@ class FoodData(CacheData):
 
 class DrugAskData(CacheData):
     drug_types = None  # type: QuerySet
+    drug_detail_pk = ''  # type: str
