@@ -83,6 +83,7 @@ class InputHandler(object):
                                            action=app_cache.action,
                                            text=self.text)
 
+
             return CallbackHandler(callback).handle()
 
         # Debby can't understand what user saying.
@@ -122,19 +123,23 @@ class CallbackHandler(object):
             callback = self.callback.convert_to(FoodRecordCallback)
             bg_manager = BGRecordManager(callback)
             return bg_manager.handle()
+
         elif self.callback == FoodRecordCallback:
             callback = self.callback.convert_to(FoodRecordCallback)
             fr_manager = FoodRecordManager(callback, self.image_content)
             return fr_manager.handle()
+
         elif self.callback == ChatCallback:
             callback = self.callback.convert_to(ChatCallback)
             chat_manager = ChatManager(callback)
             print(type(chat_manager.handle()))
             return chat_manager.handle()
+
         elif self.callback == ConsultFoodCallback:
             callback = self.callback.convert_to(ConsultFoodCallback)
             cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
+
         elif self.callback == DrugAskCallback:
             callback = self.callback.convert_to(DrugAskCallback)
             da_manager = DrugAskManager(callback)

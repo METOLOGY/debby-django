@@ -4,12 +4,13 @@ from linebot.models import SendMessage
 from linebot.models import TextSendMessage
 from linebot.models import ButtonsTemplate
 from linebot.models import PostbackTemplateAction
+from user.cache import AppCache
 
-
-class ReminderManager():
+class ReminderManager(object):
     def __init__(self, callback: ReminderCallback):
         self.callback = callback
 
+    @staticmethod
     def reply_reminder(self, type: str, reminder_time='12:00'):
         reminder_time = 'default reminder time'
         reminder_text = reminder_time
@@ -31,17 +32,17 @@ class ReminderManager():
                     PostbackTemplateAction(
                         label='好的',
                         text='好的',
-                        data='app="reminder"&action=REPLY_REMINDER&choice=1',
+                        data='app=BGRecord&action=CREATE',
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
                         text='關閉此次提醒',
-                        data='app="reminder"&action=REPLY_REMINDER&choice=2',
+                        data='app=Reminder&action=REPLY_REMINDER&choice=2',
                     ),
                     PostbackTemplateAction(
                         label='10分鐘後再提醒我',
                         text='10分鐘後再提醒我',
-                        data='app="reminder"&action=REPLY_REMINDER&choice=3',
+                        data='app=Reminder&action=REPLY_REMINDER&choice=3',
                     ),
                 ]
             )
@@ -70,3 +71,10 @@ class ReminderManager():
 
     def handler(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR')
+        app_cache = AppCache(self.callback.line_id, app='Reminder')
+
+        if self.callback.action == 'REPLY_REMINDER':
+            if self.callback.choice == 2:
+
+            elif self.callback.choice == 3:
+

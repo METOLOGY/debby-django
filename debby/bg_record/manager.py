@@ -7,6 +7,7 @@ from linebot.models import TextSendMessage
 from line.callback import BGRecordCallback
 from .models import BGModel
 from user.models import CustomUserModel
+from user.cache import AppCache
 
 
 class BGRecordManager:
@@ -68,7 +69,6 @@ class BGRecordManager:
         elif choice == 'false':
             message = '好，要隨時注意自己的血糖狀況哦！'
 
-        print(message)
         return TextSendMessage(text=message)
 
     @staticmethod
@@ -89,11 +89,19 @@ class BGRecordManager:
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
+        app_cache = AppCache(self.callback.line_id, app='BGRecord')
+        if self.callback.data.
         if self.callback.action == 'CREATE':
+            app_cache.set_action('CREATE')
+            app_cache.commit()
             reply = self.reply_to_user_choice()
         elif self.callback.action == 'CREATE_FROM_MENU':
+            app_cache.set_action('CREATE_FROM_MENU')
+            app_cache.commit()
             reply = self.reply_please_enter_bg()
         elif self.callback.action == 'CONFIRM_RECORD':
+            app_cache.set_action('CONFIRM_RECORD')
+            app_cache.commit()
             reply = self.reply_does_user_want_to_record()
 
         return reply

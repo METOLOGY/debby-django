@@ -29,7 +29,7 @@ class DrugAskManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='1.作用機轉和服用方式',
-                        data='app="DrugAsk&action=READ_DRUG_DETAIL&choice=1'
+                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=1'
                     ),
                     PostbackTemplateAction(
                         label='2.不良反應,副作用',
@@ -69,7 +69,7 @@ class DrugAskManager(object):
                 reply = self.reply_choose_one(drug_types)
             elif len(drug_types) == 1:
                 drug_type = drug_types[0]
-                drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
+                drug_detail = DrugDetailModel.objects.get(tyㄓpe=drug_type.type)
 
                 data = DrugAskData()
                 data.drug_detail_pk = drug_detail.pk
