@@ -1,11 +1,7 @@
 from io import BytesIO
 
-from django.core.cache import cache
 from django.core.files import File
-from linebot.models import ConfirmTemplate
-from linebot.models import PostbackTemplateAction
 from linebot.models import SendMessage
-from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
 from food_record.models import FoodModel
@@ -53,15 +49,20 @@ class FoodRecordManager:
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id)
+        app_cache = AppCache(self.callback.line_id, app="FoodRecord")
         if self.callback.action == 'CREATE':
-            current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-            fd = FoodData()
-            fd.food_record_pk = self.record_image(current_user, self.image_content)
+            app_cache.set_action(action="CREATE")
 
-            app_cache.save_data(app="FoodRecord", action="CREATE", data=fd)
+            current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            data = FoodData()
+            data.food_record_pk = self.record_image(current_user, self.image_content)
+
+            app_cache.save_data(data=data)
             print('in\n')
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+
+        elif self.callback.action == 'CREATE_FROM_MENU':
+            reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字: ')
 
         elif self.callback.action == 'UPDATE':
             if app_cache.is_app_running():
@@ -82,4 +83,6 @@ class FoodRecordManager:
                     reply = message
 
         elif self.callback.action == 'write_detail_notes':
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+
+        return reply

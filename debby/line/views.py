@@ -47,7 +47,7 @@ def callback(request):
         try:
             line_id = data['events'][0]['source']['userId']
 
-            ## create a new user in database.
+            # create a new user in database.
             if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
                 CustomUserModel.objects.create_user(line_id=line_id)
 
@@ -106,7 +106,7 @@ def postback(event: PostbackEvent):
     line_id = event.source.sender_id
     data = event.postback.data
     data_dict = dict(parse_qsl(data))
-    c = Callback(**data_dict)
+    c = Callback(line_id=line_id, **data_dict)
     ch = CallbackHandler(c)
 
     send_message = ch.handle()

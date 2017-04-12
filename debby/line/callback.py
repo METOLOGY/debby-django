@@ -70,19 +70,27 @@ class ConsultFoodCallback(DerivedAppCallback):
     app = 'ConsultFood'
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.data.get('text')
 
 
-class DrugQueryCallback(DerivedAppCallback):
-    app = 'DrugQuery'
+class DrugAskCallback(DerivedAppCallback):
+    app = 'DrugAsk'
+
+    @property
+    def text(self) -> str:
+        return self.data.get('text')
+
+    @property
+    def choice(self) -> str:
+        return self.data.get('choice')
 
 
 class ChatCallback(DerivedAppCallback):
     app = 'Chat'
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.data.get('text')
 
 class ReminderCallback(DerivedAppCallback):

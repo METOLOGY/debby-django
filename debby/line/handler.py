@@ -12,8 +12,10 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
+from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
-from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback
+from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
+    DrugAskCallback
 from line.models import EventModel
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
@@ -69,11 +71,18 @@ class InputHandler(object):
         #     return chat_manager.reply_answer()
 
         # user type the description after uploading a food image.
-        elif app_cache.is_app_running() and type(app_cache.data) is FoodData:
-            callback = FoodRecordCallback(self.line_id,
-                                          action='UPDATE',
-                                          choice='true',
-                                          text=self.text)
+        elif app_cache.is_app_running():
+            callback = None
+            if type(app_cache.data) is FoodData:
+                callback = FoodRecordCallback(self.line_id,
+                                              action='UPDATE',
+                                              choice='true',
+                                              text=self.text)
+            elif app_cache.app is "DrugAsk":
+                callback = DrugAskCallback(self.line_id,
+                                           action=app_cache.action,
+                                           text=self.text)
+
             return CallbackHandler(callback).handle()
 
         # Debby can't understand what user saying.
@@ -126,5 +135,9 @@ class CallbackHandler(object):
             callback = self.callback.convert_to(ConsultFoodCallback)
             cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
+        elif self.callback == DrugAskCallback:
+            callback = self.callback.convert_to(DrugAskCallback)
+            da_manager = DrugAskManager(callback)
+            return da_manager.handle()
         else:
             print('not find corresponding app.')
