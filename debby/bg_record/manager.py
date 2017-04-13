@@ -14,26 +14,26 @@ class BGRecordManager:
     line_id = ''
     this_record = BGModel()
 
-    reminder_message = TemplateSendMessage(
-        alt_text='嗨，現在要記錄血糖嗎？',
-        template=ConfirmTemplate(
-            text='嗨，現在要記錄血糖嗎？',
-            actions=[
-                PostbackTemplateAction(
-                    label='好啊',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='ASK_TO_CREATE',
-                                          choice='true').url
-                ),
-                PostbackTemplateAction(
-                    label='等等再說',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='ASK_TO_CREATE',
-                                          choice='false').url
-                )
-            ]
-        )
-    )
+    # reminder_message = TemplateSendMessage(
+    #     alt_text='嗨，現在要記錄血糖嗎？',
+    #     template=ConfirmTemplate(
+    #         text='嗨，現在要記錄血糖嗎？',
+    #         actions=[
+    #             PostbackTemplateAction(
+    #                 label='好啊',
+    #                 data=BGRecordCallback(line_id=line_id,
+    #                                       action='ASK_TO_CREATE',
+    #                                       choice='true').url
+    #             ),
+    #             PostbackTemplateAction(
+    #                 label='等等再說',
+    #                 data=BGRecordCallback(line_id=line_id,
+    #                                       action='ASK_TO_CREATE',
+    #                                       choice='false').url
+    #             )
+    #         ]
+    #     )
+    # )
 
     meal_type_message = TemplateSendMessage(
         alt_text='餐前血糖還是飯後血糖呢？',
@@ -108,8 +108,8 @@ class BGRecordManager:
         message = self.conditions[ind]
         return TextSendMessage(text=message)
 
-    def reply_reminder(self) -> TemplateSendMessage:
-        return self.reminder_message
+    # def reply_reminder(self) -> TemplateSendMessage:
+    #     return self.reminder_message
 
     def reply_record_type(self) -> TextSendMessage:
         return self.meal_type_message
