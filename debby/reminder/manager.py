@@ -32,7 +32,7 @@ class ReminderManager(object):
                     PostbackTemplateAction(
                         label='好的',
                         text='好的',
-                        data='app=BGRecord&action=CREATE',
+                        data='app=BGRecord&action=CREATE_FROM_MENU',
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
@@ -75,6 +75,6 @@ class ReminderManager(object):
 
         if self.callback.action == 'REPLY_REMINDER':
             if self.callback.choice == 2:
-
+                pass
             elif self.callback.choice == 3:
-
+                pass

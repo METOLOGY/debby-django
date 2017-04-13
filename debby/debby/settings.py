@@ -70,6 +70,7 @@ BUILD_APPS = [
     'drug_ask.apps.DrugAskConfig',
     'chat.apps.ChatConfig',
     'consult_food.apps.ConsultFoodConfig',
+    'reminder.apps.ReminderConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS

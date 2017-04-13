@@ -10,7 +10,10 @@ from line.callback import FoodRecordCallback, Callback
 from line.handler import InputHandler, CallbackHandler
 from user.models import CustomUserModel
 from user.models import UserLogModel
+from reminder.models import UserReminder
 from food_record.models import FoodModel
+
+import datetime
 import json
 
 from linebot.exceptions import (
@@ -48,8 +51,7 @@ def callback(request):
             line_id = data['events'][0]['source']['userId']
 
             # create a new user in database.
-            if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
-                CustomUserModel.objects.create_user(line_id=line_id)
+            UserInit(line_id)
 
             handler.handle(body, signature)
         except InvalidSignatureError:
@@ -119,3 +121,12 @@ def postback(event: PostbackEvent):
         event.reply_token,
         send_message
     )
+
+def UserInit(line_id: str):
+    if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
+        user = CustomUserModel.objects.create_user(line_id=line_id)
+
+        # init reminder, three reminder for each type in default
+        for type in ['bg', 'insulin', 'drug']:
+            for time in [datetime.time(9, 00), datetime.time(13, 00), datetime.time(19, 30)]:
+                UserReminder.objects.create(user=user, type=type, time=time, status=True)
