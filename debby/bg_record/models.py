@@ -11,7 +11,6 @@ class BGModel(models.Model):
                                 ('before', '餐前'),
                                 ('after', '飯後'),
                             ),
-                            default='after'
                             )
 
     def __str__(self):

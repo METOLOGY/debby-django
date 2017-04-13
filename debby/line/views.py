@@ -66,7 +66,7 @@ def callback(request):
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
-    print(text)
+    # print(text)
 
     input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()

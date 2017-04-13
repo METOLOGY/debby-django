@@ -65,6 +65,10 @@ class BGRecordCallback(DerivedAppCallback):
     def choice(self):
         return self.data.get('choice')
 
+    @property
+    def text(self):
+        return self.data.get('text')
+
 
 class ConsultFoodCallback(DerivedAppCallback):
     app = 'ConsultFood'
