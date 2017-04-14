@@ -1,8 +1,6 @@
 import random
 from urllib.parse import parse_qsl
 
-from django.core.cache import cache
-from hamcrest import *
 from linebot.models import ImageMessage
 from linebot.models import Message
 from linebot.models import SendMessage
@@ -17,16 +15,17 @@ from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
     DrugAskCallback
 from line.models import EventModel
-from user.cache import AppCache, FoodData
+from user.cache import AppCache
 from user.models import CustomUserModel
 
 
 class InputHandler(object):
-    def __init__(self, line_id: str, message: Message):
+    def __init__(self, line_id: str, message: Message = None):
         self.line_id = line_id
         self.current_user = CustomUserModel.objects.get(line_id=line_id)
         self.message = message
         self.text = ''
+        self.image_id = ''
 
     def is_input_a_bg_value(self):
         """
@@ -73,12 +72,12 @@ class InputHandler(object):
         # user type the description after uploading a food image.
         elif app_cache.is_app_running():
             callback = None
-            if type(app_cache.data) is FoodData:
+            if app_cache.app == "FoodRecord":
                 callback = FoodRecordCallback(self.line_id,
-                                              action='UPDATE',
-                                              choice='true',
-                                              text=self.text)
-            elif app_cache.app is "DrugAsk":
+                                              action=app_cache.action,
+                                              text=self.text
+                                              )
+            elif app_cache.app == "DrugAsk":
                 callback = DrugAskCallback(self.line_id,
                                            action=app_cache.action,
                                            text=self.text)
@@ -91,11 +90,28 @@ class InputHandler(object):
             # return bg_manager.reply_does_user_want_to_record()
             return TextSendMessage(text='哎呀，我不太清楚你說了什麼，你可以換句話說嗎 ~ ')
 
+    def handle_image(self, image_id):
+        callback = FoodRecordCallback(self.line_id,
+                                      action="DIRECT_UPLOAD_IMAGE",
+                                      image_id=image_id)
+        return CallbackHandler(callback).handle()
+
+    def handle_postback(self, data):
+        app_cache = AppCache(self.line_id)
+        data_dict = dict(parse_qsl(data))
+        c = Callback(line_id=self.line_id, **data_dict)
+        if c.app == "FoodRecord" and not app_cache.is_app_running():  # not sure if this is a common rule for all apps
+            return None
+        return CallbackHandler(c).handle()
+
     def handle(self):
         # check the input type
         if isinstance(self.message, TextMessage):
             self.text = self.message.text
             return self.find_best_answer_for_text()
+
+        elif isinstance(self.message, ImageMessage):
+            return self.handle_image(self.message.id)
 
 
 class CallbackHandler(object):
@@ -110,9 +126,6 @@ class CallbackHandler(object):
     def is_callback_from_food_record(self):
         return self.callback == FoodRecordCallback and self.callback.action == 'CREATE'
 
-    def setup_for_record_food_image(self, image_content: bytes):
-        self.image_content = image_content
-
     def handle(self) -> SendMessage:
         """
         First convert the input Callback to proper type of Callback, then run the manager.
@@ -122,22 +135,26 @@ class CallbackHandler(object):
             callback = self.callback.convert_to(FoodRecordCallback)
             bg_manager = BGRecordManager(callback)
             return bg_manager.handle()
+
         elif self.callback == FoodRecordCallback:
             callback = self.callback.convert_to(FoodRecordCallback)
-            fr_manager = FoodRecordManager(callback, self.image_content)
+            fr_manager = FoodRecordManager(callback)
             return fr_manager.handle()
+
         elif self.callback == ChatCallback:
             callback = self.callback.convert_to(ChatCallback)
             chat_manager = ChatManager(callback)
-            print(type(chat_manager.handle()))
             return chat_manager.handle()
+
         elif self.callback == ConsultFoodCallback:
             callback = self.callback.convert_to(ConsultFoodCallback)
             cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
+
         elif self.callback == DrugAskCallback:
             callback = self.callback.convert_to(DrugAskCallback)
             da_manager = DrugAskManager(callback)
             return da_manager.handle()
+
         else:
             print('not find corresponding app.')

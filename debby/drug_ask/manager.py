@@ -29,7 +29,7 @@ class DrugAskManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='1.作用機轉和服用方式',
-                        data='app="DrugAsk&action=READ_DRUG_DETAIL&choice=1'
+                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=1'
                     ),
                     PostbackTemplateAction(
                         label='2.不良反應,副作用',
@@ -53,14 +53,14 @@ class DrugAskManager(object):
         app_cache = AppCache(self.callback.line_id, app='DrugAsk')
 
         if self.callback.action == 'READ_FROM_MENU':
-            app_cache.set_action(action="READ")
+            app_cache.set_next_action(action="READ")
             app_cache.commit()
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
         elif self.callback.action == 'READ':
             drug_types = DrugTypeModel.objects.filter(question=self.callback.text)
             if len(drug_types) > 1:
-                app_cache.set_action(action="WAIT_DRUG_TYPE_CHOICE")
+                app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
 
                 data = DrugAskData()
                 data.drug_types = drug_types
