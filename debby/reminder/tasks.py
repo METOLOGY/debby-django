@@ -33,12 +33,14 @@ def periodic_checking_bg_reminder_setting():
                     )
 
                     reminder_task, _ = PeriodicTask.objects.get_or_create(
-                        name=user.line_id + num,
-                        task='line.tasks.record_reminder',
-                        args=json.dumps([user.line_id, reminder.type]),
-                        enable=True
+                        name=user.line_id + '_reminder_' + str(num),
                     )
 
+                    reminder_task.crontab = schedule
+                    reminder_task.task = 'reminder.tasks.record_reminder'
+                    reminder_task.args = json.dumps([user.line_id, reminder.type])
+                    reminder_task.enabled = True
+                    reminder_task.save()
 
 
                 # breakfast_reminder = user.usersettingmodel_set.last().breakfast_reminder # TYPE: datatime.time

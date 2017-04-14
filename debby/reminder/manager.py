@@ -58,7 +58,7 @@ class ReminderManager(object):
         )
 
         line_bot_api = settings.LINE_BOT_API
-        line_bot_api.push_message(line_id, messages=reminder_message)
+        line_bot_api.push_message(to=line_id, messages=reminder_message)
 
 
     def reply_reminder_awaits(self):
