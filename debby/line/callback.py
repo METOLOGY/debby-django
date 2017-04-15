@@ -96,3 +96,7 @@ class ChatCallback(DerivedAppCallback):
     @property
     def text(self) -> str:
         return self.data.get('text')
+
+
+class MyDiaryCallback(DerivedAppCallback):
+    app = 'MyDiary'
