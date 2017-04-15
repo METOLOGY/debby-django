@@ -96,7 +96,7 @@ class DrugAskManager(object):
                     print('Error!')
         elif self.callback.action == "READ_DRUG_DETAIL":
             data = app_cache.data  # type: DrugAskData
-            message = "隔太久啦，再來一次!"
+            message = "偷偷跟你說, Debby忘記你問甚麼了><, 可以重新問我一遍嗎~"
             if data:
                 drug_detail_pk = data.drug_detail_pk
 
