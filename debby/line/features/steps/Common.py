@@ -75,7 +75,7 @@ def step_impl(context, text: str):
     send_message = context.send_message
     assert_that(send_message, instance_of(TextSendMessage))
     message = context.send_message.text
-    assert_that(message, equal_to(text))
+    assert message == text
 
 
 @given('debby回了我 "{text}"')
@@ -110,6 +110,3 @@ def step_impl(context):
     assert_that(context.send_message, instance_of(TextSendMessage))
     message = context.send_message.text
     assert_that(message, is_in(answers))
-
-
-

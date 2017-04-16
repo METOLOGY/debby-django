@@ -53,14 +53,14 @@ class DrugAskManager(object):
         app_cache = AppCache(self.callback.line_id, app='DrugAsk')
 
         if self.callback.action == 'READ_FROM_MENU':
-            app_cache.set_action(action="READ")
+            app_cache.set_next_action(action="READ")
             app_cache.commit()
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
         elif self.callback.action == 'READ':
             drug_types = DrugTypeModel.objects.filter(question=self.callback.text)
             if len(drug_types) > 1:
-                app_cache.set_action(action="WAIT_DRUG_TYPE_CHOICE")
+                app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
 
                 data = DrugAskData()
                 data.drug_types = drug_types
@@ -96,7 +96,7 @@ class DrugAskManager(object):
                     print('Error!')
         elif self.callback.action == "READ_DRUG_DETAIL":
             data = app_cache.data  # type: DrugAskData
-            message = "隔太久啦，再來一次!"
+            message = "偷偷跟你說, Debby忘記你問甚麼了><, 可以重新問我一遍嗎~"
             if data:
                 drug_detail_pk = data.drug_detail_pk
 

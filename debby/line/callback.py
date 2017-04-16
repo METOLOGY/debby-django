@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import Type
 from urllib.parse import urlencode, parse_qsl
 
 
@@ -50,6 +50,10 @@ class FoodRecordCallback(DerivedAppCallback):
     app = 'FoodRecord'
 
     @property
+    def image_id(self) -> str:
+        return self.data.get('image_id')
+
+    @property
     def text(self) -> str:
         return self.data.get('text')
 
@@ -97,6 +101,7 @@ class ChatCallback(DerivedAppCallback):
     def text(self) -> str:
         return self.data.get('text')
 
+
 class ReminderCallback(DerivedAppCallback):
     app = 'Reminder'
 
@@ -107,3 +112,8 @@ class ReminderCallback(DerivedAppCallback):
     @property
     def reminder_id(self) -> str:
         return self.data.get('reminder_id')
+
+
+class MyDiaryCallback(DerivedAppCallback):
+    app = 'MyDiary'
+

@@ -85,12 +85,9 @@ def handle_message(event: MessageEvent):
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
-    print(line_id)
-    c = FoodRecordCallback(line_id, action='CREATE')
-    ch = CallbackHandler(c)
-    image_content = line_bot_api.get_message_content(message_id=event.message.id)
-    ch.setup_for_record_food_image(image_content.content)
-    send_message = ch.handle()
+
+    input_handler = InputHandler(line_id, event.message)
+    send_message = input_handler.handle()
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
@@ -106,21 +103,19 @@ def handle_image(event: MessageEvent):
 @handler.add(PostbackEvent)
 def postback(event: PostbackEvent):
     line_id = event.source.sender_id
-    data = event.postback.data
-    data_dict = dict(parse_qsl(data))
-    c = Callback(line_id=line_id, **data_dict)
-    ch = CallbackHandler(c)
 
-    send_message = ch.handle()
+    input_handler = InputHandler(line_id)
+    send_message = input_handler.handle_postback(event.postback.data)
 
-    # Save to log model.
-    UserLogModel.objects.save_to_log(line_id=line_id, input_text=data, send_message=send_message)
+    if send_message:
+        # Save to log model.
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text=event.postback.data, send_message=send_message)
 
-    # return to Line Server
-    line_bot_api.reply_message(
-        event.reply_token,
-        send_message
-    )
+        # return to Line Server
+        line_bot_api.reply_message(
+            event.reply_token,
+            send_message
+        )
 
 def UserInit(line_id: str):
     if CustomUserModel.objects.filter(line_id=line_id).exists() is False:

@@ -1,9 +1,10 @@
+import warnings
 from abc import ABCMeta
 from enum import Enum, auto
+from typing import TypeVar
 
 from django.core.cache import cache
 from django.db.models import QuerySet
-from typing import TypeVar
 
 
 class AppCache(object):
@@ -27,7 +28,12 @@ class AppCache(object):
     def set_app(self, app: str):
         self.app = app
 
+    def set_next_action(self, action: str = ''):
+        self.action = action
+
     def set_action(self, action: str = ''):
+        warnings.warn("Name changed, use set_next_action instead", DeprecationWarning)
+
         self.action = action
 
     def set_data(self, data: "C"):
@@ -52,6 +58,7 @@ class FoodRecord(App):
     class Action(Enum):
         CREATE = auto()
         CREATE_FROM_MENU = auto()
+        WAIT_FOR_USER_REPLY = auto()
         UPDATE = auto()
 
 
@@ -64,7 +71,8 @@ class DrugAsk(App):
 
 
 class CacheData(metaclass=ABCMeta):
-    pass
+    def setup_data(self, data: "C"):
+        self.__dict__.update(data.__dict__)
 
 
 C = TypeVar("C", bound=CacheData)
@@ -73,6 +81,8 @@ C = TypeVar("C", bound=CacheData)
 class FoodData(CacheData):
     food_record_pk = ''  # type: str
     keep_recording = False  # type: bool
+    extra_info = ''  # type: str
+    image_id = ''  # type: str
 
 
 class DrugAskData(CacheData):
