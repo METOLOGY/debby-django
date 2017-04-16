@@ -78,3 +78,6 @@ class FoodData(CacheData):
 class DrugAskData(CacheData):
     drug_types = None  # type: QuerySet
     drug_detail_pk = ''  # type: str
+
+class BGData(CacheData):
+    text = ''

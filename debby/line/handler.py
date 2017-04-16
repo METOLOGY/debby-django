@@ -29,13 +29,6 @@ class InputHandler(object):
         self.message = message
         self.text = ''
 
-    def is_input_a_bg_value(self):
-        """
-        Check the int input from user is a blood glucose value or not.
-        We defined the blood value is between 20 to 999
-        :return: boolean
-        """
-        return self.text.isdigit() and 20 < int(self.text) < 999
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
@@ -51,28 +44,9 @@ class InputHandler(object):
         app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
 
-
-        # event founded in event model(app, action)
-        if events:
-            event = random.choice(events)
-            print(event.callback, event.action)
-
-            callback = Callback(line_id=self.line_id,
-                                app=event.callback,
-                                action=event.action,
-                                text=self.text)
-            return CallbackHandler(callback).handle()
-
-        # user might input number directly.
-        elif self.is_input_a_bg_value():
-            print(self.text)
-            bg_callback = BGRecordCallback(line_id=self.line_id, action='CREATE', text=self.text)
-            return CallbackHandler(bg_callback).handle()
-
-
-        elif app_cache.is_app_running():
+        if app_cache.is_app_running():
             callback = None
-            print(app_cache.line_id, app_cache.app, app_cache.action)
+            print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
 
             #TODO: unify the judgement
             if type(app_cache.data) is FoodData:
@@ -84,18 +58,29 @@ class InputHandler(object):
                 callback = DrugAskCallback(self.line_id,
                                            action=app_cache.action,
                                            text=self.text)
-            elif app_cache.app is 'BGRecord':
-                if self.is_input_a_bg_value():
-                    callback = BGRecordCallback(self.line_id,
-                                                action=app_cache.action,
-                                                text=self.text)
-                else:
-                    # TODO: here might be occur error. check this later.
-                    callback = BGRecordCallback(self.line_id,
-                                                action=app_cache.action)
+            elif app_cache.app == 'BGRecord':
+                callback = BGRecordCallback(self.line_id,
+                                            action=app_cache.action,
+                                            text=self.text)
 
+            return CallbackHandler(callback).handle()
 
+        # user might input number directly.
+        elif self.text.isdigit():
+            print('user input digit', self.text)
+            bg_callback = BGRecordCallback(line_id=self.line_id, action='CREATE_FROM_VALUE', text=self.text)
 
+            return CallbackHandler(bg_callback).handle()
+
+        # event founded in event model(app, action)
+        elif events:
+            event = random.choice(events)
+            print('Start from event', event.callback, event.action)
+
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
             return CallbackHandler(callback).handle()
 
         # Debby can't understand what user saying.

@@ -28,7 +28,13 @@ class ChatManager(object):
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        if self.callback.action == 'READ':
-            if self.is_input_a_chat(self.callback.text):
-                reply = self.reply_answer()
+
+        print('chat: ', self.callback.text)
+        #TODO: 會有action不是read的情況出現嗎？
+        # if self.callback.action == 'READ':
+        if self.is_input_a_chat(self.callback.text):
+            reply = self.reply_answer()
+        else:
+            reply = TextSendMessage(text='我猜你不是要輸入血糖齁！原本想講個笑話給您聽的，但我不太清楚你說了什麼~')
+
         return reply
