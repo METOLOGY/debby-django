@@ -175,9 +175,11 @@ class BGRecordManager:
             else:
                 self.this_record.type = self.callback.choice
                 self.this_record.save()
-                reply = TextSendMessage(text=self.reply_record_success().text
-                                             + '\n'
-                                             + self.reply_by_check_value(self.this_record.glucose_val).text)
+
+                reply = [self.reply_record_success(), self.reply_by_check_value(self.this_record.glucose_val)]
+                # reply = TextSendMessage(text=self.reply_record_success().text
+                #                              + '\n'
+                #                              + self.reply_by_check_value(self.this_record.glucose_val).text)
 
         # elif self.callback.action == 'CONFIRM_RECORD':
         #     app_cache.set_action('CONFIRM_RECORD')
