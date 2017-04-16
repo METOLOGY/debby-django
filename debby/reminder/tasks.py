@@ -8,15 +8,10 @@ from reminder.manager import ReminderManager
 
 import json
 
-@shared_task
-def record_bg_reminder(line_id):
-    # BGRecordManager.record_reminder(LINE_BOT_API, line_id=line_id)
-    print(line_id)
-
 
 @shared_task
-def record_reminder(line_id: str, reminder_type: str):
-    ReminderManager.reply_reminder(line_id=line_id, type=reminder_type)
+def record_reminder(line_id: str, reminder_id: int):
+    ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
 
 @shared_task
 def periodic_checking_bg_reminder_setting():
@@ -38,7 +33,7 @@ def periodic_checking_bg_reminder_setting():
 
                     reminder_task.crontab = schedule
                     reminder_task.task = 'reminder.tasks.record_reminder'
-                    reminder_task.args = json.dumps([user.line_id, reminder.type])
+                    reminder_task.args = json.dumps([user.line_id, reminder.id])
                     reminder_task.enabled = True
                     reminder_task.save()
 
