@@ -15,7 +15,7 @@ from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from reminder.manager import ReminderManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback, ReminderCallback, MyDiaryManager
+    DrugAskCallback, ReminderCallback, MyDiaryCallback
 
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
