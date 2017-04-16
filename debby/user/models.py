@@ -67,16 +67,9 @@ class UserSettingModel(models.Model):
                             default='mg/dL'
                             )
 
-    breakfast_reminder = models.TimeField(default=datetime.time(9,00))
-    breakfast_reminder_status = models.BooleanField(default=True)
-    lunch_reminder = models.TimeField(default=datetime.time(12,30))
-    lunch_reminder_status = models.BooleanField(default=True)
-    dinner_reminder = models.TimeField(default=datetime.time(7,30))
-    dinner_reminder_status = models.BooleanField(default=True)
-
-    late_reminder = models.TimeField()
-    height = models.FloatField()
-    weight = models.FloatField()
+    late_reminder = models.TimeField(blank=True, null=True)
+    height = models.FloatField(blank=True, null=True)
+    weight = models.FloatField(blank=True, null=True)
 
 
 class UserLogManger(models.Manager):

@@ -70,6 +70,7 @@ BUILD_APPS = [
     'drug_ask.apps.DrugAskConfig',
     'chat.apps.ChatConfig',
     'consult_food.apps.ConsultFoodConfig',
+    'reminder.apps.ReminderConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -165,6 +166,7 @@ CELERY_BROKER_URL = 'amqp://'
 CELERY_RESULT_BACKEND = 'amqp://'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
+CELERY_IGNORE_RESULT = True
 
 MEDIA_ROOT = os.path.join(PROJECT_DIR, 'media')
 

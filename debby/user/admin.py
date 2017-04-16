@@ -21,17 +21,17 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 @admin.register(UserSettingModel)
 class UserSettingsAdmin(admin.ModelAdmin):
-    list_display = ('user', 'unit', 'breakfast_reminder', 'lunch_reminder', 'dinner_reminder')
+    list_display = ('user', 'unit', )
     fieldsets = (
         ('基本資料', {'fields': ('user','height', 'weight')}),
         ('血糖單位', {'fields': ('unit',)}),
-        ('早餐血糖紀錄提醒', {'fields': ('breakfast_reminder_status', 'breakfast_reminder')}),
-        ('午餐血糖紀錄提醒', {'fields': ('lunch_reminder_status', 'lunch_reminder')}),
-        ('晚餐血糖紀錄提醒', {'fields': ('dinner_reminder_status', 'dinner_reminder')}),
-        ('延後提醒時間', {'fields': ('late_reminder',)}),
+        # ('早餐血糖紀錄提醒', {'fields': ('breakfast_reminder_status', 'breakfast_reminder')}),
+        # ('午餐血糖紀錄提醒', {'fields': ('lunch_reminder_status', 'lunch_reminder')}),
+        # ('晚餐血糖紀錄提醒', {'fields': ('dinner_reminder_status', 'dinner_reminder')}),
+        # ('延後提醒時間', {'fields': ('late_reminder',)}),
     )
 
-    readonly_fields = ('user', )
+    # readonly_fields = ('user', )
 
 @admin.register(UserLogModel)
 class UserLogAdmin(admin.ModelAdmin):

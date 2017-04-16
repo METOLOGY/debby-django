@@ -65,22 +65,45 @@ class BGRecordCallback(DerivedAppCallback):
     def choice(self):
         return self.data.get('choice')
 
-
-class ConsultFoodCallback(DerivedAppCallback):
-    app = 'ConsultFood'
-
     @property
     def text(self):
         return self.data.get('text')
 
 
-class DrugQueryCallback(DerivedAppCallback):
-    app = 'DrugQuery'
+class ConsultFoodCallback(DerivedAppCallback):
+    app = 'ConsultFood'
+
+    @property
+    def text(self) -> str:
+        return self.data.get('text')
+
+
+class DrugAskCallback(DerivedAppCallback):
+    app = 'DrugAsk'
+
+    @property
+    def text(self) -> str:
+        return self.data.get('text')
+
+    @property
+    def choice(self) -> str:
+        return self.data.get('choice')
 
 
 class ChatCallback(DerivedAppCallback):
     app = 'Chat'
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.data.get('text')
+
+class ReminderCallback(DerivedAppCallback):
+    app = 'Reminder'
+
+    @property
+    def choice(self) -> str:
+        return self.data.get('choice')
+
+    @property
+    def reminder_id(self) -> str:
+        return self.data.get('reminder_id')

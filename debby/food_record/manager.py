@@ -1,15 +1,12 @@
 from io import BytesIO
 
-from django.core.cache import cache
 from django.core.files import File
-from linebot.models import ConfirmTemplate
-from linebot.models import PostbackTemplateAction
 from linebot.models import SendMessage
-from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
 from food_record.models import FoodModel
 from line.callback import FoodRecordCallback
+from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
 
@@ -50,46 +47,42 @@ class FoodRecordManager:
             food_record.note = text
         food_record.save()
 
-    def delete_cache(self):
-        user_cache = cache.get(self.callback.line_id)
-        if user_cache:
-            cache.delete(self.callback.line_id)
-
-    def let_cache_record(self, key: str, value, time: int = 60):
-        """
-        Keep status in cache, identify user by line_id
-        :param key: key in cache, must in str
-        :param value: value in cache
-        :param time: hold the cache in x seconds.
-        :return: None
-        """
-        user_cache = cache.get(self.callback.line_id)
-        if not user_cache:
-            user_cache = {key: value}
-        else:
-            user_cache[key] = value
-        cache.set(self.callback.line_id, user_cache, time)
-
     def handle(self) -> SendMessage:
+        reply = TextSendMessage(text='ERROR!')
+        app_cache = AppCache(self.callback.line_id, app="FoodRecord")
         if self.callback.action == 'CREATE':
+            app_cache.set_action(action="CREATE")
+
             current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-            food_record_pk = self.record_image(current_user, self.image_content)
-            self.let_cache_record(key='food_record_pk', value=food_record_pk, time=120)
+            data = FoodData()
+            data.food_record_pk = self.record_image(current_user, self.image_content)
+
+            app_cache.save_data(data=data)
             print('in\n')
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+
+        elif self.callback.action == 'CREATE_FROM_MENU':
+            reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字: ')
 
         elif self.callback.action == 'UPDATE':
-            user_cache = cache.get(self.callback.line_id)
-            if user_cache:
-                if 'food_record_pk' in user_cache.keys():
+            if app_cache.is_app_running():
+                data = app_cache.data  # type: FoodData
+                if data.food_record_pk:
                     if self.callback.text.upper() != 'N':
-                        self.record_extra_info(user_cache['food_record_pk'], self.callback.text)
-                        self.let_cache_record(key='KEEP_RECORDING', value=True, time=60)
+                        self.record_extra_info(data.food_record_pk, self.callback.text)
+
+                        # save to cache
+                        data.keep_recording = True
+                        app_cache.set_data(data)
+                        app_cache.commit()
+
                         message = self.reply_keep_recording()
                     else:
                         message = self.reply_record_success()
-                        self.delete_cache()
-                    return message
+                        app_cache.delete()
+                    reply = message
 
         elif self.callback.action == 'write_detail_notes':
-            return self.reply_to_record_detail_template()
+            reply = self.reply_to_record_detail_template()
+
+        return reply

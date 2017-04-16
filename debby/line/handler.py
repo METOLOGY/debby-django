@@ -12,9 +12,13 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
+from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
-from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback
+from reminder.manager import ReminderManager
+from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
+    DrugAskCallback, ReminderCallback
 from line.models import EventModel
+from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
 
@@ -25,31 +29,53 @@ class InputHandler(object):
         self.message = message
         self.text = ''
 
-    def is_input_a_bg_value(self):
-        """
-        Check the int input from user is a blood glucose value or not.
-        We defined the blood value is between 20 to 999
-        :return: boolean
-        """
-        return self.text.isdigit() and 20 < int(self.text) < 999
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
         Mainly response for replying.
+        There will be four conditions:
+        1. input text is founded in database (ex: chat conversation)
+        2. input is digits, which is might be blood glucose value
+        3. continuous conversation, the cache record which app is currently used.
+        4. input that debby can not recognized.
+
         :return: SendMessage
         """
-        user_cache = cache.get(self.line_id)
+        app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
 
-        # managers
-        bg_manager = BGRecordManager(BGRecordCallback(line_id=self.line_id, text=self.text))
-        # chat_manager = ChatManager(callback_url)
-        # food_manager = FoodRecordManager(callback_url)
+        if app_cache.is_app_running():
+            callback = None
+            print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
+
+            #TODO: unify the judgement
+            if type(app_cache.data) is FoodData:
+                callback = FoodRecordCallback(self.line_id,
+                                              action='UPDATE',
+                                              choice='true',
+                                              text=self.text)
+            elif app_cache.app is 'DrugAsk':
+                callback = DrugAskCallback(self.line_id,
+                                           action=app_cache.action,
+                                           text=self.text)
+            elif app_cache.app == 'BGRecord':
+                callback = BGRecordCallback(self.line_id,
+                                            action=app_cache.action,
+                                            text=self.text)
+
+            return CallbackHandler(callback).handle()
+
+        # user might input number directly.
+        elif self.text.isdigit():
+            print('user input digit', self.text)
+            bg_callback = BGRecordCallback(line_id=self.line_id, action='CREATE_FROM_VALUE', text=self.text)
+
+            return CallbackHandler(bg_callback).handle()
 
         # event founded in event model(app, action)
-        if events:
+        elif events:
             event = random.choice(events)
-            print(event.callback, event.action)
+            print('Start from event', event.callback, event.action)
 
             callback = Callback(line_id=self.line_id,
                                 app=event.callback,
@@ -57,32 +83,11 @@ class InputHandler(object):
                                 text=self.text)
             return CallbackHandler(callback).handle()
 
-        # user might input number directly.
-        elif self.is_input_a_bg_value():
-            bg_manager.record_bg_record(self.current_user, int(self.text))
-            text1 = bg_manager.reply_record_success()
-            text2 = bg_manager.reply_by_check_value(self.text)
-            text1.text += " " + text2.text
-            return text1
-        # elif chat_manager.is_input_a_chat(self.text):
-        #     return chat_manager.reply_answer()
-
-        # user type the description after uploading a food image.
-        elif user_cache and 'food_record_pk' in user_cache.keys():
-            callback = FoodRecordCallback(self.line_id,
-                                          action='UPDATE',
-                                          choice='true',
-                                          text=self.text)
-            return CallbackHandler(callback).handle()
-
         # Debby can't understand what user saying.
         else:
-            # here should response something like: "哎呀，我有點笨，你可以換句話說嗎 (bittersmile)(bittersmile)(bittersmile)"
-            # return bg_manager.reply_does_user_want_to_record()
             return TextSendMessage(text='哎呀，我不太清楚你說了什麼，你可以換句話說嗎 ~ ')
 
     def handle(self):
-        # check the input type
         if isinstance(self.message, TextMessage):
             self.text = self.message.text
             return self.find_best_answer_for_text()
@@ -107,23 +112,36 @@ class CallbackHandler(object):
         """
         First convert the input Callback to proper type of Callback, then run the manager.
         """
-        print("{}, {}\n".format(self.callback.app, self.callback.action))
+
         if self.callback == BGRecordCallback:
-            callback = self.callback.convert_to(FoodRecordCallback)
+            callback = self.callback.convert_to(BGRecordCallback)
             bg_manager = BGRecordManager(callback)
             return bg_manager.handle()
+
         elif self.callback == FoodRecordCallback:
             callback = self.callback.convert_to(FoodRecordCallback)
             fr_manager = FoodRecordManager(callback, self.image_content)
             return fr_manager.handle()
+
         elif self.callback == ChatCallback:
             callback = self.callback.convert_to(ChatCallback)
             chat_manager = ChatManager(callback)
-            print(type(chat_manager.handle()))
             return chat_manager.handle()
+
         elif self.callback == ConsultFoodCallback:
             callback = self.callback.convert_to(ConsultFoodCallback)
             cf_manager = ConsultFoodManager(callback)
             return cf_manager.handle()
+
+        elif self.callback == DrugAskCallback:
+            callback = self.callback.convert_to(DrugAskCallback)
+            da_manager = DrugAskManager(callback)
+            return da_manager.handle()
+
+        elif self.callback == ReminderCallback:
+            callback = self.callback.convert_to(ReminderCallback)
+            da_manager = ReminderManager(callback)
+            return da_manager.handle()
+
         else:
-            print('not find corresponding app.')
+            print('not find corresponding apps or callbacks.')
