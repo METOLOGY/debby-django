@@ -16,11 +16,13 @@ class ConsultFoodManager(object):
         metabolic_carbohydrates = food.metabolic_carbohydrates
         carbohydrates_equivalent = food.carbohydrates_equivalent
         white_rice_equivalent = food.white_rice_equivalent
-        message = "每100克{}含有: 熱量{}大卡，含可代謝醣類{}克，等於{}份醣類，也代表吃了{}碗白飯".format(sample_name,
-                                                                          modified_calorie,
-                                                                          metabolic_carbohydrates,
-                                                                          carbohydrates_equivalent,
-                                                                          white_rice_equivalent)
+        message = "每100克{}含有: 熱量{}大卡，含可代謝醣類{:.2f}克，等於{:.2f}份醣類，也代表吃了{:.2f}碗白飯".format(
+            sample_name,
+            modified_calorie,
+            metabolic_carbohydrates,
+            carbohydrates_equivalent,
+            white_rice_equivalent
+        )
         return TextSendMessage(text=message)
 
     def handle(self) -> SendMessage:
