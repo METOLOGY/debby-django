@@ -1,4 +1,5 @@
 import random
+from typing import Union
 from urllib.parse import parse_qsl
 
 from linebot.models import ImageMessage
@@ -13,8 +14,9 @@ from consult_food.manager import ConsultFoodManager
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback
+    DrugAskCallback, MyDiaryCallback
 from line.models import EventModel
+from my_diary.manager import MyDiaryManager
 from user.cache import AppCache
 from user.models import CustomUserModel
 
@@ -57,7 +59,11 @@ class InputHandler(object):
                                 app=event.callback,
                                 action=event.action,
                                 text=self.text)
-            return CallbackHandler(callback).handle()
+            send_message = CallbackHandler(callback).handle()
+            if send_message:
+                return send_message
+            else:
+                return TextSendMessage(text='哀呀, Debby ><')
 
         # user might input number directly.
         elif self.is_input_a_bg_value():
@@ -88,7 +94,7 @@ class InputHandler(object):
         else:
             # here should response something like: "哎呀，我有點笨，你可以換句話說嗎 (bittersmile)(bittersmile)(bittersmile)"
             # return bg_manager.reply_does_user_want_to_record()
-            return TextSendMessage(text='哎呀，我不太清楚你說了什麼，你可以換句話說嗎 ~ ')
+            return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
 
     def handle_image(self, image_id):
         callback = FoodRecordCallback(self.line_id,
@@ -120,41 +126,36 @@ class CallbackHandler(object):
     """
     image_content = bytes()
 
+    class App(object):
+        def __init__(self, manager, callback):
+            self.manager = manager
+            self.callback = callback
+
     def __init__(self, callback: Callback):
         self.callback = callback
+        self.registered_app = [
+            self.App(BGRecordManager, BGRecordCallback),
+            self.App(ChatManager, ChatCallback),
+            self.App(ConsultFoodManager, ConsultFoodCallback),
+            self.App(DrugAskManager, DrugAskCallback),
+            self.App(FoodRecordManager, FoodRecordCallback),
+            self.App(MyDiaryManager, MyDiaryCallback),
+        ]
 
     def is_callback_from_food_record(self):
         return self.callback == FoodRecordCallback and self.callback.action == 'CREATE'
 
-    def handle(self) -> SendMessage:
+    def handle(self) -> Union[SendMessage, None]:
         """
         First convert the input Callback to proper type of Callback, then run the manager.
         """
         print("{}, {}\n".format(self.callback.app, self.callback.action))
-        if self.callback == BGRecordCallback:
-            callback = self.callback.convert_to(FoodRecordCallback)
-            bg_manager = BGRecordManager(callback)
-            return bg_manager.handle()
 
-        elif self.callback == FoodRecordCallback:
-            callback = self.callback.convert_to(FoodRecordCallback)
-            fr_manager = FoodRecordManager(callback)
-            return fr_manager.handle()
-
-        elif self.callback == ChatCallback:
-            callback = self.callback.convert_to(ChatCallback)
-            chat_manager = ChatManager(callback)
-            return chat_manager.handle()
-
-        elif self.callback == ConsultFoodCallback:
-            callback = self.callback.convert_to(ConsultFoodCallback)
-            cf_manager = ConsultFoodManager(callback)
-            return cf_manager.handle()
-
-        elif self.callback == DrugAskCallback:
-            callback = self.callback.convert_to(DrugAskCallback)
-            da_manager = DrugAskManager(callback)
-            return da_manager.handle()
-
+        for app in self.registered_app:
+            if self.callback == app.callback:
+                callback = self.callback.convert_to(app.callback)
+                manager = app.manager(callback)
+                return manager.handle()
         else:
             print('not find corresponding app.')
+            return None
