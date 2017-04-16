@@ -14,8 +14,9 @@ from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
+from reminder.manager import ReminderManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback
+    DrugAskCallback, ReminderCallback
 from line.models import EventModel
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
@@ -151,5 +152,11 @@ class CallbackHandler(object):
             callback = self.callback.convert_to(DrugAskCallback)
             da_manager = DrugAskManager(callback)
             return da_manager.handle()
+
+        elif self.callback == ReminderCallback:
+            callback = self.callback.convert_to(ReminderCallback)
+            da_manager = ReminderManager(callback)
+            return da_manager.handle()
+
         else:
-            print('not find corresponding app.')
+            print('not find corresponding apps or callbacks.')

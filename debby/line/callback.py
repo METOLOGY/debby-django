@@ -103,3 +103,7 @@ class ReminderCallback(DerivedAppCallback):
     @property
     def choice(self) -> str:
         return self.data.get('choice')
+
+    @property
+    def reminder_id(self) -> str:
+        return self.data.get('reminder_id')
