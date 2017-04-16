@@ -155,7 +155,7 @@ class CallbackHandler(object):
             if self.callback == app.callback:
                 callback = self.callback.convert_to(app.callback)
                 manager = app.manager(callback)
-                return manager.handle
+                return manager.handle()
         else:
             print('not find corresponding app.')
             return None
