@@ -80,4 +80,7 @@ class DrugAskData(CacheData):
     drug_detail_pk = ''  # type: str
 
 class BGData(CacheData):
-    text = ''
+    text = ''  # type: str
+
+class ReminderData(CacheData):
+    reminder_id = 0 #type: int

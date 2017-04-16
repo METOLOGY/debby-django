@@ -5,7 +5,10 @@ from linebot.models import SendMessage, TextSendMessage, ButtonsTemplate, Postba
 from user.cache import AppCache
 from django_celery_beat.models import PeriodicTask
 from reminder.models import UserReminder
-from user.models import CustomUserModel
+
+from line.callback import BGRecordCallback
+from bg_record.manager import BGRecordManager
+from user.cache import ReminderData
 
 
 class ReminderManager(object):
@@ -39,7 +42,7 @@ class ReminderManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='好的',
-                        data='app=BGRecord&action=CREATE_FROM_MENU',
+                        data='app=Reminder&action=REPLY_REMINDER&choice=1&reminder_id={}'.format(reminder.id),
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
@@ -64,9 +67,11 @@ class ReminderManager(object):
             TextSendMessage(text='您可至"我的設定"中調整提醒時間')
             ]
 
-    def reply_next_reminder(self, reminder: UserReminder):
+    @staticmethod
+    def reply_next_reminder(reminder: UserReminder):
         type_zh = ''
         time = reminder.time
+        type = reminder.type
         if type == 'bg':
             type_zh = '血糖'
         elif type == 'insulin':
@@ -86,8 +91,8 @@ class ReminderManager(object):
             TextSendMessage(text='您可至"我的設定"中調整提醒時間')
             ]
 
-
-    def find_next_reminder(self, reminder: UserReminder):
+    @staticmethod
+    def find_next_reminder(reminder: UserReminder):
         reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
         time = []
         for re in reminders:
@@ -107,7 +112,19 @@ class ReminderManager(object):
         print(self.callback.action, self.callback.choice, self.callback.reminder_id)
         if self.callback.action == 'REPLY_REMINDER':
             choice = int(self.callback.choice)
-            if choice == 2:
+            if choice == 1:
+                data = ReminderData()
+                data.reminder_id = self.callback.reminder_id
+                app_cache.data = data
+                app_cache.commit()
+
+                _callback = BGRecordCallback(line_id=self.callback.line_id,action='CREATE_FROM_MENU', text='血糖紀錄')
+
+                print(_callback.text, _callback.app, _callback.action)
+                reply = BGRecordManager(_callback).handle()
+
+
+            elif choice == 2:
                 reminder = UserReminder.objects.get(id=self.callback.reminder_id)
                 next_reminder = self.find_next_reminder(reminder)
                 if next_reminder != None:
@@ -123,5 +140,6 @@ class ReminderManager(object):
                 reply = self.reply_reminder_awaits()
             else:
                 print(self.callback.choice)
+
 
         return reply
