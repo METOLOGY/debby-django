@@ -104,8 +104,6 @@ class InputHandler(object):
         app_cache = AppCache(self.line_id)
         data_dict = dict(parse_qsl(data))
         c = Callback(line_id=self.line_id, **data_dict)
-        if c.app == "FoodRecord" and not app_cache.is_app_running():  # not sure if this is a common rule for all apps
-            return None
         return CallbackHandler(c).handle()
 
     def handle(self):
