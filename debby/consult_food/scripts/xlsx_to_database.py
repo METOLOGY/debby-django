@@ -2,7 +2,7 @@ import openpyxl
 from consult_food.models import ConsultFoodModel
 from line.models import EventModel
 
-wb = openpyxl.load_workbook("./chat_table/FoodQuery_database.xlsx", data_only=True)
+wb = openpyxl.load_workbook("./consult_food/scripts/FoodQuery_database.xlsx", data_only=True)
 ws = wb.active
 food = {
     'sample_name': '',

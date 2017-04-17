@@ -2,7 +2,7 @@ from openpyxl import load_workbook
 from chat.models import ChatModel
 from line.models import EventModel
 
-wb2 = load_workbook('../chat_table/Chatbot Database.xlsx')  # path to .xlsx
+wb2 = load_workbook('./chat/scripts/chat_database_v1.xlsx')  # path to .xlsx
 chat_table = wb2['問候']  # sheet name
 
 for num, line in enumerate(chat_table.iter_rows()):
