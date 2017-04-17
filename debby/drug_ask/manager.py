@@ -20,8 +20,8 @@ class DrugAskManager(object):
         return TextSendMessage(text=message + choice_texts)
 
     @staticmethod
-    def reply_want_which_content(drug_detail: DrugDetailModel) -> TemplateSendMessage:
-        message = drug_detail.type + "\n" + "請問您要查詢什麼項目呢?"
+    def reply_want_which_content(drug_detail: DrugDetailModel, answer: str) -> TemplateSendMessage:
+        message = answer + "\n" + "請問您要查詢什麼項目呢?"
         reply = TemplateSendMessage(
             alt_text=message,
             template=ButtonsTemplate(
@@ -62,11 +62,22 @@ class DrugAskManager(object):
             if len(drug_types) > 1:
                 app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
 
+                choice_texts = ""
+                i = 1
+                for drug_type in drug_types:  # type: DrugTypeModel
+                    if len(drug_types) != i:
+                        choice_texts += str(i) + ". " + drug_type.user_choice + "\n"
+                    else:
+                        choice_texts += str(i) + ". " + drug_type.user_choice
+                    i += 1
+                message = "請選擇符合的項目:\n"
+
                 data = DrugAskData()
                 data.drug_types = drug_types
+                app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
                 app_cache.save_data(data)
 
-                reply = self.reply_choose_one(drug_types)
+                reply = TextSendMessage(text=message + choice_texts)
             elif len(drug_types) == 1:
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
@@ -78,20 +89,23 @@ class DrugAskManager(object):
             else:
                 reply = TextSendMessage(text="ERROR!")
         elif self.callback.action == 'WAIT_DRUG_TYPE_CHOICE':
-            if not self.callback.text.isdigit():
+            data = DrugAskData()
+            data.setup_data(app_cache.data)
+            if not self.callback.text.isdigit() or int(self.callback.text) > len(data.drug_types):
                 reply = TextSendMessage(text="請輸入選項中的數字喔~")
             else:
                 if app_cache.is_app_running():
-                    data = app_cache.data  # type: DrugAskData
                     drug_types = data.drug_types
 
-                    drug_type = drug_types.get(user_choice__startswith=self.callback.text)  # type: DrugTypeModel
+                    drug_type = drug_types[int(self.callback.text) - 1]  # type: DrugTypeModel
                     drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
+
+                    answer = drug_type.answer
 
                     data = DrugAskData()
                     data.drug_detail_pk = drug_detail.pk
                     app_cache.save_data(data)
-                    reply = self.reply_want_which_content(drug_detail)
+                    reply = self.reply_want_which_content(drug_detail, answer)
                 else:
                     print('Error!')
         elif self.callback.action == "READ_DRUG_DETAIL":
