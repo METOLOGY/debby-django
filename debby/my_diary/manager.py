@@ -10,10 +10,11 @@ class MyDiaryManager(object):
     def __init__(self, callback: MyDiaryCallback):
         self.callback = callback
 
-    @property
+
     def handle(self):
         reply = TextSendMessage(text="ERROR!")
         app_cache = AppCache(self.callback.line_id, app=self.callback.app)
+
         if self.callback.action == "START":
             app_cache.commit()
             reply = TemplateSendMessage(

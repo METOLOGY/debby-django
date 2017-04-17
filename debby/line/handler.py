@@ -46,8 +46,23 @@ class InputHandler(object):
         app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
 
+        # event founded in event model(app, action)
+        if events:
+            event = random.choice(events)
+            print(event.callback, event.action)
 
-        if app_cache.is_app_running():
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
+            send_message = CallbackHandler(callback).handle()
+            if send_message:
+                return send_message
+            else:
+                return TextSendMessage(text='哀呀, Debby ><')
+
+
+        elif app_cache.is_app_running():
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
             callback = None
             if app_cache.app == "FoodRecord":
@@ -73,20 +88,7 @@ class InputHandler(object):
 
             return CallbackHandler(bg_callback).handle()
 
-        # event founded in event model(app, action)
-        elif events:
-            event = random.choice(events)
-            print(event.callback, event.action)
 
-            callback = Callback(line_id=self.line_id,
-                                app=event.callback,
-                                action=event.action,
-                                text=self.text)
-            send_message = CallbackHandler(callback).handle()
-            if send_message:
-                return send_message
-            else:
-                return TextSendMessage(text='哀呀, Debby ><')
 
         # Debby can't understand what user saying.
         else:

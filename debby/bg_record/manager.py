@@ -187,43 +187,44 @@ class BGRecordManager:
                     self.reply_by_check_value(self.this_record.glucose_val)
                     ]
 
-                if app_cache.data.reminder_id:
-                    id = app_cache.data.reminder_id
+                try:
+                    if app_cache.data.reminder_id:
+                        id = app_cache.data.reminder_id
 
-                    # repeated code here
-                    # TODO: figure out solutions for app communication without looping import.
-                    reminder = UserReminder.objects.get(id=id)
-                    reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
-                    time = []
-                    for re in reminders:
-                        time.append(re.time)
-                    time = sorted(time)
-                    index = time.index(reminder.time)
-                    try:
-                        next_reminder = UserReminder.objects.get(user=reminder.user, type=reminder.type, time=time[index + 1])
-                    except:
-                        next_reminder = None
+                        # repeated code here
+                        # TODO: figure out solutions for app communication without looping import.
+                        reminder = UserReminder.objects.get(id=id)
+                        reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
+                        time = []
+                        for re in reminders:
+                            time.append(re.time)
+                        time = sorted(time)
+                        index = time.index(reminder.time)
+                        try:
+                            next_reminder = UserReminder.objects.get(user=reminder.user, type=reminder.type, time=time[index + 1])
+                        except:
+                            next_reminder = None
 
-                    type = reminder.type
-                    if type == 'bg':
-                        type_zh = '血糖'
-                    elif type == 'insulin':
-                        type_zh = '胰島素'
-                    elif type == 'drug':
-                        type_zh = '藥物'
+                        type = reminder.type
+                        if type == 'bg':
+                            type_zh = '血糖'
+                        elif type == 'insulin':
+                            type_zh = '胰島素'
+                        elif type == 'drug':
+                            type_zh = '藥物'
 
-                    if next_reminder != None:
-                        reply = reply_common + [
-                            TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
-                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                        ]
-                    else:
-                        reply = reply_common + [
-                            TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
-                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                        ]
-
-
+                        if next_reminder != None:
+                            reply = reply_common + [
+                                TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
+                                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+                            ]
+                        else:
+                            reply = reply_common + [
+                                TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
+                                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+                            ]
+                except:
+                    reply = reply_common
 
                         # clear cache
             app_cache.delete()
