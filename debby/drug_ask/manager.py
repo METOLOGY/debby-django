@@ -117,13 +117,13 @@ class DrugAskManager(object):
                 drug_detail = DrugDetailModel.objects.get(pk=drug_detail_pk)
                 message = "Error!"
                 if self.callback.choice == "1":
-                    message = "1.作用機轉和服用方式\n" + drug_detail.mechanism
+                    message = "(1) 作用機轉和服用方式\n" + drug_detail.mechanism
                 elif self.callback.choice == "2":
-                    message = "2.不良反應,副作用\n" + drug_detail.side_effect
+                    message = "(2) 不良反應,副作用\n" + drug_detail.side_effect
                 elif self.callback.choice == "3":
-                    message = "3.禁忌\n" + drug_detail.taboo
+                    message = "(3) 禁忌\n" + drug_detail.taboo
                 elif self.callback.choice == "4":
-                    message = "4.注意事項\n" + drug_detail.awareness
+                    message = "(4) 注意事項\n" + drug_detail.awareness
 
             reply = TextSendMessage(text=message)
 
