@@ -90,6 +90,8 @@ class FoodRecordManager(object):
             reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
 
             app_cache.set_next_action(action="WAIT_FOR_USER_REPLY")
+            data = FoodData()
+            app_cache.data = data
             app_cache.commit()
 
         elif self.callback.action == "WAIT_FOR_USER_REPLY":
@@ -126,8 +128,14 @@ class FoodRecordManager(object):
             print("CREATE")
             data = FoodData()
             data.setup_data(app_cache.data)
-            image_content = self.image_reader.load_image(data.image_id)
-            food_record_pk = self.record_image(image_content, data.extra_info)
+            try:
+                image_content = self.image_reader.load_image(data.image_id)
+                food_record_pk = self.record_image(image_content, data.extra_info)
+            except:
+                print('no image')
+
+            print(food_record_pk)
+
             if food_record_pk:
                 app_cache.delete()
                 reply = TextSendMessage(text="紀錄成功!")

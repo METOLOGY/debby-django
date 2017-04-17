@@ -59,7 +59,7 @@ class InputHandler(object):
             if send_message:
                 return send_message
             else:
-                return TextSendMessage(text='哀呀, Debby ><')
+                return TextSendMessage(text='哀呀, Debby 犯傻了><')
 
 
         elif app_cache.is_app_running():

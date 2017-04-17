@@ -26,7 +26,7 @@ class ConsultFoodManager(object):
         return TextSendMessage(text=message)
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='你說的是什麼食物呀，雖然我沒聽過，但感覺好像很好吃!')
         if self.callback.action == 'READ_FROM_MENU':
             reply = TextSendMessage(text="請輸入食品名稱:")
         else:
