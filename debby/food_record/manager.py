@@ -52,7 +52,7 @@ class FoodRecordManager(object):
     @staticmethod
     def handle_final_check_before_save(data: FoodData) -> List[SendMessage]:
 
-        time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
 
         text_send_message = TextSendMessage(text=message)
@@ -128,13 +128,9 @@ class FoodRecordManager(object):
             print("CREATE")
             data = FoodData()
             data.setup_data(app_cache.data)
-            try:
-                image_content = self.image_reader.load_image(data.image_id)
-                food_record_pk = self.record_image(image_content, data.extra_info)
-            except:
-                print('no image')
 
-            print(food_record_pk)
+            image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+            food_record_pk = self.record_image(image_content, data.extra_info)
 
             if food_record_pk:
                 app_cache.delete()
