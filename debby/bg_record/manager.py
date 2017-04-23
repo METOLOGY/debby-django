@@ -130,7 +130,7 @@ class BGRecordManager:
         self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
         if self.callback.action == 'CREATE_FROM_MENU':
-            app_cache.set_action('CREATE_FROM_MENU')
+            app_cache.set_next_action('CREATE_FROM_MENU')
             app_cache.commit()
             print(self.callback.text.isdigit())
             if self.callback.text.isdigit() and self.is_input_a_bg_value():
@@ -150,7 +150,7 @@ class BGRecordManager:
 
 
         elif self.callback.action == 'CREATE_FROM_VALUE':
-            app_cache.set_action('CREATE_FROM_VALUE')
+            app_cache.set_next_action('CREATE_FROM_VALUE')
             data = BGData()
             data.text = self.callback.text
             app_cache.data = data
@@ -185,7 +185,7 @@ class BGRecordManager:
                 reply_common = [
                     self.reply_record_success(),
                     self.reply_by_check_value(self.this_record.glucose_val)
-                    ]
+                ]
 
                 try:
                     if app_cache.data.reminder_id:
