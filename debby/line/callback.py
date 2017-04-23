@@ -117,3 +117,5 @@ class ReminderCallback(DerivedAppCallback):
 class MyDiaryCallback(DerivedAppCallback):
     app = 'MyDiary'
 
+class UserSettingsCallback(DerivedAppCallback):
+    app = 'UserSetting'
