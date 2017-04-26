@@ -37,7 +37,7 @@ class BGRecordManager:
                                           choice='after').url
                 ),
                 PostbackTemplateAction(
-                    label='取消紀錄',
+                    label='取消記錄',
                     data=BGRecordCallback(line_id=line_id,
                                           action='SET_TYPE',
                                           choice='cancel').url
