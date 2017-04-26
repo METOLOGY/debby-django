@@ -30,7 +30,7 @@ class ChatManager(object):
         reply = TextSendMessage(text='ERROR!')
 
         print('chat: ', self.callback.text)
-        #TODO: 會有action不是read的情況出現嗎？
+        # TODO: 會有action不是read的情況出現嗎？
         # if self.callback.action == 'READ':
         if self.is_input_a_chat(self.callback.text):
             reply = self.reply_answer()

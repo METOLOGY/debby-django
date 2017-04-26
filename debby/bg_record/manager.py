@@ -1,22 +1,21 @@
-from linebot.models import ConfirmTemplate, ButtonsTemplate
+from linebot.models import ButtonsTemplate
 from linebot.models import PostbackTemplateAction
 from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
 
-from line.callback import BGRecordCallback
-from .models import BGModel
-from user.models import CustomUserModel
-from user.cache import AppCache
-
 from chat.manager import ChatManager
+from line.callback import BGRecordCallback
 from line.callback import ChatCallback
-from user.cache import BGData
-
+from line.constant import BGRecordAction as Action, App
 from reminder.models import UserReminder
+from user.cache import AppCache
+from user.cache import BGData
+from user.models import CustomUserModel
+from .models import BGModel
+
 
 class BGRecordManager:
-    line_id = ''
     this_record = BGModel()
 
     meal_type_message = TemplateSendMessage(
@@ -26,20 +25,17 @@ class BGRecordManager:
             actions=[
                 PostbackTemplateAction(
                     label='餐前',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='SET_TYPE',
+                    data=BGRecordCallback(action=Action.SET_TYPE,
                                           choice='before').url
                 ),
                 PostbackTemplateAction(
                     label='飯後',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='SET_TYPE',
+                    data=BGRecordCallback(action=Action.SET_TYPE,
                                           choice='after').url
                 ),
                 PostbackTemplateAction(
                     label='取消紀錄',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='SET_TYPE',
+                    data=BGRecordCallback(action=Action.SET_TYPE,
                                           choice='cancel').url
                 ),
             ]
@@ -53,14 +49,12 @@ class BGRecordManager:
             actions=[
                 PostbackTemplateAction(
                     label='好啊',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='CONFIRM_RECORD',
+                    data=BGRecordCallback(action=Action.CONFIRM_RECORD,
                                           choice='yes').url
                 ),
                 PostbackTemplateAction(
                     label='等等再說',
-                    data=BGRecordCallback(line_id=line_id,
-                                          action='CONFIRM_RECORD',
+                    data=BGRecordCallback(action=Action.CONFIRM_RECORD,
                                           choice='no').url
                 )
             ]
@@ -86,11 +80,12 @@ class BGRecordManager:
         """
         return self.callback.text.isdigit() and 20 < int(self.callback.text) < 999
 
-    def reply_bg_range_not_right(self):
+    @staticmethod
+    def reply_bg_range_not_right():
         return TextSendMessage(text='您輸入的血糖範圍好像怪怪的，請確認血糖範圍在20 ~ 999之間～')
 
-    def reply_by_check_value(self, text: str) -> TextSendMessage:
-        value = float(text)
+    def reply_by_check_value(self, value: int) -> TextSendMessage:
+        value = float(value)
         ind = 0
         for ind, r in enumerate(self.ranges):
             if value <= r:
@@ -103,10 +98,11 @@ class BGRecordManager:
     # def reply_reminder(self) -> TemplateSendMessage:
     #     return self.reminder_message
 
-    def reply_record_type(self) -> TextSendMessage:
+    def reply_record_type(self) -> TemplateSendMessage:
         return self.meal_type_message
 
-    def reply_record_success(self) -> TextSendMessage:
+    @staticmethod
+    def reply_record_success() -> TextSendMessage:
         return TextSendMessage(text='記錄成功！')
 
     # def reply_to_user_choice(self) -> TextSendMessage:
@@ -116,21 +112,21 @@ class BGRecordManager:
     #     elif choice == 'false':
     #         return TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！')
 
-    def reply_please_enter_bg(self) -> TextSendMessage:
+    @staticmethod
+    def reply_please_enter_bg() -> TextSendMessage:
         return TextSendMessage(text='請輸入血糖數字:')
 
-    def reply_confirm_record(self) -> TextSendMessage:
+    def reply_confirm_record(self) -> TemplateSendMessage:
         return self.confirm_record_message
-
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id, app='BGRecord')
+        app_cache = AppCache(self.callback.line_id, app=App.BG_RECORD)
 
         self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
-        if self.callback.action == 'CREATE_FROM_MENU':
-            app_cache.set_next_action('CREATE_FROM_MENU')
+        if self.callback.action == Action.CREATE_FROM_MENU:
+            app_cache.set_next_action(Action.CREATE_FROM_MENU)
             app_cache.commit()
             print(self.callback.text.isdigit())
             if self.callback.text.isdigit() and self.is_input_a_bg_value():
@@ -140,17 +136,15 @@ class BGRecordManager:
                 reply = [
                     self.reply_bg_range_not_right(),
                     self.reply_please_enter_bg(),
-                    ]
+                ]
             else:
                 # make sure that app name is right, when the process comes from reminder app.
-                app_cache.app = 'BGRecord'
+                app_cache.app = App.BG_RECORD
                 app_cache.commit()
                 reply = self.reply_please_enter_bg()
 
-
-
-        elif self.callback.action == 'CREATE_FROM_VALUE':
-            app_cache.set_next_action('CREATE_FROM_VALUE')
+        elif self.callback.action == Action.CREATE_FROM_VALUE:
+            app_cache.set_next_action(Action.CREATE_FROM_VALUE)
             data = BGData()
             data.text = self.callback.text
             app_cache.data = data
@@ -158,7 +152,7 @@ class BGRecordManager:
 
             reply = self.reply_confirm_record()
 
-        elif self.callback.action == 'CONFIRM_RECORD':
+        elif self.callback.action == Action.CONFIRM_RECORD:
 
             if self.callback.choice == 'yes':
                 text = app_cache.data.text
@@ -174,8 +168,7 @@ class BGRecordManager:
 
                 reply = ChatManager(callback).handle()
 
-
-        elif self.callback.action == 'SET_TYPE':
+        elif self.callback.action == Action.SET_TYPE:
             if self.callback.choice == 'cancel':
                 reply = TextSendMessage(text="okay, 這次就不幫你記錄囉！")
             else:
@@ -189,31 +182,31 @@ class BGRecordManager:
 
                 try:
                     if app_cache.data.reminder_id:
-                        id = app_cache.data.reminder_id
+                        id_ = app_cache.data.reminder_id
 
                         # repeated code here
                         # TODO: figure out solutions for app communication without looping import.
-                        reminder = UserReminder.objects.get(id=id)
+                        reminder = UserReminder.objects.get(id=id_)
                         reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
                         time = []
                         for re in reminders:
                             time.append(re.time)
                         time = sorted(time)
                         index = time.index(reminder.time)
-                        try:
-                            next_reminder = UserReminder.objects.get(user=reminder.user, type=reminder.type, time=time[index + 1])
-                        except:
-                            next_reminder = None
+                        next_reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type,
+                                                                     time=time[index + 1])
+                        next_reminder = next_reminders[0] if next_reminders else None
 
-                        type = reminder.type
-                        if type == 'bg':
+                        type_ = reminder.type
+                        type_zh = ''
+                        if type_ == 'bg':
                             type_zh = '血糖'
-                        elif type == 'insulin':
+                        elif type_ == 'insulin':
                             type_zh = '胰島素'
-                        elif type == 'drug':
+                        elif type_ == 'drug':
                             type_zh = '藥物'
 
-                        if next_reminder != None:
+                        if next_reminder is not None:
                             reply = reply_common + [
                                 TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
                                 TextSendMessage(text='您可至"我的設定"中調整提醒時間')
@@ -224,10 +217,10 @@ class BGRecordManager:
                                 TextSendMessage(text='您可至"我的設定"中調整提醒時間')
                             ]
                 except:
+                    # TODO: Not recommend using try/except, it's not clear and explicit where it will throw to here.
                     reply = reply_common
 
-                        # clear cache
+                    # clear cache
             app_cache.delete()
-
 
         return reply
