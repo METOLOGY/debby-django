@@ -53,7 +53,7 @@ def step_impl(context, line_id):
     assert_that(app_cache.data.food_record_pk, equal_to(context.pk))
 
 
-@given('選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
+@given('選單 "記錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
 def step_impl(context):
     callback = FoodRecordCallback(line_id=context.line_id, action='')
     fr_manager = FoodRecordManager(callback)

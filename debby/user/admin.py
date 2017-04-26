@@ -25,9 +25,9 @@ class UserSettingsAdmin(admin.ModelAdmin):
     fieldsets = (
         ('基本資料', {'fields': ('user','height', 'weight')}),
         ('血糖單位', {'fields': ('unit',)}),
-        # ('早餐血糖紀錄提醒', {'fields': ('breakfast_reminder_status', 'breakfast_reminder')}),
-        # ('午餐血糖紀錄提醒', {'fields': ('lunch_reminder_status', 'lunch_reminder')}),
-        # ('晚餐血糖紀錄提醒', {'fields': ('dinner_reminder_status', 'dinner_reminder')}),
+        # ('早餐血糖記錄提醒', {'fields': ('breakfast_reminder_status', 'breakfast_reminder')}),
+        # ('午餐血糖記錄提醒', {'fields': ('lunch_reminder_status', 'lunch_reminder')}),
+        # ('晚餐血糖記錄提醒', {'fields': ('dinner_reminder_status', 'dinner_reminder')}),
         # ('延後提醒時間', {'fields': ('late_reminder',)}),
     )
 
