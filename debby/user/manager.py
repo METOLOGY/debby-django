@@ -1,12 +1,19 @@
 from linebot.models import ButtonsTemplate
 from linebot.models import PostbackTemplateAction
 from linebot.models import TextSendMessage, TemplateSendMessage
+from linebot.models import CarouselColumn, CarouselTemplate
 from .models import UserSettingModel
+from reminder.models import UserReminder
+from user.models import CustomUserModel
 
 from user.cache import AppCache
 from line.callback import UserSettingsCallback
 
-class UserSettingManager:
+class UserSettingManager(object):
+
+    def __init__(self, callback: UserSettingsCallback):
+        self.callback = callback
+
 
     setting_message = TemplateSendMessage(
         alt_text='請選擇要設定的項目',
@@ -58,7 +65,6 @@ class UserSettingManager:
         )
     )
 
-
     select_reminder_type_message = TemplateSendMessage(
         alt_text='請選擇您要調整的提醒項目',
         template=ButtonsTemplate(
@@ -97,6 +103,37 @@ class UserSettingManager:
 
 
 
+
+    conversation_closed_message = TextSendMessage(text='您可以隨時回來調整哦！')
+
+
+    def reminder_select_carousel(self, carousels):
+        return TemplateSendMessage(
+            alt_text="請選擇要更改的提醒項目",
+            tempalte=CarouselTemplate(
+                columns=carousels
+            )
+        )
+
+    def confirm_reminder_turn_off(self, reminder_id):
+        return TemplateSendMessage(
+            alt_text='確定要關閉提醒嗎?',
+            template=ButtonsTemplate(
+                text='確定要關閉提醒嗎?',
+                actions=[
+                    PostbackTemplateAction(
+                        label='確定',
+                        data='app=UserSetting&action=TURN_OFF_REMINDER&reminder_id={}'.format(reminder_id)
+                    ),
+                    PostbackTemplateAction(
+                        label='取消',
+                        data='app=UserSetting&action=CANCEL_TURN_OFF_REMINDER'
+                    )
+                ]
+            )
+        )
+
+
     def handle(self):
         reply = TextSendMessage(text='ERROR!')
         app_cache = AppCache(self.callback.line_id, app='UserSetting')
@@ -116,6 +153,49 @@ class UserSettingManager:
             reply = self.select_reminder_type_message
 
         elif self.callback.action == 'SET_REMINDER':
-            pass
+            type = self.callback.choice
+            user_reminders = UserReminder.objects.fileter(
+                user=CustomUserModel.objects.get(line_id=self.callback.line_id),
+                type=type
+            )
+
+            carousels = []
+            for reminder in user_reminders:
+                message = '提醒時間：{}\n提醒是否開啟：{}'.format(reminder.time, '是' if reminder.status else '否')
+                carousels.append(CarouselColumn(
+                    text=message,
+                    actions=[
+                        PostbackTemplateAction(
+                            label='設定時間',
+                            data='app=UserSetting&action=SET_REMINDER_TIME&reminder_id={}'.format(reminder.id)
+                        ),
+                        PostbackTemplateAction(
+                            label='關閉提醒',
+                            data='app=UserSetting&action=CONFIRM_TURN_OFF_REMINDER&reminder_id={}'.format(reminder.id)
+                        ),
+                    ]
+                ))
+
+            reply = self.reminder_select_carousel(carousels=carousels)
+
+
+        elif self.callback.action == 'CONFIRM_TURN_OFF_REMINDER':
+            reminder_id = self.action.reminder_id
+            reply = self.confirm_reminder_turn_off(reminder_id=reminder_id)
+
+        elif self.callback.action == 'TURN_OFF_REMINDER':
+            reminder_id = self.action.reminder_id
+            reminder = UserReminder.objects.get(id=reminder_id)
+            reminder.status = False
+            reminder.save()
+            reply = TextSendMessage(text='設定完成，已關閉提醒！')
+
+        elif self.callback.action == 'CANCEL_TURN_OFF_REMINDER':
+            reply = self.conversation_closed_message
+
+
+        elif self.callback.action == 'SET_REMINDER_TIME':
+            reminder_id = self.callback.reminder_id
+            pass # TODO: bookmark here, contiune here later
 
         return reply
