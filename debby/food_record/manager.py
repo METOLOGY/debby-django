@@ -61,7 +61,7 @@ class FoodRecordManager(object):
         send_message = TemplateSendMessage(
             alt_text="您是否確定要存取此次紀錄",
             template=ButtonsTemplate(
-                title="紀錄飲食",
+                title="記錄飲食",
                 text="您是否確定要存取此次紀錄?",
                 actions=[
                     PostbackTemplateAction(
@@ -135,9 +135,9 @@ class FoodRecordManager(object):
 
             if food_record_pk:
                 app_cache.delete()
-                reply = TextSendMessage(text="紀錄成功!")
+                reply = TextSendMessage(text="記錄成功!")
             else:
-                reply = TextSendMessage(text="紀錄失敗!?")
+                reply = TextSendMessage(text="記錄失敗!?")
 
         elif self.callback.action == Action.UPDATE:
             if app_cache.is_app_running():
@@ -160,7 +160,7 @@ class FoodRecordManager(object):
             reply = TextSendMessage(text="Debby 還不會修改 一起跟Debby努力加油吧!❤")
         elif self.callback.action == Action.CANCEL:
             app_cache.delete()
-            reply = TextSendMessage(text="紀錄取消!")
+            reply = TextSendMessage(text="記錄取消!")
         return reply
 
 
