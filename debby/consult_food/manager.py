@@ -3,6 +3,7 @@ from linebot.models import TextSendMessage
 
 from consult_food.models import ConsultFoodModel
 from line.callback import ConsultFoodCallback
+from line.constant import ConsultFoodAction as Action
 
 
 class ConsultFoodManager(object):
@@ -27,7 +28,7 @@ class ConsultFoodManager(object):
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='你說的是什麼食物呀，雖然我沒聽過，但感覺好像很好吃!')
-        if self.callback.action == 'READ_FROM_MENU':
+        if self.callback.action == Action.READ_FROM_MENU:
             reply = TextSendMessage(text="請輸入食品名稱:")
         else:
             reply = self.reply_answer()

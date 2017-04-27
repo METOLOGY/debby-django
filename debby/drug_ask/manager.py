@@ -4,6 +4,7 @@ from linebot.models import TextSendMessage
 
 from drug_ask.models import DrugTypeModel, DrugDetailModel
 from line.callback import DrugAskCallback
+from line.constant import DrugAskAction as Action, App
 from user.cache import AppCache, DrugAskData
 
 
@@ -29,19 +30,23 @@ class DrugAskManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='(1) 作用機轉和服用方式',
-                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=1'
+                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
+                                             choice=1).url
                     ),
                     PostbackTemplateAction(
                         label='(2) 不良反應,副作用',
-                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=2'
+                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
+                                             choice=2).url
                     ),
                     PostbackTemplateAction(
                         label='(3) 禁忌',
-                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=3'
+                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
+                                             choice=3).url
                     ),
                     PostbackTemplateAction(
                         label='(4) 注意事項',
-                        data='app=DrugAsk&action=READ_DRUG_DETAIL&choice=4'
+                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
+                                             choice=4).url
                     )
                 ]
             )
@@ -50,17 +55,17 @@ class DrugAskManager(object):
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id, app='DrugAsk')
+        app_cache = AppCache(self.callback.line_id, app=App.DRUG_ASK)
 
-        if self.callback.action == 'READ_FROM_MENU':
-            app_cache.set_next_action(action="READ")
+        if self.callback.action == Action.READ_FROM_MENU:
+            app_cache.set_next_action(action=Action.READ)
             app_cache.commit()
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
-        elif self.callback.action == 'READ':
+        elif self.callback.action == Action.READ:
             drug_types = DrugTypeModel.objects.filter(question=self.callback.text)
             if len(drug_types) > 1:
-                app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
+                app_cache.set_next_action(action=Action.WAIT_DRUG_TYPE_CHOICE)
 
                 choice_texts = ""
                 i = 1
@@ -74,7 +79,7 @@ class DrugAskManager(object):
 
                 data = DrugAskData()
                 data.drug_types = drug_types
-                app_cache.set_next_action(action="WAIT_DRUG_TYPE_CHOICE")
+                app_cache.set_next_action(action=Action.WAIT_DRUG_TYPE_CHOICE)
                 app_cache.save_data(data)
 
                 reply = TextSendMessage(text=message + choice_texts)
@@ -88,7 +93,7 @@ class DrugAskManager(object):
                 reply = self.reply_want_which_content(drug_detail)
             else:
                 reply = TextSendMessage(text="ERROR!")
-        elif self.callback.action == 'WAIT_DRUG_TYPE_CHOICE':
+        elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
             data = DrugAskData()
             data.setup_data(app_cache.data)
             if not self.callback.text.isdigit() or int(self.callback.text) > len(data.drug_types):
@@ -108,7 +113,7 @@ class DrugAskManager(object):
                     reply = self.reply_want_which_content(drug_detail, answer)
                 else:
                     print('Error!')
-        elif self.callback.action == "READ_DRUG_DETAIL":
+        elif self.callback.action == Action.READ_DRUG_DETAIL:
             data = app_cache.data  # type: DrugAskData
             message = "偷偷跟你說, Debby忘記你問甚麼了><, 可以重新問我一遍嗎~"
             if data:
