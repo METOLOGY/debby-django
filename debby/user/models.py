@@ -97,9 +97,9 @@ class UserLogManger(models.Manager):
 
 class UserLogModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
-    request_text = models.CharField(max_length=100,
+    request_text = models.CharField(max_length=500,
                                     verbose_name=('Request from user.'))
-    response = models.CharField(max_length=100,
+    response = models.CharField(max_length=500,
                                 verbose_name=('Response from debby.'))
     time = models.DateTimeField(auto_now_add=True)
 
