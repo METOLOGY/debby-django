@@ -15,3 +15,12 @@ class BGModel(models.Model):
 
     def __str__(self):
         return self.user.line_id
+
+
+class InsulinIntakeModel(models.Model):
+    time = models.DateTimeField(auto_now_add=True)
+    status = models.BooleanField(default=False)
+
+class DrugIntakeModel(models.Model):
+    time = models.DateTimeField(auto_now_add=True)
+    status = models.BooleanField(default=False)

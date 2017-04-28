@@ -14,11 +14,12 @@ from consult_food.manager import ConsultFoodManager
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback, ReminderCallback, MyDiaryCallback
+    DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback
 from line.constant import App, BGRecordAction, FoodRecordAction
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
 from reminder.manager import ReminderManager
+from user.manager import UserSettingManager
 from user.cache import AppCache
 from user.models import CustomUserModel
 
@@ -60,7 +61,9 @@ class InputHandler(object):
             else:
                 return TextSendMessage(text='哀呀, Debby 犯傻了><')
 
-        elif app_cache.is_app_running():
+        if app_cache.is_app_running():
+
+            # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
             callback = None
             if app_cache.app == App.FOOD_RECORD:
@@ -76,6 +79,11 @@ class InputHandler(object):
                 callback = BGRecordCallback(self.line_id,
                                             action=app_cache.action,
                                             text=self.text)
+
+            elif app_cache.app == 'UserSetting':
+                callback = UserSettingsCallback(self.line_id,
+                                                action=app_cache.action,
+                                                text=self.text)
 
             return CallbackHandler(callback).handle()
 
@@ -132,6 +140,7 @@ class CallbackHandler(object):
             self.App(DrugAskManager, DrugAskCallback),
             self.App(FoodRecordManager, FoodRecordCallback),
             self.App(ReminderManager, ReminderCallback),
+            self.App(UserSettingManager, UserSettingsCallback),
             self.App(MyDiaryManager, MyDiaryCallback),
         ]
 
