@@ -94,3 +94,6 @@ class BGData(CacheData):
 
 class ReminderData(CacheData):
     reminder_id = 0 #type: int
+
+class UserSettingData(CacheData):
+    reminder_id = 0 #type: int

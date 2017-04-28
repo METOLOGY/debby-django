@@ -123,3 +123,7 @@ class UserSettingsCallback(DerivedAppCallback):
     @property
     def reminder_id(self) -> str:
         return self.data.get('reminder_id')
+
+    @property
+    def text(self) -> str:
+        return self.data.get('text')

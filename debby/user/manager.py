@@ -6,8 +6,11 @@ from .models import UserSettingModel
 from reminder.models import UserReminder
 from user.models import CustomUserModel
 
-from user.cache import AppCache
+from user.cache import AppCache, UserSettingData
 from line.callback import UserSettingsCallback
+
+
+import datetime
 
 class UserSettingManager(object):
 
@@ -94,17 +97,34 @@ class UserSettingManager(object):
                 PostbackTemplateAction(
                     label='離開設定',
                     data=UserSettingsCallback(
-                        action=''   #TODO: set leave action
+                        action='app=UserSetting&action=END_CONVERSATION'
                     ).url
                 ),
             ]
         )
     )
 
-
-
-
     conversation_closed_message = TextSendMessage(text='您可以隨時回來調整哦！')
+
+
+    def error_value_message(self, reminder_id):
+        return TemplateSendMessage(
+            alt_text='error value',
+            template=ButtonsTemplate(
+                text='格式好像有點錯誤... 再試一次嗎？',
+                actions=[
+                    PostbackTemplateAction(
+                        label='繼續設定',
+                        data='app=UserSetting&action=SET_REMINDER_TIME&reminder_id={}'.format(reminder_id)
+                    ),
+                    PostbackTemplateAction(
+                        label='取消設定',
+                        data='app=UserSetting&action=END_CONVERSATION'
+                    )
+                ]
+            )
+        )
+
 
 
     def reminder_select_carousel(self, carousels):
@@ -127,16 +147,32 @@ class UserSettingManager(object):
                     ),
                     PostbackTemplateAction(
                         label='取消',
-                        data='app=UserSetting&action=CANCEL_TURN_OFF_REMINDER'
+                        data='app=UserSetting&action=END_CONVERSATION'
                     )
                 ]
             )
         )
 
+    def check_input_is_time(self, text: str):
+        if len(text) == 4:
+            for t in text:
+                if t.isdigit() == False:
+                    return False
+                else:
+                    pass
+
+            if  0 <= int(text[0:2]) < 24 and 0 <= int(text[2:]) <= 60:
+                return datetime.time(hour=int(text[0:2]) ,minute=int(text[2:])) # TODO: 這裡直接return datetime.time 不知道好不好
+            else:
+                return False
+        return False
+
+
 
     def handle(self):
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='ERROR!') # default error message.
         app_cache = AppCache(self.callback.line_id, app='UserSetting')
+
 
         if self.callback.action == 'CREATE_FROM_MENU':
             reply = self.setting_message
@@ -190,12 +226,34 @@ class UserSettingManager(object):
             reminder.save()
             reply = TextSendMessage(text='設定完成，已關閉提醒！')
 
-        elif self.callback.action == 'CANCEL_TURN_OFF_REMINDER':
-            reply = self.conversation_closed_message
-
 
         elif self.callback.action == 'SET_REMINDER_TIME':
             reminder_id = self.callback.reminder_id
-            pass # TODO: bookmark here, contiune here later
+            data = UserSettingData()
+            data.reminder_id = reminder_id
+            app_cache.set_next_action('CHECK_INPUT_REMINDER_TIME')
+            app_cache.reminder_id
+            app_cache.save_data(data)  # alias of set_data and commit
+
+
+            reply = TextSendMessage(text='請輸入要設定的提醒時間共四碼，例如晚上七點：1930')
+
+
+        elif self.callback.action == 'CHECK_INPUT_REMINDER_TIME':
+            input_value = self.callback.text
+            reminder_id = app_cache.data.reminder_id
+
+            time = self.check_input_is_time(input_value)
+            if  time == False:
+                reply = self.error_value_message(
+                    reminder_id=reminder_id
+                )
+            else:
+                reminder = UserReminder.objects.get(id=reminder_id)
+                reminder.time = time
+                reply = [TextSendMessage(text='設定成功！'), self.conversation_closed_message]
+
+        elif self.callback.action == 'END_CONVERSATION':
+            reply = self.conversation_closed_message
 
         return reply

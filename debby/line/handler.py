@@ -15,7 +15,7 @@ from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from reminder.manager import ReminderManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback, ReminderCallback, MyDiaryCallback
+    DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback
 
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
@@ -48,6 +48,8 @@ class InputHandler(object):
 
 
         if app_cache.is_app_running():
+
+            # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
             callback = None
             if app_cache.app == "FoodRecord":
@@ -55,14 +57,21 @@ class InputHandler(object):
                                               action=app_cache.action,
                                               text=self.text
                                               )
+
             elif app_cache.app == "DrugAsk":
                 callback = DrugAskCallback(self.line_id,
                                            action=app_cache.action,
                                            text=self.text)
+
             elif app_cache.app == 'BGRecord':
                 callback = BGRecordCallback(self.line_id,
                                             action=app_cache.action,
                                             text=self.text)
+
+            elif app_cache.app == 'UserSetting':
+                callback = UserSettingsCallback(self.line_id,
+                                                action=app_cache.action,
+                                                text=self.text)
 
             return CallbackHandler(callback).handle()
 
