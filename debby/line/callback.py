@@ -94,6 +94,10 @@ class DrugAskCallback(DerivedAppCallback):
     def choice(self) -> str:
         return self.data.get('choice')
 
+    @property
+    def fuzzy_drug_name(self) -> str:
+        return self.data.get('fuzzy_drug_name')
+
 
 class ChatCallback(DerivedAppCallback):
     app = App.CHAT
