@@ -3,6 +3,7 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplat
 
 from bg_record.models import BGModel
 from line.callback import MyDiaryCallback
+from line.constant import MyDiaryAction as Action, App
 from user.cache import AppCache
 
 
@@ -10,11 +11,11 @@ class MyDiaryManager(object):
     def __init__(self, callback: MyDiaryCallback):
         self.callback = callback
 
-    @property
     def handle(self):
         reply = TextSendMessage(text="ERROR!")
         app_cache = AppCache(self.callback.line_id, app=self.callback.app)
-        if self.callback.action == "START":
+
+        if self.callback.action == Action.START:
             app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
@@ -23,13 +24,13 @@ class MyDiaryManager(object):
                     actions=[
                         PostbackTemplateAction(
                             label="血糖紀錄",
-                            data="app=MyDiary&action=BGHistory"
+                            data=MyDiaryCallback(action=Action.BG_HISTORY).url
                         )
                     ]
                 )
 
             )
-        elif self.callback.action == "BGHistory":
+        elif self.callback.action == Action.BG_HISTORY:
             records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
             carousels = []
             for record in records:
@@ -38,14 +39,14 @@ class MyDiaryManager(object):
                 val = record.glucose_val
                 message = "紀錄時間: {}\n血糖值: {} {}".format(time, type_, val)
                 carousels.append(CarouselColumn(
-                            text=message,
-                            actions=[
-                                PostbackTemplateAction(
-                                    label='太好了!',
-                                    data='app=MyDiary&action=YOKATTA'
-                                )
-                            ]
-                        ))
+                    text=message,
+                    actions=[
+                        PostbackTemplateAction(
+                            label='太好了!',
+                            data=MyDiaryCallback(action=Action.YOKATTA).url
+                        )
+                    ]
+                ))
             # noinspection PyTypeChecker
             reply = TemplateSendMessage(
                 alt_text="最近的五筆血糖紀錄",
@@ -53,7 +54,7 @@ class MyDiaryManager(object):
                     columns=carousels
                 )
             )
-        elif self.callback.action == "YOKATTA":
+        elif self.callback.action == Action.YOKATTA:
             reply = TextSendMessage(text="謝謝你的讚美>///<")
 
         return reply

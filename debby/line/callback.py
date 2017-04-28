@@ -1,4 +1,5 @@
 from typing import Type
+from line.constant import App
 from urllib.parse import urlencode, parse_qsl
 
 
@@ -41,13 +42,13 @@ class Callback(object):
 class DerivedAppCallback(Callback):
     app = ''
 
-    def __init__(self, line_id: str, **kwargs):
+    def __init__(self, line_id: str = '', **kwargs):
         super().__init__(line_id, **kwargs)
         self.data['app'] = self.app
 
 
 class FoodRecordCallback(DerivedAppCallback):
-    app = 'FoodRecord'
+    app = App.FOOD_RECORD
 
     @property
     def image_id(self) -> str:
@@ -63,7 +64,7 @@ class FoodRecordCallback(DerivedAppCallback):
 
 
 class BGRecordCallback(DerivedAppCallback):
-    app = 'BGRecord'
+    app = App.BG_RECORD
 
     @property
     def choice(self):
@@ -75,7 +76,7 @@ class BGRecordCallback(DerivedAppCallback):
 
 
 class ConsultFoodCallback(DerivedAppCallback):
-    app = 'ConsultFood'
+    app = App.CONSULT_FOOD
 
     @property
     def text(self) -> str:
@@ -83,7 +84,7 @@ class ConsultFoodCallback(DerivedAppCallback):
 
 
 class DrugAskCallback(DerivedAppCallback):
-    app = 'DrugAsk'
+    app = App.DRUG_ASK
 
     @property
     def text(self) -> str:
@@ -93,9 +94,13 @@ class DrugAskCallback(DerivedAppCallback):
     def choice(self) -> str:
         return self.data.get('choice')
 
+    @property
+    def fuzzy_drug_name(self) -> str:
+        return self.data.get('fuzzy_drug_name')
+
 
 class ChatCallback(DerivedAppCallback):
-    app = 'Chat'
+    app = App.CHAT
 
     @property
     def text(self) -> str:
@@ -103,7 +108,7 @@ class ChatCallback(DerivedAppCallback):
 
 
 class ReminderCallback(DerivedAppCallback):
-    app = 'Reminder'
+    app = App.REMINDER
 
     @property
     def choice(self) -> str:
@@ -115,7 +120,7 @@ class ReminderCallback(DerivedAppCallback):
 
 
 class MyDiaryCallback(DerivedAppCallback):
-    app = 'MyDiary'
+    app = App.MY_DIARY
 
 class UserSettingsCallback(DerivedAppCallback):
     app = 'UserSetting'

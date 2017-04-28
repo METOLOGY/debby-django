@@ -17,6 +17,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'check user setting and push message': {
         'task': 'reminder.tasks.periodic_checking_bg_reminder_setting',
-        'schedule': 10
+        'schedule': 60
     },
 }

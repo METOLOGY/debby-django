@@ -1,6 +1,5 @@
 import warnings
 from abc import ABCMeta
-from enum import Enum, auto
 from typing import TypeVar
 
 from django.core.cache import cache
@@ -50,26 +49,6 @@ class AppCache(object):
         self.commit()
 
 
-class App(metaclass=ABCMeta):
-    pass
-
-
-class FoodRecord(App):
-    class Action(Enum):
-        CREATE = auto()
-        CREATE_FROM_MENU = auto()
-        WAIT_FOR_USER_REPLY = auto()
-        UPDATE = auto()
-
-
-class DrugAsk(App):
-    class Action(Enum):
-        READ = auto()
-        READ_FROM_MENU = auto()
-        WAIT_DRUG_TYPE_CHOICE = auto()
-        READ_DRUG_DETAIL = auto()
-
-
 class CacheData(metaclass=ABCMeta):
     def setup_data(self, data: "C"):
         self.__dict__.update(data.__dict__)
@@ -89,11 +68,13 @@ class DrugAskData(CacheData):
     drug_types = None  # type: QuerySet
     drug_detail_pk = ''  # type: str
 
+
 class BGData(CacheData):
     text = ''  # type: str
 
+
 class ReminderData(CacheData):
-    reminder_id = 0 #type: int
+    reminder_id = 0  #type: int
 
 class UserSettingData(CacheData):
-    reminder_id = 0 #type: int
+    reminder_id = 0  #type: int

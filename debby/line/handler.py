@@ -13,13 +13,12 @@ from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
-from reminder.manager import ReminderManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
     DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback
-
+from line.constant import App, BGRecordAction, FoodRecordAction
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
-
+from reminder.manager import ReminderManager
 from user.manager import UserSettingManager
 from user.cache import AppCache
 from user.models import CustomUserModel
@@ -32,7 +31,6 @@ class InputHandler(object):
         self.message = message
         self.text = ''
         self.image_id = ''
-
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
@@ -48,24 +46,36 @@ class InputHandler(object):
         app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
 
+        # event founded in event model(app, action)
+        if events:
+            event = random.choice(events)
+            print(event.callback, event.action)
+
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
+            send_message = CallbackHandler(callback).handle()
+            if send_message:
+                return send_message
+            else:
+                return TextSendMessage(text='哀呀, Debby 犯傻了><')
 
         if app_cache.is_app_running():
 
             # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
             callback = None
-            if app_cache.app == "FoodRecord":
+            if app_cache.app == App.FOOD_RECORD:
                 callback = FoodRecordCallback(self.line_id,
                                               action=app_cache.action,
                                               text=self.text
                                               )
-
-            elif app_cache.app == "DrugAsk":
+            elif app_cache.app == App.DRUG_ASK:
                 callback = DrugAskCallback(self.line_id,
                                            action=app_cache.action,
                                            text=self.text)
-
-            elif app_cache.app == 'BGRecord':
+            elif app_cache.app == App.BG_RECORD:
                 callback = BGRecordCallback(self.line_id,
                                             action=app_cache.action,
                                             text=self.text)
@@ -80,24 +90,11 @@ class InputHandler(object):
         # user might input number directly.
         elif self.text.isdigit():
             print('user input digit', self.text)
-            bg_callback = BGRecordCallback(line_id=self.line_id, action='CREATE_FROM_VALUE', text=self.text)
+            bg_callback = BGRecordCallback(line_id=self.line_id,
+                                           action=BGRecordAction.CREATE_FROM_VALUE,
+                                           text=self.text)
 
             return CallbackHandler(bg_callback).handle()
-
-        # event founded in event model(app, action)
-        elif events:
-            event = random.choice(events)
-            print(event.callback, event.action)
-
-            callback = Callback(line_id=self.line_id,
-                                app=event.callback,
-                                action=event.action,
-                                text=self.text)
-            send_message = CallbackHandler(callback).handle()
-            if send_message:
-                return send_message
-            else:
-                return TextSendMessage(text='哀呀, Debby ><')
 
         # Debby can't understand what user saying.
         else:
@@ -105,17 +102,14 @@ class InputHandler(object):
 
     def handle_image(self, image_id):
         callback = FoodRecordCallback(self.line_id,
-                                      action="DIRECT_UPLOAD_IMAGE",
+                                      action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
                                       image_id=image_id)
         return CallbackHandler(callback).handle()
 
     def handle_postback(self, data):
-        app_cache = AppCache(self.line_id)
         data_dict = dict(parse_qsl(data))
-        c = Callback(line_id=self.line_id, **data_dict)
-        if c.app == "FoodRecord" and not app_cache.is_app_running():  # not sure if this is a common rule for all apps
-            return None
-        return CallbackHandler(c).handle()
+        callback = Callback(line_id=self.line_id, **data_dict)
+        return CallbackHandler(callback).handle()
 
     def handle(self):
         if isinstance(self.message, TextMessage):
@@ -150,9 +144,6 @@ class CallbackHandler(object):
             self.App(MyDiaryManager, MyDiaryCallback),
         ]
 
-    def is_callback_from_food_record(self):
-        return self.callback == FoodRecordCallback and self.callback.action == 'CREATE'
-
     def handle(self) -> Union[SendMessage, None]:
         """
         First convert the input Callback to proper type of Callback, then run the manager.
@@ -168,4 +159,3 @@ class CallbackHandler(object):
         else:
             print('not find corresponding app.')
             return None
-

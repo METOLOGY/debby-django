@@ -12,6 +12,7 @@ from linebot.models import TextSendMessage
 from debby import settings
 from food_record.models import FoodModel
 from line.callback import FoodRecordCallback
+from line.constant import FoodRecordAction as Action, App
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
@@ -52,7 +53,7 @@ class FoodRecordManager(object):
     @staticmethod
     def handle_final_check_before_save(data: FoodData) -> List[SendMessage]:
 
-        time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
 
         text_send_message = TextSendMessage(text=message)
@@ -60,20 +61,20 @@ class FoodRecordManager(object):
         send_message = TemplateSendMessage(
             alt_text="您是否確定要存取此次紀錄",
             template=ButtonsTemplate(
-                title="紀錄飲食",
+                title="記錄飲食",
                 text="您是否確定要存取此次紀錄?",
                 actions=[
                     PostbackTemplateAction(
                         label='儲存',
-                        data='app=FoodRecord&action=CREATE'
+                        data=FoodRecordCallback(action=Action.CREATE).url
                     ),
                     PostbackTemplateAction(
                         label='修改',
-                        data='app=FoodRecord&action=MODIFY_EXTRA_INFO'
+                        data=FoodRecordCallback(action=Action.MODIFY_EXTRA_INFO).url
                     ),
                     PostbackTemplateAction(
                         label='取消',
-                        data='app=FoodRecord&action=CANCEL'
+                        data=FoodRecordCallback(action=Action.CANCEL).url
                     ),
                 ]
             )
@@ -83,17 +84,19 @@ class FoodRecordManager(object):
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id, app="FoodRecord")
+        app_cache = AppCache(self.callback.line_id, app=App.FOOD_RECORD)
 
-        if self.callback.action == 'CREATE_FROM_MENU':
-            print("CREATE_FROM_MENU")
+        if self.callback.action == Action.CREATE_FROM_MENU:
+            print(Action.CREATE_FROM_MENU)
             reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
 
-            app_cache.set_next_action(action="WAIT_FOR_USER_REPLY")
+            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            data = FoodData()
+            app_cache.data = data
             app_cache.commit()
 
-        elif self.callback.action == "WAIT_FOR_USER_REPLY":
-            print("WAIT_FOR_USER_REPLY")
+        elif self.callback.action == Action.WAIT_FOR_USER_REPLY:
+            print(Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             data.setup_data(app_cache.data)
             if self.callback.text.upper() == 'N':
@@ -107,11 +110,11 @@ class FoodRecordManager(object):
                     data.extra_info = self.callback.text
                     reply = self.reply_to_record_detail_template()
                 app_cache.data = data
-                app_cache.set_next_action(action="WAIT_FOR_USER_REPLY")
+                app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
                 app_cache.commit()
 
-        elif self.callback.action == "DIRECT_UPLOAD_IMAGE":
-            print("DIRECT_UPLOAD_IMAGE")
+        elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
+            print(Action.DIRECT_UPLOAD_IMAGE)
             data = FoodData()
             data.image_id = self.callback.image_id
 
@@ -119,22 +122,24 @@ class FoodRecordManager(object):
             app_cache.commit()
 
             reply = self.reply_to_record_detail_template()
-            app_cache.set_next_action(action="WAIT_FOR_USER_REPLY")
+            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
-        elif self.callback.action == 'CREATE':
-            print("CREATE")
+        elif self.callback.action == Action.CREATE:
+            print(Action.CREATE)
             data = FoodData()
             data.setup_data(app_cache.data)
-            image_content = self.image_reader.load_image(data.image_id)
+
+            image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
             food_record_pk = self.record_image(image_content, data.extra_info)
+
             if food_record_pk:
                 app_cache.delete()
-                reply = TextSendMessage(text="紀錄成功!")
+                reply = TextSendMessage(text="記錄成功!")
             else:
-                reply = TextSendMessage(text="紀錄失敗!?")
+                reply = TextSendMessage(text="記錄失敗!?")
 
-        elif self.callback.action == 'UPDATE':
+        elif self.callback.action == Action.UPDATE:
             if app_cache.is_app_running():
                 data = app_cache.data  # type: FoodData
                 if data.food_record_pk:
@@ -151,11 +156,11 @@ class FoodRecordManager(object):
                         message = TextSendMessage(text="飲食記錄成功!")
                         app_cache.delete()
                     reply = message
-        elif self.callback.action == 'MODIFY_EXTRA_INFO':
+        elif self.callback.action == Action.MODIFY_EXTRA_INFO:
             reply = TextSendMessage(text="Debby 還不會修改 一起跟Debby努力加油吧!❤")
-        elif self.callback.action == 'CANCEL':
+        elif self.callback.action == Action.CANCEL:
             app_cache.delete()
-            reply = TextSendMessage(text="紀錄取消!")
+            reply = TextSendMessage(text="記錄取消!")
         return reply
 
 

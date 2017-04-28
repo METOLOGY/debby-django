@@ -1,6 +1,6 @@
 # Created by PoHan at 2017/2/13
 Feature: Exercise Record
-  提供一個紀錄運動過程的功能
+  提供一個記錄運動過程的功能
 
   身為一個糖尿病患，我希望我可以對chatbot記錄我的運動狀況，因為感覺很方便
 
