@@ -19,6 +19,8 @@ from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCa
 
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
+
+from user.manager import UserSettingManager
 from user.cache import AppCache
 from user.models import CustomUserModel
 
@@ -144,6 +146,7 @@ class CallbackHandler(object):
             self.App(DrugAskManager, DrugAskCallback),
             self.App(FoodRecordManager, FoodRecordCallback),
             self.App(ReminderManager, ReminderCallback),
+            self.App(UserSettingManager, UserSettingsCallback),
             self.App(MyDiaryManager, MyDiaryCallback),
         ]
 

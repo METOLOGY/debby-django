@@ -9,14 +9,10 @@ from user.models import CustomUserModel
 from user.cache import AppCache, UserSettingData
 from line.callback import UserSettingsCallback
 
-
 import datetime
 
 class UserSettingManager(object):
-
-    def __init__(self, callback: UserSettingsCallback):
-        self.callback = callback
-
+    line_id = ''
 
     setting_message = TemplateSendMessage(
         alt_text='請選擇要設定的項目',
@@ -25,21 +21,15 @@ class UserSettingManager(object):
             actions=[
                 PostbackTemplateAction(
                     label='血糖單位',
-                    data=UserSettingsCallback(
-                        action='SELECT_UNIT'
-                    ).url
+                    data='app=UserSetting&action=SELECT_UNIT'
                 ),
                 PostbackTemplateAction(
                     label='提醒時間',
-                    data=UserSettingsCallback(
-                        action='SELECT_REMINDED_TYPE'
-                    ).url
+                    data='app=UserSetting&action=SELECT_REMINDED_TYPE'
                 ),
                 PostbackTemplateAction(
                     label='離開設定',
-                    data=UserSettingsCallback(
-                        action='' #TODO: set leave action
-                    ).url
+                    data='app=UserSetting&action=END_CONVERSATION'
                 )
             ]
         )
@@ -52,17 +42,11 @@ class UserSettingManager(object):
             actions=[
                 PostbackTemplateAction(
                     label='mg/dL',
-                    data=UserSettingsCallback(
-                        action='SET_UNIT',
-                        choice='mg/dL'
-                    ).url
+                    data='app=UserSetting&action=SET_UNIT&choice=mg/dL'
                 ),
                 PostbackTemplateAction(
                     label='mmol/L',
-                    data=UserSettingsCallback(
-                        action='SET_UNIT',
-                        choice='mmol/L'
-                    ).url
+                    data='app=UserSetting&action=SET_UNIT&choice=mmol/L'
                 )
             ]
         )
@@ -75,36 +59,28 @@ class UserSettingManager(object):
             actions=[
                 PostbackTemplateAction(
                     label='量測血糖',
-                    data=UserSettingsCallback(
-                        action='SET_REMINDER',
-                        choice='bg'
-                    ).url
+                    data='app=UserSetting&action=SET_REMINDER&choice=bg'
                 ),
                 PostbackTemplateAction(
                     label='注射胰島素',
-                    data=UserSettingsCallback(
-                        action='SET_REMINDER',
-                        choice='insulin'
-                    ).url
+                    data='app=UserSetting&action=SET_REMINDER&choice=insulin'
                 ),
                 PostbackTemplateAction(
                     label='服用藥物',
-                    data=UserSettingsCallback(
-                        action='SET_REMINDER',
-                        choice='drug'
-                    ).url
+                    data='app=UserSetting&action=SET_REMINDER&choice=drug'
                 ),
                 PostbackTemplateAction(
                     label='離開設定',
-                    data=UserSettingsCallback(
-                        action='app=UserSetting&action=END_CONVERSATION'
-                    ).url
+                    data='app=UserSetting&action=END_CONVERSATION'
                 ),
             ]
         )
     )
 
     conversation_closed_message = TextSendMessage(text='您可以隨時回來調整哦！')
+
+    def __init__(self, callback: UserSettingsCallback):
+        self.callback = callback
 
 
     def error_value_message(self, reminder_id):
@@ -130,7 +106,7 @@ class UserSettingManager(object):
     def reminder_select_carousel(self, carousels):
         return TemplateSendMessage(
             alt_text="請選擇要更改的提醒項目",
-            tempalte=CarouselTemplate(
+            template=CarouselTemplate(
                 columns=carousels
             )
         )
@@ -161,7 +137,7 @@ class UserSettingManager(object):
                 else:
                     pass
 
-            if  0 <= int(text[0:2]) < 24 and 0 <= int(text[2:]) <= 60:
+            if  0 <= int(text[0:2]) < 24 and 0 <= int(text[2:]) < 60:
                 return datetime.time(hour=int(text[0:2]) ,minute=int(text[2:])) # TODO: 這裡直接return datetime.time 不知道好不好
             else:
                 return False
@@ -170,17 +146,19 @@ class UserSettingManager(object):
 
 
     def handle(self):
-        reply = TextSendMessage(text='ERROR!') # default error message.
+        reply = TextSendMessage(text='USER SETTING ERROR!') # default error message.
         app_cache = AppCache(self.callback.line_id, app='UserSetting')
 
-
         if self.callback.action == 'CREATE_FROM_MENU':
+            app_cache.action = 'CREATE_FROM_MENU'
+            app_cache.commit()
             reply = self.setting_message
         elif self.callback.action == 'SELECT_UNIT':
             reply = self.set_unit_message
         elif self.callback.action == 'SET_UNIT':
             unit = self.callback.choice
-            user_setting = UserSettingModel.objects.get(line_id=self.callback.line_id)
+            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            user_setting, created = UserSettingModel.objects.get_or_create(user=user)
             user_setting.unit = unit
             user_setting.save()
             reply = TextSendMessage(text='設定完成！')
@@ -190,7 +168,7 @@ class UserSettingManager(object):
 
         elif self.callback.action == 'SET_REMINDER':
             type = self.callback.choice
-            user_reminders = UserReminder.objects.fileter(
+            user_reminders = UserReminder.objects.filter(
                 user=CustomUserModel.objects.get(line_id=self.callback.line_id),
                 type=type
             )
@@ -198,6 +176,7 @@ class UserSettingManager(object):
             carousels = []
             for reminder in user_reminders:
                 message = '提醒時間：{}\n提醒是否開啟：{}'.format(reminder.time, '是' if reminder.status else '否')
+                print(message)
                 carousels.append(CarouselColumn(
                     text=message,
                     actions=[
@@ -211,16 +190,14 @@ class UserSettingManager(object):
                         ),
                     ]
                 ))
-
             reply = self.reminder_select_carousel(carousels=carousels)
 
-
         elif self.callback.action == 'CONFIRM_TURN_OFF_REMINDER':
-            reminder_id = self.action.reminder_id
+            reminder_id = self.callback.reminder_id
             reply = self.confirm_reminder_turn_off(reminder_id=reminder_id)
 
         elif self.callback.action == 'TURN_OFF_REMINDER':
-            reminder_id = self.action.reminder_id
+            reminder_id = self.callback.reminder_id
             reminder = UserReminder.objects.get(id=reminder_id)
             reminder.status = False
             reminder.save()
@@ -232,7 +209,6 @@ class UserSettingManager(object):
             data = UserSettingData()
             data.reminder_id = reminder_id
             app_cache.set_next_action('CHECK_INPUT_REMINDER_TIME')
-            app_cache.reminder_id
             app_cache.save_data(data)  # alias of set_data and commit
 
 
@@ -251,9 +227,11 @@ class UserSettingManager(object):
             else:
                 reminder = UserReminder.objects.get(id=reminder_id)
                 reminder.time = time
+                reminder.save()
                 reply = [TextSendMessage(text='設定成功！'), self.conversation_closed_message]
 
         elif self.callback.action == 'END_CONVERSATION':
             reply = self.conversation_closed_message
+
 
         return reply

@@ -125,5 +125,9 @@ class UserSettingsCallback(DerivedAppCallback):
         return self.data.get('reminder_id')
 
     @property
+    def choice(self) -> str:
+        return self.data.get('choice')
+
+    @property
     def text(self) -> str:
         return self.data.get('text')
