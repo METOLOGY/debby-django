@@ -1,3 +1,7 @@
+import math
+from collections import deque
+from typing import List, Union
+
 from django.db.models import QuerySet
 from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction
 from linebot.models import TextSendMessage
@@ -21,8 +25,10 @@ class DrugAskManager(object):
         return TextSendMessage(text=message + choice_texts)
 
     @staticmethod
-    def reply_want_which_content(drug_detail: DrugDetailModel, answer: str) -> TemplateSendMessage:
-        message = answer + "\n" + "請問您要查詢什麼項目呢?"
+    def reply_want_which_content(drug_detail: DrugDetailModel, fuzzy_drug_name: str = '') -> TemplateSendMessage:
+        message = "請問您要查詢什麼項目呢?"
+        if fuzzy_drug_name:
+            message = "{}, 請問您要查詢什麼項目呢?".format(fuzzy_drug_name)
         reply = TemplateSendMessage(
             alt_text=message,
             template=ButtonsTemplate(
@@ -53,7 +59,7 @@ class DrugAskManager(object):
         )
         return reply
 
-    def handle(self) -> SendMessage:
+    def handle(self) -> Union[SendMessage, List[SendMessage]]:
         reply = TextSendMessage(text='ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.DRUG_ASK)
 
@@ -63,26 +69,53 @@ class DrugAskManager(object):
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
         elif self.callback.action == Action.READ:
-            drug_types = DrugTypeModel.objects.filter(question=self.callback.text)
+            drug_types = DrugTypeModel.objects.filter(question__icontains=self.callback.text)
             if len(drug_types) > 1:
-                app_cache.set_next_action(action=Action.WAIT_DRUG_TYPE_CHOICE)
-
-                choice_texts = ""
-                i = 1
-                for drug_type in drug_types:  # type: DrugTypeModel
-                    if len(drug_types) != i:
-                        choice_texts += str(i) + ". " + drug_type.user_choice + "\n"
-                    else:
-                        choice_texts += str(i) + ". " + drug_type.user_choice
-                    i += 1
-                message = "請選擇符合的項目:\n"
-
+                drug_len = len(drug_types)
                 data = DrugAskData()
                 data.drug_types = drug_types
                 app_cache.set_next_action(action=Action.WAIT_DRUG_TYPE_CHOICE)
                 app_cache.save_data(data)
 
-                reply = TextSendMessage(text=message + choice_texts)
+                # find how many template needed
+                def get_each_card_num(choice_num: int) -> list:
+                    def find_card_len(num):
+                        return math.ceil(num / 4)
+
+                    def find_button_num(num, _card_len):
+                        return math.ceil(num / _card_len)
+
+                    result = []
+                    while choice_num > 0:
+                        card_len = find_card_len(choice_num)
+                        button_num = find_button_num(choice_num, card_len)
+                        result.append(button_num)
+                        choice_num -= button_num
+                    return result
+
+                reply = list()
+                reply.append(TextSendMessage(text="請選擇符合的項目:"))
+                card_num_list = get_each_card_num(drug_len)
+                message = "請問您要查詢的是:"
+                d = deque(drug_types)
+                for card_num in card_num_list:
+                    actions = []
+                    for i in range(card_num):
+                        drug_type = d.popleft()  # type:DrugTypeModel
+                        actions.append(
+                            PostbackTemplateAction(
+                                label=drug_type.user_choice,
+                                data=DrugAskCallback(action=Action.WAIT_DRUG_TYPE_CHOICE,
+                                                     fuzzy_drug_name=drug_type.user_choice).url
+                            ))
+                    template_send_message = TemplateSendMessage(
+                        alt_text=message,
+                        template=ButtonsTemplate(
+                            text=message,
+                            actions=actions
+                        )
+                    )
+                    reply.append(template_send_message)
             elif len(drug_types) == 1:
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
@@ -94,25 +127,19 @@ class DrugAskManager(object):
             else:
                 reply = TextSendMessage(text="ERROR!")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
-            data = DrugAskData()
-            data.setup_data(app_cache.data)
-            if not self.callback.text.isdigit() or int(self.callback.text) > len(data.drug_types):
-                reply = TextSendMessage(text="請輸入選項中的數字喔~")
+            callback = self.callback.convert_to(DrugAskCallback)
+            drug_type = DrugTypeModel.objects.filter(user_choice=callback.fuzzy_drug_name)[0]
+            drug_detail = DrugDetailModel.objects.filter(type=drug_type.type)
+
+            if not drug_detail:
+                reply = TextSendMessage(text='這種藥我還不大熟>"<')
             else:
-                if app_cache.is_app_running():
-                    drug_types = data.drug_types
+                drug_detail = drug_detail[0]
+                data = DrugAskData()
+                data.drug_detail_pk = drug_detail.pk
+                app_cache.save_data(data)
+                reply = self.reply_want_which_content(drug_detail, callback.fuzzy_drug_name)
 
-                    drug_type = drug_types[int(self.callback.text) - 1]  # type: DrugTypeModel
-                    drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
-
-                    answer = drug_type.answer
-
-                    data = DrugAskData()
-                    data.drug_detail_pk = drug_detail.pk
-                    app_cache.save_data(data)
-                    reply = self.reply_want_which_content(drug_detail, answer)
-                else:
-                    print('Error!')
         elif self.callback.action == Action.READ_DRUG_DETAIL:
             data = app_cache.data  # type: DrugAskData
             message = "偷偷跟你說, Debby忘記你問甚麼了><, 可以重新問我一遍嗎~"
