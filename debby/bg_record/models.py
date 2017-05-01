@@ -18,9 +18,11 @@ class BGModel(models.Model):
 
 
 class InsulinIntakeModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
     time = models.DateTimeField(auto_now_add=True)
     status = models.BooleanField(default=False)
 
 class DrugIntakeModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
     time = models.DateTimeField(auto_now_add=True)
     status = models.BooleanField(default=False)
