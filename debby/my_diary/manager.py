@@ -3,7 +3,7 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplat
 
 from bg_record.models import BGModel
 from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action, App
+from line.constant import MyDiaryAction as Action
 from user.cache import AppCache
 
 
@@ -24,7 +24,8 @@ class MyDiaryManager(object):
                     actions=[
                         PostbackTemplateAction(
                             label="血糖紀錄",
-                            data=MyDiaryCallback(action=Action.BG_HISTORY).url
+                            data=MyDiaryCallback(line_id=self.callback.line_id,
+                                                 action=Action.BG_HISTORY).url
                         )
                     ]
                 )
@@ -43,7 +44,8 @@ class MyDiaryManager(object):
                     actions=[
                         PostbackTemplateAction(
                             label='太好了!',
-                            data=MyDiaryCallback(action=Action.YOKATTA).url
+                            data=MyDiaryCallback(line_id=self.callback.line_id,
+                                                 action=Action.YOKATTA).url
                         )
                     ]
                 ))

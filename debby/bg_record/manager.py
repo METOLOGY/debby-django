@@ -18,49 +18,6 @@ from .models import BGModel
 class BGRecordManager:
     this_record = BGModel()
 
-    meal_type_message = TemplateSendMessage(
-        alt_text='餐前血糖還是飯後血糖呢？',
-        template=ButtonsTemplate(
-            text='餐前血糖還是飯後血糖呢？',
-            actions=[
-                PostbackTemplateAction(
-                    label='餐前',
-                    data=BGRecordCallback(action=Action.SET_TYPE,
-                                          choice='before').url
-                ),
-                PostbackTemplateAction(
-                    label='飯後',
-                    data=BGRecordCallback(action=Action.SET_TYPE,
-                                          choice='after').url
-                ),
-                PostbackTemplateAction(
-                    label='取消紀錄',
-                    data=BGRecordCallback(action=Action.SET_TYPE,
-                                          choice='cancel').url
-                ),
-            ]
-        )
-    )
-
-    confirm_record_message = TemplateSendMessage(
-        alt_text='請問現在要記錄血糖嗎？',
-        template=ButtonsTemplate(
-            text='請問現在要記錄血糖嗎？',
-            actions=[
-                PostbackTemplateAction(
-                    label='好啊',
-                    data=BGRecordCallback(action=Action.CONFIRM_RECORD,
-                                          choice='yes').url
-                ),
-                PostbackTemplateAction(
-                    label='等等再說',
-                    data=BGRecordCallback(action=Action.CONFIRM_RECORD,
-                                          choice='no').url
-                )
-            ]
-        )
-    )
-
     ranges = [70, 80, 130, 250, 600]
     conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
                   "請注意是否有低血糖不適症情況發生",
@@ -99,7 +56,35 @@ class BGRecordManager:
     #     return self.reminder_message
 
     def reply_record_type(self) -> TemplateSendMessage:
-        return self.meal_type_message
+        return TemplateSendMessage(
+            alt_text='餐前血糖還是飯後血糖呢？',
+            template=ButtonsTemplate(
+                text='餐前血糖還是飯後血糖呢？',
+                actions=[
+                    PostbackTemplateAction(
+                        label='餐前',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.SET_TYPE,
+                            choice='before').url
+                    ),
+                    PostbackTemplateAction(
+                        label='飯後',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.SET_TYPE,
+                            choice='after').url
+                    ),
+                    PostbackTemplateAction(
+                        label='取消紀錄',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.SET_TYPE,
+                            choice='cancel').url
+                    ),
+                ]
+            )
+        )
 
     @staticmethod
     def reply_record_success() -> TextSendMessage:
@@ -117,7 +102,28 @@ class BGRecordManager:
         return TextSendMessage(text='請輸入血糖數字:')
 
     def reply_confirm_record(self) -> TemplateSendMessage:
-        return self.confirm_record_message
+        return TemplateSendMessage(
+            alt_text='請問現在要記錄血糖嗎？',
+            template=ButtonsTemplate(
+                text='請問現在要記錄血糖嗎？',
+                actions=[
+                    PostbackTemplateAction(
+                        label='好啊',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.CONFIRM_RECORD,
+                            choice='yes').url
+                    ),
+                    PostbackTemplateAction(
+                        label='等等再說',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.CONFIRM_RECORD,
+                            choice='no').url
+                    )
+                ]
+            )
+        )
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR!')

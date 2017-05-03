@@ -42,7 +42,7 @@ class Callback(object):
 class DerivedAppCallback(Callback):
     app = ''
 
-    def __init__(self, line_id: str = '', **kwargs):
+    def __init__(self, line_id: str, **kwargs):
         super().__init__(line_id, **kwargs)
         self.data['app'] = self.app
 
@@ -121,6 +121,7 @@ class ReminderCallback(DerivedAppCallback):
 
 class MyDiaryCallback(DerivedAppCallback):
     app = App.MY_DIARY
+
 
 class UserSettingsCallback(DerivedAppCallback):
     app = 'UserSetting'

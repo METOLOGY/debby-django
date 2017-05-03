@@ -2,6 +2,7 @@ from django.conf import settings
 from linebot.models import SendMessage, TextSendMessage, ButtonsTemplate, PostbackTemplateAction, TemplateSendMessage
 
 from bg_record.manager import BGRecordManager
+from bg_record.models import DrugIntakeModel, InsulinIntakeModel
 from line.callback import BGRecordCallback
 from line.callback import ReminderCallback
 from line.constant import ReminderAction as Action, App, BGRecordAction
@@ -9,15 +10,13 @@ from reminder.models import UserReminder
 from user.cache import AppCache
 from user.cache import ReminderData
 from user.models import CustomUserModel
-from bg_record.models import DrugIntakeModel, InsulinIntakeModel
 
 
 class ReminderManager(object):
     def __init__(self, callback: ReminderCallback):
         self.callback = callback
 
-    @staticmethod
-    def reply_reminder(line_id: str, reminder_id: int):
+    def reply_reminder(self, line_id: str, reminder_id: int):
         """
         :param line_id: a true line ID.
         :param reminder_id: reminder type.
@@ -42,19 +41,22 @@ class ReminderManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='好的',
-                        data=ReminderCallback(action=Action.REPLY_REMINDER,
+                        data=ReminderCallback(line_id=self.callback.line_id,
+                                              action=Action.REPLY_REMINDER,
                                               choice=1,
                                               reminder_id=reminder.id).url
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
-                        data=ReminderCallback(action=Action.REPLY_REMINDER,
+                        data=ReminderCallback(line_id=self.callback.line_id,
+                                              action=Action.REPLY_REMINDER,
                                               choice=2,
                                               reminder_id=reminder.id).url
                     ),
                     PostbackTemplateAction(
                         label='10分鐘後再提醒我',
-                        data=ReminderCallback(action=Action.REPLY_REMINDER,
+                        data=ReminderCallback(line_id=self.callback.line_id,
+                                              action=Action.REPLY_REMINDER,
                                               choice=3,
                                               reminder_id=reminder.id).url
                     ),
@@ -105,11 +107,8 @@ class ReminderManager(object):
             time.append(re.time)
         time = sorted(time)
         index = time.index(reminder.time)
-        try:
-            return UserReminder.objects.get(user=reminder.user, type=reminder.type, time=time[index + 1])
-        except:
-            # return UserReminder.objects.get(user=reminder.user, type=reminder.type, time=time[0])
-            return None
+        query = UserReminder.objects.filter(user=reminder.user, type=reminder.type, time=time[index + 1])
+        return query[0] if len(query) > 0 else None
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='ERROR')
@@ -169,7 +168,6 @@ class ReminderManager(object):
                         DrugIntakeModel.objects.create(user=user, status=False)
                         reply = [TextSendMessage(text='紀錄此次未服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
-
 
                 else:
                     reply = self.reply_no_next_reminder()
