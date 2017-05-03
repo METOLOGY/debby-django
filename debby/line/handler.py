@@ -108,7 +108,7 @@ class InputHandler(object):
 
     def handle_postback(self, data):
         data_dict = dict(parse_qsl(data))
-        callback = Callback(line_id=self.line_id, **data_dict)
+        callback = Callback(**data_dict) if data_dict.get("line_id") else Callback(line_id=self.line_id, **data_dict)
         return CallbackHandler(callback).handle()
 
     def handle(self):
