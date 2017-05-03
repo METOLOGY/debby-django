@@ -50,8 +50,7 @@ class FoodRecordManager(object):
             food_record.note = text
         food_record.save()
 
-    @staticmethod
-    def handle_final_check_before_save(data: FoodData) -> List[SendMessage]:
+    def handle_final_check_before_save(self, data: FoodData) -> List[SendMessage]:
 
         time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
@@ -66,15 +65,15 @@ class FoodRecordManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='儲存',
-                        data=FoodRecordCallback(action=Action.CREATE).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CREATE).url
                     ),
                     PostbackTemplateAction(
                         label='修改',
-                        data=FoodRecordCallback(action=Action.MODIFY_EXTRA_INFO).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
                     ),
                     PostbackTemplateAction(
                         label='取消',
-                        data=FoodRecordCallback(action=Action.CANCEL).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL).url
                     ),
                 ]
             )

@@ -24,8 +24,7 @@ class DrugAskManager(object):
         message = "請選擇符合的項目:\n"
         return TextSendMessage(text=message + choice_texts)
 
-    @staticmethod
-    def reply_want_which_content(drug_detail: DrugDetailModel, fuzzy_drug_name: str = '') -> TemplateSendMessage:
+    def reply_want_which_content(self, fuzzy_drug_name: str = '') -> TemplateSendMessage:
         message = "請問您要查詢什麼項目呢?"
         if fuzzy_drug_name:
             message = "{}, 請問您要查詢什麼項目呢?".format(fuzzy_drug_name)
@@ -36,23 +35,31 @@ class DrugAskManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='(1) 作用機轉和服用方式',
-                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
-                                             choice=1).url
+                        data=DrugAskCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.READ_DRUG_DETAIL,
+                            choice=1).url
                     ),
                     PostbackTemplateAction(
                         label='(2) 不良反應,副作用',
-                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
-                                             choice=2).url
+                        data=DrugAskCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.READ_DRUG_DETAIL,
+                            choice=2).url
                     ),
                     PostbackTemplateAction(
                         label='(3) 禁忌',
-                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
-                                             choice=3).url
+                        data=DrugAskCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.READ_DRUG_DETAIL,
+                            choice=3).url
                     ),
                     PostbackTemplateAction(
                         label='(4) 注意事項',
-                        data=DrugAskCallback(action=Action.READ_DRUG_DETAIL,
-                                             choice=4).url
+                        data=DrugAskCallback(
+                            line_id=self.callback.line_id,
+                            action=Action.READ_DRUG_DETAIL,
+                            choice=4).url
                     )
                 ]
             )
@@ -105,8 +112,10 @@ class DrugAskManager(object):
                         actions.append(
                             PostbackTemplateAction(
                                 label=drug_type.user_choice,
-                                data=DrugAskCallback(action=Action.WAIT_DRUG_TYPE_CHOICE,
-                                                     fuzzy_drug_name=drug_type.user_choice).url
+                                data=DrugAskCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.WAIT_DRUG_TYPE_CHOICE,
+                                    fuzzy_drug_name=drug_type.user_choice).url
                             ))
                     template_send_message = TemplateSendMessage(
                         alt_text=message,
