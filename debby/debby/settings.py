@@ -37,10 +37,12 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
+SECURE_SSL_REDIRECT = env('SECURE_SSL_REDIRECT')
+
 ALLOWED_HOSTS = [
     env('NGROK_URL'),
     'localhost',
-    'debby.metology.com.tw'
+    'debby.metology.com.tw',
     '140.114.71.167',  # server ip for hsnl@NCHU
 ]
 
