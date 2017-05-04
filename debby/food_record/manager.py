@@ -2,7 +2,7 @@ import datetime
 import io
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
-from typing import List
+from typing import List, Union
 
 from PIL import Image
 from django.core.files import File
@@ -36,9 +36,24 @@ class FoodRecordManager(object):
         food_record.save()
         return food_record.pk
 
-    @staticmethod
-    def reply_to_record_detail_template():
-        return TextSendMessage(text='您是否要繼續增加文字說明? (請輸入; 若已完成紀錄請回傳英文字母N )')
+    def reply_to_record_detail_template(self):
+        return TemplateSendMessage(
+            alt_text="請繼續增加文字說明?",
+            template=ButtonsTemplate(
+                title="記錄飲食",
+                text="請繼續增加文字說明?",
+                actions=[
+                    PostbackTemplateAction(
+                        label="不, 我已輸入完畢!",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CHECK_BEFORE_CREATE).url
+                    ),
+                    PostbackTemplateAction(
+                        label="取消紀錄",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL).url
+                    )
+                ]
+            )
+        )
 
     @staticmethod
     def record_extra_info(record_pk: str, text: str):
@@ -51,7 +66,6 @@ class FoodRecordManager(object):
         food_record.save()
 
     def handle_final_check_before_save(self, data: FoodData) -> List[SendMessage]:
-
         time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
 
@@ -81,7 +95,7 @@ class FoodRecordManager(object):
 
         return [text_send_message, send_message]
 
-    def handle(self) -> SendMessage:
+    def handle(self) -> Union[SendMessage, None]:
         reply = TextSendMessage(text='ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.FOOD_RECORD)
 
@@ -98,19 +112,18 @@ class FoodRecordManager(object):
             print(Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             data.setup_data(app_cache.data)
-            if self.callback.text.upper() == 'N':
-                reply = self.handle_final_check_before_save(data)
+            # if self.callback.text.upper() == 'N':
+            #     reply = self.handle_final_check_before_save(data)
+            # else:
+            if data.extra_info or data.image_id:
+                data.extra_info = "\n".join([data.extra_info, self.callback.text])
             else:
-                if data.extra_info or data.image_id:
-                    data.extra_info = "\n".join([data.extra_info, self.callback.text])
-                    reply = TextSendMessage(text="繼續說")
+                data.extra_info = self.callback.text
 
-                else:
-                    data.extra_info = self.callback.text
-                    reply = self.reply_to_record_detail_template()
-                app_cache.data = data
-                app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
-                app_cache.commit()
+            reply = self.reply_to_record_detail_template()
+            app_cache.data = data
+            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            app_cache.commit()
 
         elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
             print(Action.DIRECT_UPLOAD_IMAGE)
@@ -124,42 +137,39 @@ class FoodRecordManager(object):
             app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
-        elif self.callback.action == Action.CREATE:
-            print(Action.CREATE)
+        elif self.callback.action == Action.CHECK_BEFORE_CREATE:
+            # avoid cache induced empty error
+            if not app_cache.data:
+                return None
+            print(Action.CHECK_BEFORE_CREATE)
             data = FoodData()
-            data.setup_data(app_cache.data)
+            data.setup_data(app_cache.data) if app_cache.data else None
+            reply = self.handle_final_check_before_save(data)
 
-            image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
-            food_record_pk = self.record_image(image_content, data.extra_info)
-
-            if food_record_pk:
-                app_cache.delete()
-                reply = TextSendMessage(text="記錄成功!")
+        elif self.callback.action == Action.CREATE:
+            # avoid cache induced empty error
+            if not app_cache.data:
+                reply = TextSendMessage(text="記錄失敗!? 可能隔太久沒有動作囉, 再重新記錄一次看看?")
             else:
-                reply = TextSendMessage(text="記錄失敗!?")
+                print(Action.CREATE)
+                data = FoodData()
+                data.setup_data(app_cache.data) if app_cache.data else None
 
-        elif self.callback.action == Action.UPDATE:
-            if app_cache.is_app_running():
-                data = app_cache.data  # type: FoodData
-                if data.food_record_pk:
-                    if self.callback.text.upper() != 'N':
-                        self.record_extra_info(data.food_record_pk, self.callback.text)
+                image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+                food_record_pk = self.record_image(image_content, data.extra_info)
 
-                        # save to cache
-                        data.keep_recording = True
-                        app_cache.set_data(data)
-                        app_cache.commit()
-
-                        message = TextSendMessage(text="繼續說")
-                    else:
-                        message = TextSendMessage(text="飲食記錄成功!")
-                        app_cache.delete()
-                    reply = message
+                if food_record_pk:
+                    app_cache.delete()
+                    reply = TextSendMessage(text="飲食記錄成功!")
+                else:
+                    reply = TextSendMessage(text="記錄失敗!? 可能隔太久沒有動作囉")
         elif self.callback.action == Action.MODIFY_EXTRA_INFO:
             reply = TextSendMessage(text="Debby 還不會修改 一起跟Debby努力加油吧!❤")
         elif self.callback.action == Action.CANCEL:
+            if not app_cache.data:
+                return None
             app_cache.delete()
-            reply = TextSendMessage(text="記錄取消!")
+            reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
         return reply
 
 

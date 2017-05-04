@@ -14,8 +14,11 @@ class AppCache(object):
         self.expired_time = 120  # in seconds
         self.data = None
 
+        self._update()
+
+    def _update(self):
         # update itself from cache
-        user_cache = cache.get(line_id)  # type: AppCache
+        user_cache = cache.get(self.line_id)  # type: AppCache
         if user_cache and type(user_cache) is AppCache:
             self.__dict__.update(user_cache.__dict__)
 
@@ -74,7 +77,8 @@ class BGData(CacheData):
 
 
 class ReminderData(CacheData):
-    reminder_id = 0  #type: int
+    reminder_id = 0  # type: int
+
 
 class UserSettingData(CacheData):
-    reminder_id = 0  #type: int
+    reminder_id = 0  # type: int
