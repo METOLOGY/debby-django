@@ -26,6 +26,16 @@ class MyDiaryManager(object):
                             label="血糖紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
                                                  action=Action.BG_HISTORY).url
+                        ),
+                        PostbackTemplateAction(
+                            label="飲食紀錄",
+                            data=MyDiaryCallback(line_id=self.callback.line_id,
+                                                 action=Action.INSULIN_HISTORY).url
+                        ),
+                        PostbackTemplateAction(
+                            label="用藥紀錄",
+                            data=MyDiaryCallback(line_id=self.callback.line_id,
+                                                 action=Action.DRUG_HISTORY).url
                         )
                     ]
                 )
@@ -43,9 +53,18 @@ class MyDiaryManager(object):
                     text=message,
                     actions=[
                         PostbackTemplateAction(
-                            label='太好了!',
-                            data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.YOKATTA).url
+                            label='修改記錄',
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE,
+                                record_pk=records.id).url
+                        ),
+                        PostbackTemplateAction(
+                            label='刪除記錄',
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.DELETE,
+                                record_pk=records.id).url
                         )
                     ]
                 ))
@@ -58,5 +77,32 @@ class MyDiaryManager(object):
             )
         elif self.callback.action == Action.YOKATTA:
             reply = TextSendMessage(text="謝謝你的讚美>///<")
+
+        elif self.callback.action == Action.DELETE:
+            reply = TemplateSendMessage(
+                alt_text='確定要刪除這筆紀錄？',
+                template=ButtonsTemplate(
+                    text='您確定要刪除這筆紀錄？',
+                    actions=[
+                        PostbackTemplateAction(
+                            label='確定',
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.DELETE_CONFIRM,
+                                record_id=self.callback.record_pk).url
+                        ),
+                        PostbackTemplateAction(
+                            label='取消',
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.DELETE_CANCEL,
+                                record_id=self.callback.record_pk).url
+                        )
+                    ]
+                )
+            )
+
+        elif self.callback.action == Action.DELETE_CONFIRM:
+            pass
 
         return reply
