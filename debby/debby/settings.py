@@ -40,6 +40,7 @@ DEBUG = env('DEBUG')
 ALLOWED_HOSTS = [
     env('NGROK_URL'),
     'localhost',
+    'debby.metology.com.tw'
     '140.114.71.167',  # server ip for hsnl@NCHU
 ]
 
