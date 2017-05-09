@@ -18,3 +18,4 @@ class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     image_upload = models.ImageField(upload_to='Temp')
     time = models.DateTimeField(auto_now_add=True)
+
