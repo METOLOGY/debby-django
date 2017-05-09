@@ -150,7 +150,7 @@ class BGRecordManager:
                 reply = self.reply_please_enter_bg()
 
         elif self.callback.action == Action.CREATE_FROM_VALUE:
-            app_cache.set_next_action(Action.CREATE_FROM_VALUE)
+            app_cache.set_next_action(Action.CONFIRM_RECORD)
             data = BGData()
             data.text = self.callback.text
             app_cache.data = data

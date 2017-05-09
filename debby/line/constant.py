@@ -45,7 +45,14 @@ class FoodRecordAction(Action):
 class MyDiaryAction(Action):
     START = 'START'
     BG_HISTORY = 'BG_HISTORY'
+    INSULIN_HISTORY = 'INSULIN_HISTORY'
+    DRUG_HISTORY = 'DRUG_HISTORY'
     YOKATTA = 'YOKATTA'
+    UPDATE = 'UPDATE'
+    DELETE = 'DELETE'
+    DELETE_CONFIRM = 'DELETE_CONFIRM'
+    DELETE_CANCEL = 'DELETE_CANCEL'
+    FOOD_HISTORY = 'FOOD_HISTORY'
 
 
 class ReminderAction(Action):

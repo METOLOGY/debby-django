@@ -149,7 +149,7 @@ class FoodRecordManager(object):
         elif self.callback.action == Action.CREATE:
             # avoid cache induced empty error
             if not app_cache.data:
-                reply = TextSendMessage(text="記錄失敗!? 可能隔太久沒有動作囉, 再重新記錄一次看看?")
+                reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
             else:
                 print(Action.CREATE)
                 data = FoodData()

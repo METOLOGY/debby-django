@@ -122,6 +122,14 @@ class ReminderCallback(DerivedAppCallback):
 class MyDiaryCallback(DerivedAppCallback):
     app = App.MY_DIARY
 
+    @property
+    def record_pk(self) -> int:
+        return self.data.get('record_pk')
+
+    @property
+    def record_type(self) -> str:
+        return self.data.get('record_type')
+
 
 class UserSettingsCallback(DerivedAppCallback):
     app = 'UserSetting'

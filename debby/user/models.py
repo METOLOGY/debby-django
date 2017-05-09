@@ -94,7 +94,6 @@ class UserLogManger(models.Manager):
             log.save()
 
 
-
 class UserLogModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     request_text = models.CharField(max_length=500,

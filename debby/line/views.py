@@ -1,27 +1,22 @@
-from urllib.parse import parse_qsl
-
-from django.core.cache import cache
-from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-
-from linebot.models import ImageMessage
-from line.callback import FoodRecordCallback, Callback
-from line.handler import InputHandler, CallbackHandler
-from user.models import CustomUserModel
-from user.models import UserLogModel
-from reminder.models import UserReminder
-from food_record.models import FoodModel
-
 import datetime
 import json
 
+from django.conf import settings
+from django.core.cache import cache
+from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
+from linebot.models import ImageMessage
 from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
+
+from line.handler import InputHandler
+from reminder.models import UserReminder
+from user.models import CustomUserModel
+from user.models import UserLogModel
 
 line_bot_api = settings.LINE_BOT_API
 handler = settings.HANDLER
@@ -47,6 +42,11 @@ def callback(request):
         #               'timestamp': 1486886979585}]}
 
         # handle webhook body
+
+        # We need host name when returning pictures' url
+        host_name = request.get_host()  # return like 'd3e42111.ngrok.io'
+        cache.set("host_name", host_name, None)  # let this special cache never expire
+
         try:
             line_id = data['events'][0]['source']['userId']
 
@@ -116,6 +116,7 @@ def postback(event: PostbackEvent):
             event.reply_token,
             send_message
         )
+
 
 def UserInit(line_id: str):
     if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
