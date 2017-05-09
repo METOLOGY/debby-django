@@ -1,15 +1,21 @@
+from django.core.cache import cache
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
 
 from bg_record.models import BGModel
+from food_record.models import FoodModel
 from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action
+from line.constant import MyDiaryAction as Action, App
 from user.cache import AppCache
 
 
 class MyDiaryManager(object):
     def __init__(self, callback: MyDiaryCallback):
         self.callback = callback
+
+    @staticmethod
+    def no_record() -> TextSendMessage:
+        return TextSendMessage(text="抱歉！沒有任何歷史紀錄耶~")
 
     def handle(self):
         reply = TextSendMessage(text="ERROR!")
@@ -30,55 +36,104 @@ class MyDiaryManager(object):
                         PostbackTemplateAction(
                             label="飲食紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.INSULIN_HISTORY).url
+                                                 action=Action.FOOD_HISTORY).url
                         ),
                         PostbackTemplateAction(
                             label="用藥紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
                                                  action=Action.DRUG_HISTORY).url
-                        )
+                        ),
+                        PostbackTemplateAction(
+                            label="胰島素紀錄",
+                            data=MyDiaryCallback(line_id=self.callback.line_id,
+                                                 action=Action.INSULIN_HISTORY).url
+                        ),
                     ]
                 )
 
             )
         elif self.callback.action == Action.BG_HISTORY:
-            records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
             if records:
                 carousels = []
-                    time = record.time.strftime("%H:%M, %x")
                 for record in records:
+                    time = record.time.strftime("%Y/%m/%d %H:%M:%S")
                     type_ = "飯後" if record.type == "after" else "飯前"
                     val = record.glucose_val
-                    message = "紀錄時間: {}\n血糖值: {} {}".format(time, type_, val)
+                    message = "血糖值: {} {}".format(type_, val)
                     carousels.append(CarouselColumn(
+                        title=time,
                         text=message,
                         actions=[
-                        PostbackTemplateAction(
-                            label='修改記錄',
-                            data=MyDiaryCallback(
-                                line_id=self.callback.line_id,
-                                action=Action.UPDATE,
-                                record_pk=records.id).url
-                        ),
-                        PostbackTemplateAction(
-                            label='刪除記錄',
-                            data=MyDiaryCallback(
-                                line_id=self.callback.line_id,
-                                action=Action.DELETE,
-                                record_pk=records.id).url
-                        )
-                    ]
-                ))
-            # noinspection PyTypeChecker
-            reply = TemplateSendMessage(
-                template=CarouselTemplate(
-                alt_text="最近的五筆血糖紀錄",
-                    columns=carousels
-                )
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.UPDATE,
+                                    record_pk=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_pk=record.id).url
+                            )
+                        ]
+                    ))
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆血糖紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    ))
             else:
-                reply = TextSendMessage(text="你還沒有記錄過唷, 加把勁記錄血糖吧~")
-        elif self.callback.action == Action.YOKATTA:
-            reply = TextSendMessage(text="謝謝你的讚美>///<")
+                reply = self.no_record()
+        elif self.callback.action == Action.FOOD_HISTORY:
+            print(App.MY_DIARY, Action.FOOD_HISTORY)
+            records = FoodModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
+            if records:
+                carousels = []
+                for record in records:
+                    time = record.time.strftime("%Y/%m/%d %H:%M:%S")
+                    host = cache.get("host_name")
+                    if record.food_image_upload:
+                        url = record.food_image_upload.url
+                    else:
+                        url = '/media/FoodRecord/default.bmp'
+                    photo = "https://{}{}".format(host, url)
+
+                    text = record.note[:61].replace("\n", " ")
+                    if not text:  # if text is empty
+                        text = " "
+                    carousels.append(CarouselColumn(
+                        thumbnail_image_url=photo,
+                        title=time,
+                        text=text,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.UPDATE,
+                                    record_pk=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_pk=record.id).url
+                            )
+                        ]
+                    ))
+
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆飲食紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    ))
 
         elif self.callback.action == Action.DELETE:
             reply = TemplateSendMessage(

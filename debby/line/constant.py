@@ -52,6 +52,7 @@ class MyDiaryAction(Action):
     DELETE = 'DELETE'
     DELETE_CONFIRM = 'DELETE_CONFIRM'
     DELETE_CANCEL = 'DELETE_CANCEL'
+    FOOD_HISTORY = 'FOOD_HISTORY'
 
 
 class ReminderAction(Action):
