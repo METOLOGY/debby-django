@@ -6,6 +6,7 @@ class App(object):
     FOOD_RECORD = 'FoodRecord'
     MY_DIARY = 'MyDiary'
     REMINDER = 'Reminder'
+    USER_SETTING = 'UserSetting'
 
 
 class Action(object):
@@ -43,12 +44,20 @@ class FoodRecordAction(Action):
 
 
 class MyDiaryAction(Action):
-    START = 'START'
+    CREATE_FROM_MENU = 'CREATE_FROM_MENU'
     BG_HISTORY = 'BG_HISTORY'
     INSULIN_HISTORY = 'INSULIN_HISTORY'
     DRUG_HISTORY = 'DRUG_HISTORY'
-    YOKATTA = 'YOKATTA'
-    UPDATE = 'UPDATE'
+    BG_UPDATE = 'BG_UPDATE'
+    UPDATE_DATE = 'UPDATE_DATE'
+    UPDATE_TIME = 'UPDATE_TIME'
+    UPDATE_VALUE = 'UPDATE_VALUE'
+    UPDATE_TYPE = 'UPDATE_TYPE'
+
+    UPDATE_DATE_CHECK = 'UPDATE_DATE_CHECK'
+    UPDATE_CANCEL = 'UPDATE_CANCEL'
+    UPDATE_CONFIRM = 'UPDATE_CONFIRM'
+
     DELETE = 'DELETE'
     DELETE_CONFIRM = 'DELETE_CONFIRM'
     DELETE_CANCEL = 'DELETE_CANCEL'
@@ -57,3 +66,9 @@ class MyDiaryAction(Action):
 
 class ReminderAction(Action):
     REPLY_REMINDER = 'REPLY_REMINDER'
+
+
+class RecordType(object):
+    BG = 'BG'
+    INSULIN = 'INSULIN'
+    DRUG = 'DRUG'

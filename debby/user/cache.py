@@ -82,3 +82,9 @@ class ReminderData(CacheData):
 
 class UserSettingData(CacheData):
     reminder_id = 0  # type: int
+
+class MyDiaryData(CacheData):
+    record_id = 0 # type: int
+    record_type = '' # type: str
+    new_date = '' # type: datetime
+    new_time = '' # type: datetime
