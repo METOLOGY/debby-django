@@ -44,7 +44,7 @@ class FoodRecordAction(Action):
 
 
 class MyDiaryAction(Action):
-    START = 'START'
+    CREATE_FROM_MENU = 'CREATE_FROM_MENU'
     BG_HISTORY = 'BG_HISTORY'
     INSULIN_HISTORY = 'INSULIN_HISTORY'
     DRUG_HISTORY = 'DRUG_HISTORY'

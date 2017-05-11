@@ -45,7 +45,7 @@ class MyDiaryManager(object):
         reply = TextSendMessage(text="ERROR!")
         app_cache = AppCache(self.callback.line_id, app=self.callback.app)
 
-        if self.callback.action == Action.START:
+        if self.callback.action == Action.CREATE_FROM_MENU:
             app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
@@ -58,7 +58,7 @@ class MyDiaryManager(object):
                                                  action=Action.BG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="飲食紀錄",
+                            label="胰島素注射紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
                                                  action=Action.INSULIN_HISTORY).url
                         ),
@@ -76,44 +76,49 @@ class MyDiaryManager(object):
             carousels = []
             type='bg'
 
-            for record in records:
-                time = record.time.strftime("%H:%M, %x")
-                type_ = "飯後" if record.type == "after" else "飯前"
-                val = record.glucose_val
-                message = "血糖值: {} {}".format(type_, val)
-                carousels.append(CarouselColumn(
-                    title="紀錄時間: {} ".format(time),
-                    text=message,
-                    actions=[
-                        PostbackTemplateAction(
-                            label='修改記錄',
-                            data=MyDiaryCallback(
-                                line_id=self.callback.line_id,
-                                action=Action.BG_UPDATE,
-                                type=type,
-                                record_id=record.id).url
-                        ),
-                        PostbackTemplateAction(
-                            label='刪除記錄',
-                            data=MyDiaryCallback(
-                                line_id=self.callback.line_id,
-                                action=Action.DELETE,
-                                type=type,
-                                record_id=record.id).url
-                        )
-                    ]
-                ))
+            if len(records) == 0:
+                reply = TextSendMessage(text="目前您沒有任何記錄哦～")
+            else:
+                for record in records:
+                    time = record.time.strftime("%H:%M, %x")
+                    type_ = "飯後" if record.type == "after" else "飯前"
+                    val = record.glucose_val
+                    message = "血糖值: {} {}".format(type_, val)
+                    carousels.append(CarouselColumn(
+                        title="紀錄時間: {}".format(time),
+                        text=message,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.BG_UPDATE,
+                                    type=type,
+                                    record_id=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    type=type,
+                                    record_id=record.id).url
+                            )
+                        ]
+                    ))
 
-            # noinspection PyTypeChecker
-            reply = TemplateSendMessage(
-                alt_text="最近的五筆血糖紀錄",
-                template=CarouselTemplate(
-                    columns=carousels
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆血糖紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    )
                 )
-            )
 
         elif self.callback.action == Action.DELETE:
             type = self.callback.type
+            print(dir(self.callback))
+            print(self.callback.record_id, type)
 
             reply = TemplateSendMessage(
                 alt_text='確定要刪除這筆紀錄？',
@@ -126,7 +131,7 @@ class MyDiaryManager(object):
                                 line_id=self.callback.line_id,
                                 action=Action.DELETE_CONFIRM,
                                 type=type,
-                                record_id=self.callback.record_pk).url
+                                record_id=self.callback.record_id).url
                         ),
                         PostbackTemplateAction(
                             label='取消',
@@ -134,7 +139,7 @@ class MyDiaryManager(object):
                                 line_id=self.callback.line_id,
                                 action=Action.DELETE_CANCEL,
                                 type=type,
-                                record_id=self.callback.record_pk).url
+                                record_id=self.callback.record_id).url
                         )
                     ]
                 )
@@ -161,7 +166,7 @@ class MyDiaryManager(object):
 
         elif self.callback.action == Action.DELETE_CONFIRM:
             record_id = self.callback.record_id
-
+            print(record_id)
 
             if self.callback.type == 'bg':
                 record = BGModel.objects.get(id=record_id)

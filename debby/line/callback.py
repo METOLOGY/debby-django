@@ -128,7 +128,7 @@ class MyDiaryCallback(DerivedAppCallback):
 
     @property
     def record_id(self) -> int:
-        return self.data.get('record_pk')
+        return self.data.get('record_id')
 
     @property
     def record_type(self) -> str:
