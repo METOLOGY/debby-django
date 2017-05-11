@@ -70,6 +70,14 @@ class FoodRecordManager(object):
         reply = []
         time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
+        image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+        host = cache.get("host_name")
+        photo = "https://{}{}".format(host, url)
+
+        image_message = ImageSendMessage(
+            original_content_url='https://example.com/original.jpg',
+            preview_image_url='https://example.com/preview.jpg'
+        )
 
         query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
         if query:
