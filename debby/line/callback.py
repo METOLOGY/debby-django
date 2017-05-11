@@ -135,10 +135,6 @@ class MyDiaryCallback(DerivedAppCallback):
         return self.data.get('record_type')
 
     @property
-    def type(self) -> str:
-        return self.data.get('type')
-
-    @property
     def text(self) -> str:
         return self.data.get('text')
 

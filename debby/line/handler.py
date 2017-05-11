@@ -86,9 +86,9 @@ class InputHandler(object):
                                                 text=self.text)
 
             elif app_cache.app == App.MY_DIARY:
-                callback = MyDiaryManager(self.line_id,
-                                            action=app_cache.action,
-                                            text=self.text)
+                callback = MyDiaryCallback(self.line_id,
+                                           action=app_cache.action,
+                                           text=self.text)
 
             return CallbackHandler(callback).handle()
 
