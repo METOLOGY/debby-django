@@ -86,5 +86,6 @@ class UserSettingData(CacheData):
 class MyDiaryData(CacheData):
     record_id = 0 # type: int
     record_type = '' # type: str
-    new_date = '' # type: datetime
-    new_time = '' # type: datetime
+    new_datetime = '' # type: datetime
+    new_value = 0 # type: int
+    new_type = '' # type: str
