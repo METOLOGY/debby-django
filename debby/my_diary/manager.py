@@ -14,8 +14,8 @@ class MyDiaryManager(object):
     @staticmethod
     def confirm_template(line_id, old, new, action):
         if type(old) is datetime:
-            old_value = old.strftime("%Y-%m-%d %H:%M:%S")
-            new_value = new.strftime("%Y-%m-%d %H:%M:%S")
+            old_value = old.strftime("%Y/%m/%d %H:%M")
+            new_value = new.strftime("%Y/%m/%d %H:%M")
         else:
             old_value = old
             new_value = new
