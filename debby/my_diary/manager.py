@@ -1,18 +1,16 @@
-from django.core.cache import cache
+from datetime import datetime
+
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
 from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action, App
 from line.constant import MyDiaryAction as Action
 from line.constant import RecordType
 from user.cache import AppCache, MyDiaryData
-from datetime import datetime
 
 
 class MyDiaryManager(object):
-
     @staticmethod
     def confirm_template(line_id, old, new, action):
         if type(old) is datetime:
@@ -65,7 +63,6 @@ class MyDiaryManager(object):
         new_date = old_datetime.replace(year=year, month=month, day=day)
         return new_date
 
-
     @staticmethod
     def change_time(val: str, old_datetime: datetime):
         hour = int(val[0:2])
@@ -100,7 +97,7 @@ class MyDiaryManager(object):
                         PostbackTemplateAction(
                             label="胰島素注射紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.FOOD_HISTORY).url
+                                                 action=Action.INSULIN_HISTORY).url
                         ),
                         PostbackTemplateAction(
                             label="用藥紀錄",
@@ -108,9 +105,9 @@ class MyDiaryManager(object):
                                                  action=Action.DRUG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="胰島素紀錄",
+                            label="飲食紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.INSULIN_HISTORY).url
+                                                 action=Action.FOOD_HISTORY).url
                         ),
                     ]
                 )
@@ -189,7 +186,6 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.DELETE_CANCEL:
-
             action = ''
             if self.callback.record_type == RecordType.BG:
                 action = Action.BG_HISTORY
@@ -482,7 +478,6 @@ class MyDiaryManager(object):
                         ]
                     )
                 )
-
         elif self.callback.action == Action.UPDATE_DATE_CONFIRM or self.callback.action == Action.UPDATE_TIME_CONFIRM:
             record_type = app_cache.data.record_type
             record_id = app_cache.data.record_id
@@ -509,6 +504,10 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+
+        elif self.callback.action == Action.UPDATE_FOOD_VALUE:
+            # TODO: Not Implemented
+            return NotImplementedError
 
         elif self.callback.action == Action.UPDATE_CANCEL:
             reply = TextSendMessage(text="好的！那就不更動您原始的紀錄囉！")

@@ -12,8 +12,8 @@ from linebot.models import TextSendMessage
 
 from debby import settings
 from food_record.models import FoodModel, TempImageModel
-from line.callback import FoodRecordCallback
-from line.constant import FoodRecordAction as Action, App
+from line.callback import FoodRecordCallback, MyDiaryCallback
+from line.constant import FoodRecordAction as Action, App, MyDiaryAction
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
@@ -70,15 +70,8 @@ class FoodRecordManager(object):
         reply = []
         time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
-        image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
-        host = cache.get("host_name")
-        photo = "https://{}{}".format(host, url)
 
-        image_message = ImageSendMessage(
-            original_content_url='https://example.com/original.jpg',
-            preview_image_url='https://example.com/preview.jpg'
-        )
-
+        # Get from temp image
         query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
         if query:
             temp = query[0]
@@ -106,7 +99,7 @@ class FoodRecordManager(object):
                     ),
                     PostbackTemplateAction(
                         label='修改',
-                        data=FoodRecordCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
+                        data=MyDiaryCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
                     ),
                     PostbackTemplateAction(
                         label='取消',
@@ -135,9 +128,7 @@ class FoodRecordManager(object):
             print(Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             data.setup_data(app_cache.data)
-            # if self.callback.text.upper() == 'N':
-            #     reply = self.handle_final_check_before_save(data)
-            # else:
+
             if data.extra_info or data.image_id:
                 data.extra_info = "\n".join([data.extra_info, self.callback.text])
             else:
