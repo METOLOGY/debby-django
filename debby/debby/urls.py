@@ -14,8 +14,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.conf.urls import include
+
+from debby import settings
 from line.views import callback
 
 
@@ -23,4 +26,4 @@ urlpatterns = [
     url(r'^grappelli/', include('grappelli.urls')), # grappelli URLS
     url(r'^admin/', admin.site.urls),
     url(r'^callback/', callback, name='line-callback')
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

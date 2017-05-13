@@ -10,7 +10,9 @@ from linebot.models import MessageEvent
 
 from food_record.manager import FoodRecordManager
 from food_record.models import FoodModel
+from line.callback import FoodRecordCallback
 from line.handler import InputHandler, CallbackHandler
+from user.cache import AppCache
 from user.models import CustomUserModel
 
 
@@ -26,12 +28,13 @@ def step_impl(context):
 def step_impl(context):
     # https://devdocs.line.me/en/#webhook-event-object
     im = ImageMessage(id='55669487')
-    event = MessageEvent(message=im)
-    user_cache = {'event': 'record_food', 'message_id': im.id}
-    cache.set(context.line_id, user_cache, 120)
+    user_cache = {'message_id': im.id}
+    cache.set(context.line_id, user_cache, 500)
 
-    ih = InputHandler(context.current_user, event.message)
-    context.send_message = ih.handle()
+    c = FoodRecordCallback(context.line_id, action='CREATE')
+    ch = CallbackHandler(c)
+    ch.setup_for_record_food_image(context.image_content)
+    context.send_message = ch.handle()
 
 
 @step("在DB {model_name} 中有這筆資料使用者 {line_id} 並且有我那張照片")
@@ -46,15 +49,14 @@ def step_impl(context, model_name, line_id):
 
 @step("系統暫存了我的line_id {line_id} 和我那筆資料的 id")
 def step_impl(context, line_id):
-    user_cache = cache.get(line_id)
-    assert_that(user_cache, not_none())
-    food_record_pk = user_cache['food_record_pk']
-    assert_that(food_record_pk, equal_to(context.pk))
+    app_cache = AppCache(line_id)  # type: AppCache
+    assert_that(app_cache.data.food_record_pk, equal_to(context.pk))
 
 
-@given('選單 "紀錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
+@given('選單 "記錄成功! 請問是否要補充文字說明 例如: 1.5份醣類"')
 def step_impl(context):
-    fr_manager = FoodRecordManager()
+    callback = FoodRecordCallback(line_id=context.line_id, action='')
+    fr_manager = FoodRecordManager(callback)
     context.given_template = fr_manager.reply_record_success_and_if_want_more_detail()
 
 
@@ -65,3 +67,10 @@ def step_impl(context):
     image = Image.open(obj.food_image_upload)
     assert_that(image.size, equal_to(context.image.size))
     assert_that(obj.note, equal_to("YOYOYO"))
+
+
+@step('在DB 中有這筆資料使用者 {line_id} 並且記錄 "{record_text}"')
+def step_impl(context, line_id, record_text):
+    record_text = record_text.replace("\\n", "\n")
+    obj = FoodModel.objects.get(user__line_id=line_id)
+    assert_that(obj.note, equal_to(record_text))

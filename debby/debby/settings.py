@@ -13,26 +13,37 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 
 from linebot import LineBotApi
+from linebot import WebhookHandler
+import environ
 
-from debby.bot_settings import ngrok_key, webhook_token, postgres_host, postgres_name, postgres_password, postgres_user
+root = environ.Path(__file__) - 2
+env = environ.Env()
+
+# read the django-environ file.
+env_file = os.path.join(os.path.dirname(__file__), 'settings.env')
+if os.path.exists(env_file):
+    environ.Env.read_env(str(env_file))
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = root()
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '*3p3z1xhkv=r&4(wntviuipv$44m_^-i21d&5!4=bjg4)b8p_1'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
+
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT')
 
 ALLOWED_HOSTS = [
-    ngrok_key,
+    env('NGROK_URL'),
     'localhost',
-    '140.114.71.167', # server ip for hsnl@NCHU
+    'debby.metology.com.tw',
+    '140.114.71.167',  # server ip for hsnl@NCHU
 ]
 
 # Application definition
@@ -58,7 +69,11 @@ BUILD_APPS = [
     'user.apps.UserConfig',
     'bg_record.apps.BgRecordConfig',
     'exercise_record.apps.ExerciseRecordConfig',
-    'food_record.apps.FoodRecordConfig'
+    'food_record.apps.FoodRecordConfig',
+    'drug_ask.apps.DrugAskConfig',
+    'chat.apps.ChatConfig',
+    'consult_food.apps.ConsultFoodConfig',
+    'reminder.apps.ReminderConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -100,13 +115,7 @@ WSGI_APPLICATION = 'debby.wsgi.application'
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': postgres_name,
-        'USER': postgres_user,
-        'PASSWORD': postgres_password,
-        'HOST': postgres_host,
-    }
+    'default': env.db()
 }
 
 # Password validation
@@ -160,6 +169,7 @@ CELERY_BROKER_URL = 'amqp://'
 CELERY_RESULT_BACKEND = 'amqp://'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_DEFAULT_EXCHANGE_TYPE = 'direct'
+CELERY_IGNORE_RESULT = True
 
 MEDIA_ROOT = os.path.join(PROJECT_DIR, 'media')
 
@@ -172,4 +182,5 @@ CACHES = {
     }
 }
 
-line_bot_api = LineBotApi(webhook_token)
+LINE_BOT_API = LineBotApi(env('LINE_WEBHOOK_TOKEN'))
+HANDLER = WebhookHandler(env('LINE_WEBHOOK_SECRET'))

@@ -1,5 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, User, Group, PermissionsMixin, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import BaseUserManager
+from linebot.models import TextSendMessage
+from linebot.models import TemplateSendMessage
+import datetime
 
 # Custom user model for line.
 # example from https://www.caktusgroup.com/blog/2013/08/07/migrating-custom-user-model-django/
@@ -51,3 +55,51 @@ class CustomUserModel(AbstractUser):
 
     def __str__(self):
         return self.line_id
+
+
+class UserSettingModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
+    unit = models.CharField(max_length=10,
+                            choices=(
+                                ('mg/dL', 'mg/dL'),
+                                ('mmol/L', 'mmol/L'),
+                            ),
+                            default='mg/dL'
+                            )
+
+    late_reminder = models.TimeField(blank=True, null=True)
+    height = models.FloatField(blank=True, null=True)
+    weight = models.FloatField(blank=True, null=True)
+
+
+class UserLogManger(models.Manager):
+    """
+    handling the logging of conversation between user and debby.
+    """
+
+    def save_to_log(self, line_id, input_text, send_message):
+        if isinstance(send_message, TextSendMessage):
+            log = self.model(
+                user=CustomUserModel.objects.get(line_id=line_id),
+                request_text=input_text,
+                response=send_message.text,
+            )
+            log.save()
+        elif isinstance(send_message, TemplateSendMessage):
+            log = self.model(
+                user=CustomUserModel.objects.get(line_id=line_id),
+                request_text=input_text,
+                response=send_message.alt_text,
+            )
+            log.save()
+
+
+class UserLogModel(models.Model):
+    user = models.ForeignKey(CustomUserModel)
+    request_text = models.CharField(max_length=500,
+                                    verbose_name=('Request from user.'))
+    response = models.CharField(max_length=500,
+                                verbose_name=('Response from debby.'))
+    time = models.DateTimeField(auto_now_add=True)
+
+    objects = UserLogManger()

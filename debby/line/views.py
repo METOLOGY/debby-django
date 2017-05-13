@@ -1,26 +1,25 @@
+import datetime
+import json
+
+from django.conf import settings
 from django.core.cache import cache
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from linebot.models import ImageMessage
-
-from line.handler import InputHandler, CallbackHandler
-from user.models import CustomUserModel
-import json
-
-from debby.bot_settings import webhook_secret, webhook_token
-
-from linebot import (
-    LineBotApi, WebhookHandler
-)
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
+from linebot.models import ImageMessage
 from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
 
-line_bot_api = LineBotApi(webhook_token)
-handler = WebhookHandler(webhook_secret)
+from line.handler import InputHandler
+from reminder.models import UserReminder
+from user.models import CustomUserModel
+from user.models import UserLogModel
+
+line_bot_api = settings.LINE_BOT_API
+handler = settings.HANDLER
 
 
 @csrf_exempt
@@ -43,11 +42,16 @@ def callback(request):
         #               'timestamp': 1486886979585}]}
 
         # handle webhook body
+
+        # We need host name when returning pictures' url
+        host_name = request.get_host()  # return like 'd3e42111.ngrok.io'
+        cache.set("host_name", host_name, None)  # let this special cache never expire
+
         try:
             line_id = data['events'][0]['source']['userId']
-            if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
-                print('create a new user')
-                CustomUserModel.objects.create_user(line_id=line_id)
+
+            # create a new user in database.
+            UserInit(line_id)
 
             handler.handle(body, signature)
         except InvalidSignatureError:
@@ -64,37 +68,33 @@ def callback(request):
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
-    print(text)
-    current_user = CustomUserModel.objects.get(line_id=line_id)
-    print(current_user)
+    # print(text)
 
-<<<<<<< Updated upstream
     input_handler = InputHandler(line_id, event.message)
     send_message = input_handler.handle()
+
+    # Save to log model.
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
+
+    # return to Line Server
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
-=======
-    user_cache = cache.get(line_id)
-    # template for recording glucose
-
-    if text == '紀錄飲食':
-        fr_manager.ask_user_upload_an_image()
-        user_cache = {'event': 'record_food'}
-        cache.set(line_id, user_cache)
-    if text.isdigit():
-        bg_value = int(text)
-        bg_manager.record_bg_record(current_user, bg_value)
->>>>>>> Stashed changes
 
 
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
-    print(line_id)
 
-    ih = InputHandler(line_id, event.message)
-    send_message = ih.handle()
+    input_handler = InputHandler(line_id, event.message)
+    send_message = input_handler.handle()
+
+    # Save to log model.
+    # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+    # food = FoodModel.objects.last(line_id=line_id)
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
+
+    # return to Line Server
     line_bot_api.reply_message(
         event.reply_token,
         send_message)
@@ -103,37 +103,26 @@ def handle_image(event: MessageEvent):
 @handler.add(PostbackEvent)
 def postback(event: PostbackEvent):
     line_id = event.source.sender_id
-    data = event.postback.data
 
-<<<<<<< Updated upstream
-    ch = CallbackHandler(line_id)
-    ch.set_postback_data(input_data=data)
-    if ch.is_callback_from_food_record():
-        user_cache = cache.get(line_id)
-        if user_cache:
-            message_id = user_cache['message_id']
-            image_content = line_bot_api.get_message_content(message_id=message_id)
-            ch.setup_for_record_food_image(image_content.content)
+    input_handler = InputHandler(line_id)
+    send_message = input_handler.handle_postback(event.postback.data)
 
-    send_message = ch.handle()
-    line_bot_api.reply_message(
-        event.reply_token,
-        send_message
-    )
-=======
+    if send_message:
+        # Save to log model.
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text=event.postback.data, send_message=send_message)
 
-@handler.add(MessageEvent, message=ImageMessage)
-def handle_image(event: MessageEvent):
-    line_id = event.source.sender_id
-    user_cache = cache.get(line_id)
+        # return to Line Server
+        line_bot_api.reply_message(
+            event.reply_token,
+            send_message
+        )
 
-    fr_manager = FoodRecordManager(line_bot_api, event)
-    message_id = event.message.id
-    image_content = line_bot_api.get_message_content(message_id)
 
-    if image_content:
-        if not user_cache:
-            fr_manager.ask_if_want_to_record_food()
-        user_cache = {'event': 'record_food', 'message_id': message_id}
-        cache.set(line_id, user_cache, 120)  # cache for 2 min
->>>>>>> Stashed changes
+def UserInit(line_id: str):
+    if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
+        user = CustomUserModel.objects.create_user(line_id=line_id)
+
+        # init reminder, three reminder for each type in default
+        for type in ['bg', 'insulin', 'drug']:
+            for time in [datetime.time(9, 00), datetime.time(13, 00), datetime.time(19, 30)]:
+                UserReminder.objects.create(user=user, type=type, time=time, status=True)

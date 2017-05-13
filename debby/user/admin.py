@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import CustomUserModel
+from .models import UserSettingModel
+from .models import UserLogModel
 
 # Register your models here.
 @admin.register(CustomUserModel)
@@ -16,3 +18,22 @@ class CustomUserAdmin(admin.ModelAdmin):
     readonly_fields = (
         'date_joined',
     )
+
+@admin.register(UserSettingModel)
+class UserSettingsAdmin(admin.ModelAdmin):
+    list_display = ('user', 'unit', )
+    fieldsets = (
+        ('基本資料', {'fields': ('user','height', 'weight')}),
+        ('血糖單位', {'fields': ('unit',)}),
+        # ('早餐血糖記錄提醒', {'fields': ('breakfast_reminder_status', 'breakfast_reminder')}),
+        # ('午餐血糖記錄提醒', {'fields': ('lunch_reminder_status', 'lunch_reminder')}),
+        # ('晚餐血糖記錄提醒', {'fields': ('dinner_reminder_status', 'dinner_reminder')}),
+        # ('延後提醒時間', {'fields': ('late_reminder',)}),
+    )
+
+    # readonly_fields = ('user', )
+
+@admin.register(UserLogModel)
+class UserLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'request_text', 'response', 'time',)
+    readonly_fields = ('user', 'request_text', 'response', 'time',)

@@ -1,7 +1,7 @@
+import random
+from typing import Union
 from urllib.parse import parse_qsl
 
-from django.core.cache import cache
-from hamcrest import *
 from linebot.models import ImageMessage
 from linebot.models import Message
 from linebot.models import SendMessage
@@ -9,94 +9,153 @@ from linebot.models import TextMessage
 from linebot.models import TextSendMessage
 
 from bg_record.manager import BGRecordManager
+from chat.manager import ChatManager
+from consult_food.manager import ConsultFoodManager
+from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
+from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
+    DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback
+from line.constant import App, BGRecordAction, FoodRecordAction
+from line.models import EventModel
+from my_diary.manager import MyDiaryManager
+from reminder.manager import ReminderManager
+from user.manager import UserSettingManager
+from user.cache import AppCache
 from user.models import CustomUserModel
 
 
 class InputHandler(object):
-    bg_manager = BGRecordManager()
-    fr_manager = FoodRecordManager()
-
-    def __init__(self, line_id: str, message: Message):
+    def __init__(self, line_id: str, message: Message = None):
         self.line_id = line_id
         self.current_user = CustomUserModel.objects.get(line_id=line_id)
         self.message = message
         self.text = ''
-
-    def is_input_a_bg_value(self):
-        return self.text.isdigit()
+        self.image_id = ''
 
     def find_best_answer_for_text(self) -> SendMessage:
-        user_cache = cache.get(self.line_id)
+        """
+        Mainly response for replying.
+        There will be four conditions:
+        1. input text is founded in database (ex: chat conversation)
+        2. input is digits, which is might be blood glucose value
+        3. continuous conversation, the cache record which app is currently used.
+        4. input that debby can not recognized.
 
-        if user_cache and 'food_record_pk' in user_cache.keys():
-            self.fr_manager.record_extra_info(user_cache['food_record_pk'], self.text)
-            return self.fr_manager.reply_success()
-        elif self.is_input_a_bg_value():
-            self.bg_manager.record_bg_record(self.current_user, int(self.text))
-            return self.bg_manager.reply_record_success()
+        :return: SendMessage
+        """
+        app_cache = AppCache(self.line_id)
+        events = EventModel.objects.filter(phrase=self.text)
+
+        # event founded in event model(app, action)
+        if events:
+            event = random.choice(events)
+            print(event.callback, event.action)
+
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
+            send_message = CallbackHandler(callback).handle()
+            if send_message:
+                return send_message
+            else:
+                return TextSendMessage(text='哀呀, Debby 犯傻了><')
+
+        if app_cache.is_app_running():
+
+            # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
+            print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
+            callback = None
+            if app_cache.app == App.FOOD_RECORD:
+                callback = FoodRecordCallback(self.line_id,
+                                              action=app_cache.action,
+                                              text=self.text
+                                              )
+            elif app_cache.app == App.DRUG_ASK:
+                callback = DrugAskCallback(self.line_id,
+                                           action=app_cache.action,
+                                           text=self.text)
+            elif app_cache.app == App.BG_RECORD:
+                callback = BGRecordCallback(self.line_id,
+                                            action=app_cache.action,
+                                            text=self.text)
+
+            elif app_cache.app == 'UserSetting':
+                callback = UserSettingsCallback(self.line_id,
+                                                action=app_cache.action,
+                                                text=self.text)
+
+            return CallbackHandler(callback).handle()
+
+        # user might input number directly.
+        elif self.text.isdigit():
+            print('user input digit', self.text)
+            bg_callback = BGRecordCallback(line_id=self.line_id,
+                                           action=BGRecordAction.CREATE_FROM_VALUE,
+                                           text=self.text)
+
+            return CallbackHandler(bg_callback).handle()
+
+        # Debby can't understand what user saying.
         else:
-            return self.bg_manager.reply_does_user_want_to_record()
+            return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
 
-    def trigger_manager_to_reply(self):
-        return self.fr_manager.reply_if_user_want_to_record()
+    def handle_image(self, image_id):
+        callback = FoodRecordCallback(self.line_id,
+                                      action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
+                                      image_id=image_id)
+        return CallbackHandler(callback).handle()
+
+    def handle_postback(self, data):
+        data_dict = dict(parse_qsl(data))
+        callback = Callback(**data_dict) if data_dict.get("line_id") else Callback(line_id=self.line_id, **data_dict)
+        return CallbackHandler(callback).handle()
 
     def handle(self):
         if isinstance(self.message, TextMessage):
             self.text = self.message.text
             return self.find_best_answer_for_text()
+
         elif isinstance(self.message, ImageMessage):
-            return self.trigger_manager_to_reply()
+            return self.handle_image(self.message.id)
 
 
 class CallbackHandler(object):
-    bg_manager = BGRecordManager()
-    fr_manager = FoodRecordManager()
-
-    data = None
-    callback = None
-    action = None
-
+    """
+    Distribute the tasks (ex: the query result from EventModel) to corresponding App.manager
+    """
     image_content = bytes()
 
-    def __init__(self, line_id: str):
-        self.line_id = line_id
-        self.current_user = CustomUserModel.objects.get(line_id=line_id)
+    class App(object):
+        def __init__(self, manager, callback):
+            self.manager = manager
+            self.callback = callback
 
-    def set_postback_data(self, input_data):
-        data = dict(parse_qsl(input_data))
-        self.data = data
-        self.callback = data['callback']
-        self.action = data['action']
+    def __init__(self, callback: Callback):
+        self.callback = callback
+        self.registered_app = [
+            self.App(BGRecordManager, BGRecordCallback),
+            self.App(ChatManager, ChatCallback),
+            self.App(ConsultFoodManager, ConsultFoodCallback),
+            self.App(DrugAskManager, DrugAskCallback),
+            self.App(FoodRecordManager, FoodRecordCallback),
+            self.App(ReminderManager, ReminderCallback),
+            self.App(UserSettingManager, UserSettingsCallback),
+            self.App(MyDiaryManager, MyDiaryCallback),
+        ]
 
-    def set_image_content(self, image_content: bytes):
-        self.image_content = image_content
+    def handle(self) -> Union[SendMessage, None]:
+        """
+        First convert the input Callback to proper type of Callback, then run the manager.
+        """
 
-    def is_callback_from_food_record(self):
-        return self.callback == 'FoodRecord' and self.action == 'record'
+        print("{}, {}\n".format(self.callback.app, self.callback.action))
 
-    def setup_for_record_food_image(self, image_content: bytes):
-        self.image_content = image_content
-
-    def store_to_user_cache(self, food_record_pk):
-        assert_that(self.line_id, not_none)
-        user_cache = cache.get(self.line_id)
-        if user_cache:
-            user_cache['food_record_pk'] = food_record_pk
-            cache.set(self.line_id, user_cache, 120)  # cache for 2 min
-
-    def handle(self) -> SendMessage:
-        if self.callback == 'BGRecord':
-            if self.action == 'record_bg':
-                return self.bg_manager.reply_to_user_choice(self.data)
-        elif self.callback == 'FoodRecord':
-            if self.action == 'record':
-                if self.data['choice'] == 'true':
-                    food_record_pk = self.fr_manager.record_image(self.current_user, self.image_content)
-                    self.store_to_user_cache(food_record_pk)
-                    return self.fr_manager.reply_record_success_and_if_want_more_detail()
-                elif self.data['choice'] == 'false':
-                    return TextSendMessage(text='什麼啊原來只是讓我看看啊')
-            elif self.action == 'write_other_notes':
-
-                return self.fr_manager.reply_to_record_detail_template(self.data)
+        for app in self.registered_app:
+            if self.callback == app.callback:
+                callback = self.callback.convert_to(app.callback)
+                manager = app.manager(callback)
+                return manager.handle()
+        else:
+            print('not find corresponding app.')
+            return None
