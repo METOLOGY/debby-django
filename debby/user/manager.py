@@ -163,12 +163,8 @@ class UserSettingManager(object):
         app_cache = AppCache(self.callback.line_id, app=App.USER_SETTING)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
-            # app_cache.action = Action.CREATE_FROM_MENU
-            # app_cache.commit()
             reply = self.setting_message
         elif self.callback.action == Action.SELECT_UNIT:
-            # app_cache.action = Action.SELECT_UNIT
-            # app_cache.commit()
             reply = self.set_unit_message
         elif self.callback.action == Action.SET_UNIT:
             unit = self.callback.choice
@@ -179,8 +175,6 @@ class UserSettingManager(object):
             reply = TextSendMessage(text='設定完成！')
 
         elif self.callback.action == 'SELECT_REMINDED_TYPE':
-            # app_cache.action = Action.SELECT_UNIT
-            # app_cache.commit()
             reply = self.select_reminder_type_message
 
         elif self.callback.action == 'SET_REMINDER':

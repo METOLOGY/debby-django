@@ -1,6 +1,7 @@
 from typing import Type
-from line.constant import App
 from urllib.parse import urlencode, parse_qsl
+
+from line.constant import App
 
 
 class Callback(object):
@@ -101,6 +102,10 @@ class DrugAskCallback(DerivedAppCallback):
     @property
     def fuzzy_drug_name(self) -> str:
         return self.data.get('fuzzy_drug_name')
+
+    @property
+    def drug_detail_id(self) -> str:
+        return self.data.get('drug_detail_id')
 
 
 class ChatCallback(DerivedAppCallback):
