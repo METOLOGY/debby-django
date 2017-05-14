@@ -5,7 +5,7 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplat
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
 from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action, App
+from line.constant import MyDiaryAction as Action
 from line.constant import RecordType
 from user.cache import AppCache, MyDiaryData
 
@@ -489,6 +489,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_BG_VALUE_CONFIRM:
             record_type = self.callback.record_type
@@ -498,6 +499,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_BG_TYPE_CONFIRM:
             chinese_to_type = {'飯前': 'before', '飯後': 'after'}
@@ -509,6 +511,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_FOOD_VALUE:
             # TODO: Not Implemented
