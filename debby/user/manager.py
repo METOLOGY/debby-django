@@ -160,7 +160,7 @@ class UserSettingManager(object):
 
     def handle(self):
         reply = TextSendMessage(text='USER SETTING ERROR!')  # default error message.
-        app_cache = AppCache(self.callback.line_id, app=App.USER_SETTING)
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             reply = self.setting_message
@@ -219,7 +219,7 @@ class UserSettingManager(object):
             reminder_id = self.callback.reminder_id
             data = UserSettingData()
             data.reminder_id = reminder_id
-            app_cache.set_next_action(Action.CHECK_INPUT_REMINDER_TIME)
+            app_cache.set_next_action(self.callback.app, Action.CHECK_INPUT_REMINDER_TIME)
             app_cache.save_data(data)  # alias of set_data and commit
 
             reply = TextSendMessage(text='請輸入要設定的提醒時間共四碼，例如晚上七點半：1930')

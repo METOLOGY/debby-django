@@ -5,7 +5,7 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplat
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
 from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action
+from line.constant import MyDiaryAction as Action, App
 from line.constant import RecordType
 from user.cache import AppCache, MyDiaryData
 
@@ -83,9 +83,13 @@ class MyDiaryManager(object):
 
     def handle(self):
         reply = TextSendMessage(text="MY_DIARY ERROR!")
-        app_cache = AppCache(self.callback.line_id, app=self.callback.app)
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
+            # init cache again to clean other app's status and data
+            app_cache.delete()
+            app_cache.set_app(self.callback.app)
+            app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
                 template=ButtonsTemplate(
@@ -256,7 +260,7 @@ class MyDiaryManager(object):
                 )
             )
         elif self.callback.action == Action.UPDATE_DATE:
-            app_cache.set_next_action(Action.UPDATE_DATE_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_DATE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -279,7 +283,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_TIME:
-            app_cache.set_next_action(Action.UPDATE_TIME_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_TIME_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -302,7 +306,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_BG_VALUE:
-            app_cache.set_next_action(Action.UPDATE_BG_VALUE_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_BG_VALUE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type

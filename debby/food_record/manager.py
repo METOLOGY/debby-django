@@ -113,13 +113,14 @@ class FoodRecordManager(object):
 
     def handle(self) -> Union[SendMessage, None]:
         reply = TextSendMessage(text='FOOD_RECORD ERROR!')
-        app_cache = AppCache(self.callback.line_id, app=App.FOOD_RECORD)
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
             reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
 
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            # init cache again to clean other app's status and data
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             app_cache.data = data
             app_cache.commit()
@@ -136,7 +137,7 @@ class FoodRecordManager(object):
 
             reply = self.reply_to_record_detail_template()
             app_cache.data = data
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
         elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
@@ -157,7 +158,7 @@ class FoodRecordManager(object):
             app_cache.commit()
 
             reply = self.reply_to_record_detail_template()
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
         elif self.callback.action == Action.CHECK_BEFORE_CREATE:
