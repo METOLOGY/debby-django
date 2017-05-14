@@ -4,7 +4,7 @@ from openpyxl.worksheet.read_only import ReadOnlyWorksheet
 from drug_ask.models import DrugTypeModel, DrugDetailModel
 from line.models import EventModel
 
-wb = openpyxl.load_workbook("./drug_ask/scripts/drug_ask_database.xlsx", data_only=True)
+wb = openpyxl.load_workbook("./chat_table/drug_ask_database.xlsx", data_only=True)
 ws = wb["Drugs"]  # type: ReadOnlyWorksheet
 drug = {
     "question": "",
