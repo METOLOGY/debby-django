@@ -131,7 +131,7 @@ class DrugAskManager(object):
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
 
-                reply = self.reply_want_which_content(drug_detail, drug_detail.id)
+                reply = self.reply_want_which_content(drug_type.answer, drug_detail.id)
             else:
                 reply = TextSendMessage(text="Debby 找不到您輸入的藥物喔，試試其他的?")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
@@ -142,7 +142,7 @@ class DrugAskManager(object):
                 reply = TextSendMessage(text='這種藥我還不大熟>"<')
             else:
                 drug_detail = drug_detail[0]
-                reply = self.reply_want_which_content(drug_detail, drug_detail.id)
+                reply = self.reply_want_which_content(drug_type.answer, drug_detail.id)
 
         elif self.callback.action == Action.READ_DRUG_DETAIL:
             drug_detail_pk = self.callback.drug_detail_id
