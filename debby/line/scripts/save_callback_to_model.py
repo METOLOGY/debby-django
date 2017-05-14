@@ -12,4 +12,4 @@ EventModel.objects.get_or_create(phrase='飲食紀錄', callback='FoodRecord', a
 EventModel.objects.get_or_create(phrase='食物熱量查詢', callback='FoodQuery', action='READ_FROM_MENU')
 EventModel.objects.get_or_create(phrase='藥物資訊查詢', callback='DrugQuery', action='READ_FROM_MENU')
 
-EventModel.objects.get_or_create(phrase='我的日記', callback=App.MY_DIARY, action=MyDiaryAction.START)
+EventModel.objects.get_or_create(phrase='我的日記', callback=App.MY_DIARY, action=MyDiaryAction.CREATE_FROM_MENU)

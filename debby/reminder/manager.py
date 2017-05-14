@@ -111,7 +111,7 @@ class ReminderManager(object):
         return query[0] if len(query) > 0 else None
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR')
+        reply = TextSendMessage(text='REMINDER ERROR')
         app_cache = AppCache(self.callback.line_id, app=App.REMINDER)
 
         print(self.callback.action, self.callback.choice, self.callback.reminder_id)

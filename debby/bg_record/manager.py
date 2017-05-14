@@ -101,39 +101,41 @@ class BGRecordManager:
     def reply_please_enter_bg() -> TextSendMessage:
         return TextSendMessage(text='請輸入血糖數字:')
 
-    def reply_confirm_record(self) -> TemplateSendMessage:
+    def reply_confirm_record(self, input_text) -> TemplateSendMessage:
         return TemplateSendMessage(
-            alt_text='請問現在要記錄血糖嗎？',
+            alt_text='請問您是想要記錄血糖嗎？',
             template=ButtonsTemplate(
-                text='請問現在要記錄血糖嗎？',
+                text='請問您是想要記錄血糖嗎？',
                 actions=[
                     PostbackTemplateAction(
-                        label='好啊',
+                        label='是，我要記錄此血糖數字',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.CONFIRM_RECORD,
-                            choice='yes').url
+                            choice='yes',
+                            text=input_text,
+                        ).url
                     ),
                     PostbackTemplateAction(
-                        label='等等再說',
+                        label='否，我只是想聊個天~',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.CONFIRM_RECORD,
-                            choice='no').url
+                            choice='no',
+                            text=input_text,
+                        ).url
                     )
                 ]
             )
         )
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='BG_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.BG_RECORD)
 
         self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
-            app_cache.set_next_action(Action.CREATE_FROM_MENU)
-            app_cache.commit()
             print(self.callback.text.isdigit())
             if self.callback.text.isdigit() and self.is_input_a_bg_value():
                 self.this_record.glucose_val = int(self.callback.text)
@@ -144,25 +146,14 @@ class BGRecordManager:
                     self.reply_please_enter_bg(),
                 ]
             else:
-                # make sure that app name is right, when the process comes from reminder app.
-                app_cache.app = App.BG_RECORD
-                app_cache.commit()
                 reply = self.reply_please_enter_bg()
 
         elif self.callback.action == Action.CREATE_FROM_VALUE:
-            app_cache.set_next_action(Action.CONFIRM_RECORD)
-            data = BGData()
-            data.text = self.callback.text
-            app_cache.data = data
-            app_cache.commit()
-
-            reply = self.reply_confirm_record()
+            reply = self.reply_confirm_record(self.callback.text)
 
         elif self.callback.action == Action.CONFIRM_RECORD:
-
             if self.callback.choice == 'yes':
-                text = app_cache.data.text
-                self.this_record.glucose_val = int(text)
+                self.this_record.glucose_val = int(self.callback.text)
 
                 reply = self.reply_record_type()
             elif self.callback.choice == 'no':
@@ -170,7 +161,7 @@ class BGRecordManager:
                 # to chat manager
                 # TODO: 這裡有點笨
                 callback = ChatCallback(line_id=self.callback.line_id,
-                                        text=app_cache.data.text)
+                                        text=self.callback.text)
 
                 reply = ChatManager(callback).handle()
 

@@ -1,6 +1,8 @@
-from typing import Type
-from line.constant import App
+import datetime
+from typing import Type, Union
 from urllib.parse import urlencode, parse_qsl
+
+from line.constant import App
 
 
 class Callback(object):
@@ -21,6 +23,10 @@ class Callback(object):
     @property
     def action(self):
         return self.data.get('action')
+
+    @action.setter
+    def action(self, val):
+        self.data["action"] = val
 
     @property
     def url(self):
@@ -98,6 +104,10 @@ class DrugAskCallback(DerivedAppCallback):
     def fuzzy_drug_name(self) -> str:
         return self.data.get('fuzzy_drug_name')
 
+    @property
+    def drug_detail_id(self) -> str:
+        return self.data.get('drug_detail_id')
+
 
 class ChatCallback(DerivedAppCallback):
     app = App.CHAT
@@ -123,12 +133,20 @@ class MyDiaryCallback(DerivedAppCallback):
     app = App.MY_DIARY
 
     @property
-    def record_pk(self) -> int:
-        return self.data.get('record_pk')
+    def record_id(self) -> int:
+        return self.data.get('record_id')
 
     @property
     def record_type(self) -> str:
         return self.data.get('record_type')
+
+    @property
+    def new_value(self) -> Union[str, datetime.datetime]:
+        return self.data.get('new_value')
+
+    @property
+    def text(self) -> str:
+        return self.data.get('text')
 
 
 class UserSettingsCallback(DerivedAppCallback):
