@@ -191,7 +191,7 @@ class UserSettingManager(object):
 
             carousels = []
             for reminder in user_reminders:
-                message = '提醒時間：{}\n提醒是否開啟：{}'.format(reminder.time, '是' if reminder.status else '否')
+                message = '提醒時間：{}\n提醒是否開啟：{}'.format(reminder.time.strftime("%H:%M"), '是' if reminder.status else '否')
                 print(message)
                 carousels.append(CarouselColumn(
                     text=message,
