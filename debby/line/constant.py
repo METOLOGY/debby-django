@@ -21,6 +21,7 @@ class BGRecordAction(Action):
 
 
 class ConsultFoodAction(Action):
+    READ = 'READ'
     READ_FROM_MENU = 'READ_FROM_MENU'
 
 

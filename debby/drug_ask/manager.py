@@ -72,10 +72,11 @@ class DrugAskManager(object):
 
     def handle(self) -> Union[SendMessage, List[SendMessage]]:
         reply = TextSendMessage(text='DRUG_ASK ERROR!')
-        app_cache = AppCache(self.callback.line_id, app=App.DRUG_ASK)
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.READ_FROM_MENU:
-            app_cache.set_next_action(action=Action.READ)
+            # init cache again to clean other app's status and data
+            app_cache.set_next_action(self.callback.app, action=Action.READ)
             app_cache.commit()
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")

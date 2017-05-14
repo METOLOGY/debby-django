@@ -83,9 +83,13 @@ class MyDiaryManager(object):
 
     def handle(self):
         reply = TextSendMessage(text="MY_DIARY ERROR!")
-        app_cache = AppCache(self.callback.line_id, app=self.callback.app)
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
+            # init cache again to clean other app's status and data
+            app_cache.delete()
+            app_cache.set_app(self.callback.app)
+            app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
                 template=ButtonsTemplate(
@@ -123,7 +127,7 @@ class MyDiaryManager(object):
                 reply = TextSendMessage(text="目前您沒有任何記錄哦～")
             else:
                 for record in records:
-                    time = record.time.strftime("%H:%M, %x")
+                    time = record.time.astimezone().strftime("%H:%M, %x")
                     type_ = "飯後" if record.type == "after" else "飯前"
                     val = record.glucose_val
                     message = "血糖值: {} {}".format(type_, val)
@@ -256,7 +260,7 @@ class MyDiaryManager(object):
                 )
             )
         elif self.callback.action == Action.UPDATE_DATE:
-            app_cache.set_next_action(Action.UPDATE_DATE_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_DATE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -279,7 +283,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_TIME:
-            app_cache.set_next_action(Action.UPDATE_TIME_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_TIME_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -302,7 +306,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_BG_VALUE:
-            app_cache.set_next_action(Action.UPDATE_BG_VALUE_CHECK)
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_BG_VALUE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -485,6 +489,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_BG_VALUE_CONFIRM:
             record_type = self.callback.record_type
@@ -494,6 +499,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_BG_TYPE_CONFIRM:
             chinese_to_type = {'飯前': 'before', '飯後': 'after'}
@@ -505,6 +511,7 @@ class MyDiaryManager(object):
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_FOOD_VALUE:
             # TODO: Not Implemented
