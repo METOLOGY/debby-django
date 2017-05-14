@@ -112,7 +112,7 @@ class FoodRecordManager(object):
         return reply
 
     def handle(self) -> Union[SendMessage, None]:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='FOOD_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.FOOD_RECORD)
 
         if self.callback.action == Action.CREATE_FROM_MENU:

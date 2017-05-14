@@ -126,7 +126,7 @@ class BGRecordManager:
         )
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='BG_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.BG_RECORD)
 
         self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)

@@ -67,7 +67,7 @@ class DrugAskManager(object):
         return reply
 
     def handle(self) -> Union[SendMessage, List[SendMessage]]:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='DRUG_ASK ERROR!')
         app_cache = AppCache(self.callback.line_id, app=App.DRUG_ASK)
 
         if self.callback.action == Action.READ_FROM_MENU:
@@ -134,7 +134,7 @@ class DrugAskManager(object):
                 app_cache.save_data(data)
                 reply = self.reply_want_which_content(drug_detail)
             else:
-                reply = TextSendMessage(text="ERROR!")
+                reply = TextSendMessage(text="DRUG_ASK READ ERROR!")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
             callback = self.callback.convert_to(DrugAskCallback)
             drug_type = DrugTypeModel.objects.filter(user_choice=callback.fuzzy_drug_name)[0]

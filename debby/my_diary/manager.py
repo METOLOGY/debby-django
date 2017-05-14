@@ -79,7 +79,7 @@ class MyDiaryManager(object):
         return TextSendMessage(text="抱歉！沒有任何歷史紀錄耶~")
 
     def handle(self):
-        reply = TextSendMessage(text="ERROR!")
+        reply = TextSendMessage(text="MY_DIARY ERROR!")
         app_cache = AppCache(self.callback.line_id, app=self.callback.app)
 
         if self.callback.action == Action.CREATE_FROM_MENU:

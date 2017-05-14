@@ -27,7 +27,7 @@ class ChatManager(object):
         return TextSendMessage(text=message)
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR!')
+        reply = TextSendMessage(text='CHAT ERROR!')
 
         print('chat: ', self.callback.text)
         # TODO: 會有action不是read的情況出現嗎？
