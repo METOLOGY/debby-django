@@ -62,6 +62,7 @@ THIRD_PARTY_APPS = [
     'django_extensions',
     'django_celery_beat',
     'grappelli',
+    'django_q'
 ]
 
 BUILD_APPS = [
@@ -184,3 +185,15 @@ CACHES = {
 
 LINE_BOT_API = LineBotApi(env('LINE_WEBHOOK_TOKEN'))
 HANDLER = WebhookHandler(env('LINE_WEBHOOK_SECRET'))
+
+# django_q settings (default setting from documents.)
+# https://django-q.readthedocs.io/en/latest/configure.html#orm-configuration
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
+}
