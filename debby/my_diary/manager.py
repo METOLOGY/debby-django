@@ -123,7 +123,7 @@ class MyDiaryManager(object):
                 reply = TextSendMessage(text="目前您沒有任何記錄哦～")
             else:
                 for record in records:
-                    time = record.time.strftime("%H:%M, %x")
+                    time = record.time.astimezone().strftime("%H:%M, %x")
                     type_ = "飯後" if record.type == "after" else "飯前"
                     val = record.glucose_val
                     message = "血糖值: {} {}".format(type_, val)
