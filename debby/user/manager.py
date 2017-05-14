@@ -222,7 +222,7 @@ class UserSettingManager(object):
             app_cache.set_next_action(Action.CHECK_INPUT_REMINDER_TIME)
             app_cache.save_data(data)  # alias of set_data and commit
 
-            reply = TextSendMessage(text='請輸入要設定的提醒時間共四碼，例如晚上七點：1930')
+            reply = TextSendMessage(text='請輸入要設定的提醒時間共四碼，例如晚上七點半：1930')
 
         elif self.callback.action == Action.CHECK_INPUT_REMINDER_TIME:
             input_value = self.callback.text

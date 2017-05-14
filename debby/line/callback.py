@@ -1,4 +1,5 @@
-from typing import Type
+import datetime
+from typing import Type, Union
 from urllib.parse import urlencode, parse_qsl
 
 from line.constant import App
@@ -138,6 +139,10 @@ class MyDiaryCallback(DerivedAppCallback):
     @property
     def record_type(self) -> str:
         return self.data.get('record_type')
+
+    @property
+    def new_value(self) -> Union[str, datetime.datetime]:
+        return self.data.get('new_value')
 
     @property
     def text(self) -> str:

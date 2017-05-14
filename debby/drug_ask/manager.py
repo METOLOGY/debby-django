@@ -133,6 +133,7 @@ class DrugAskManager(object):
 
                 reply = self.reply_want_which_content(drug_type.answer, drug_detail.id)
             else:
+                app_cache.delete()
                 reply = TextSendMessage(text="Debby 找不到您輸入的藥物喔，試試其他的?")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
             drug_type = DrugTypeModel.objects.filter(user_choice=self.callback.fuzzy_drug_name)[0]

@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
@@ -12,8 +12,8 @@ from user.cache import AppCache, MyDiaryData
 
 class MyDiaryManager(object):
     @staticmethod
-    def confirm_template(line_id, old, new, action):
-        if type(old) is datetime:
+    def confirm_template(line_id, old, new, action, record_id, record_type):
+        if isinstance(old, datetime.datetime):
             old_value = old.strftime("%Y/%m/%d %H:%M")
             new_value = new.strftime("%Y/%m/%d %H:%M")
         else:
@@ -28,12 +28,15 @@ class MyDiaryManager(object):
                     PostbackTemplateAction(
                         label="是，請修改",
                         data=MyDiaryCallback(line_id=line_id,
-                                             action=action).url
+                                             action=action,
+                                             new_value=new,
+                                             record_id=record_id,
+                                             record_type=record_type).url
                     ),
                     PostbackTemplateAction(
                         label="否，取消修改",
                         data=MyDiaryCallback(line_id=line_id,
-                                             action=action).url
+                                             action=Action.UPDATE_CANCEL).url
                     ),
                 ]
             )
@@ -55,7 +58,7 @@ class MyDiaryManager(object):
         return record
 
     @staticmethod
-    def change_date(val: str, old_datetime: datetime):
+    def change_date(val: str, old_datetime: datetime.datetime):
         year = int(val[0:4])
         month = int(val[4:6])
         day = int(val[6:])
@@ -64,7 +67,7 @@ class MyDiaryManager(object):
         return new_date
 
     @staticmethod
-    def change_time(val: str, old_datetime: datetime):
+    def change_time(val: str, old_datetime: datetime.datetime):
         hour = int(val[0:2])
         minute = int(val[2:])
 
@@ -83,7 +86,6 @@ class MyDiaryManager(object):
         app_cache = AppCache(self.callback.line_id, app=self.callback.app)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
-            app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
                 template=ButtonsTemplate(
@@ -111,7 +113,6 @@ class MyDiaryManager(object):
                         ),
                     ]
                 )
-
             )
         elif self.callback.action == Action.BG_HISTORY:
             records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
@@ -255,7 +256,7 @@ class MyDiaryManager(object):
                 )
             )
         elif self.callback.action == Action.UPDATE_DATE:
-            app_cache.set_next_action("UPDATE_DATE_CHECK")
+            app_cache.set_next_action(Action.UPDATE_DATE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -278,7 +279,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_TIME:
-            app_cache.set_next_action("UPDATE_TIME_CHECK")
+            app_cache.set_next_action(Action.UPDATE_TIME_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -301,7 +302,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_BG_VALUE:
-            app_cache.set_next_action("UPDATE_BG_VALUE_CHECK")
+            app_cache.set_next_action(Action.UPDATE_BG_VALUE_CHECK)
             data = MyDiaryData()
             data.record_id = self.callback.record_id
             data.record_type = self.callback.record_type
@@ -324,10 +325,6 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.UPDATE_BG_TYPE:
-            data = MyDiaryData()
-            data.record_id = self.callback.record_id
-            data.record_type = self.callback.record_type
-
             old_type = BGModel.objects.get(id=self.callback.record_id).type
             if old_type == 'before':
                 new_type = 'after'
@@ -336,14 +333,13 @@ class MyDiaryManager(object):
 
             type_to_chinese = {'before': '飯前', 'after': '飯後'}
 
-            data.new_type = new_type
-            app_cache.save_data(data)
-
             reply = self.confirm_template(
                 line_id=self.callback.line_id,
                 old=type_to_chinese[old_type],
                 new=type_to_chinese[new_type],
-                action=Action.UPDATE_BG_TYPE_CONFIRM
+                action=Action.UPDATE_BG_TYPE_CONFIRM,
+                record_id=self.callback.record_id,
+                record_type=self.callback.record_type
             )
 
         elif self.callback.action == Action.UPDATE_DATE_CHECK:
@@ -353,7 +349,6 @@ class MyDiaryManager(object):
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
 
             try:
-
                 new_date = self.change_date(text, record.time)
                 data = app_cache.data
                 data.new_datetime = new_date
@@ -363,9 +358,13 @@ class MyDiaryManager(object):
                     line_id=app_cache.line_id,
                     old=record.time,
                     new=new_date,
-                    action=Action.UPDATE_DATE_CONFIRM)
+                    action=Action.UPDATE_DATE_CONFIRM,
+                    record_id=record_id,
+                    record_type=record_type
+                )
 
             except ValueError:
+                app_cache.delete()
                 reply = TemplateSendMessage(
                     alt_text="哎呀！您如果要修改日期的話請依照格式輸入喔！",
                     template=ButtonsTemplate(
@@ -399,17 +398,17 @@ class MyDiaryManager(object):
 
             try:
                 new_date = self.change_time(text, record.time)
-                data = app_cache.data
-                data.new_datetime = new_date
-                app_cache.save_data(data)
-
                 reply = self.confirm_template(
                     line_id=app_cache.line_id,
                     old=record.time,
                     new=new_date,
-                    action=Action.UPDATE_TIME_CONFIRM)
+                    action=Action.UPDATE_TIME_CONFIRM,
+                    record_type=record_type,
+                    record_id=record_id
+                )
 
             except ValueError:
+                app_cache.delete()
                 reply = TemplateSendMessage(
                     alt_text="哎呀！您如果要修改時間的話請依照格式輸入喔！",
                     template=ButtonsTemplate(
@@ -443,17 +442,17 @@ class MyDiaryManager(object):
 
             if text.isdigit():
                 new_value = int(text)
-                data = app_cache.data
-                data.new_value = new_value
-                app_cache.save_data(data)
 
                 reply = self.confirm_template(
                     line_id=app_cache.line_id,
                     old=record.glucose_val,
                     new=new_value,
-                    action=Action.UPDATE_BG_VALUE_CONFIRM)
-
+                    action=Action.UPDATE_BG_VALUE_CONFIRM,
+                    record_type=record_type,
+                    record_id=record_id
+                )
             else:
+                app_cache.delete()
                 reply = TemplateSendMessage(
                     alt_text="哎呀！您如果要修改血糖的話請輸入數字喔！",
                     template=ButtonsTemplate(
@@ -479,28 +478,30 @@ class MyDiaryManager(object):
                     )
                 )
         elif self.callback.action == Action.UPDATE_DATE_CONFIRM or self.callback.action == Action.UPDATE_TIME_CONFIRM:
-            record_type = app_cache.data.record_type
-            record_id = app_cache.data.record_id
+            record_type = self.callback.record_type
+            record_id = self.callback.record_id
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
-            record.time = app_cache.data.new_datetime
+            record.time = self.callback.new_value
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
 
         elif self.callback.action == Action.UPDATE_BG_VALUE_CONFIRM:
-            record_type = app_cache.data.record_type
-            record_id = app_cache.data.record_id
+            record_type = self.callback.record_type
+            record_id = self.callback.record_id
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
-            record.glucose_val = app_cache.data.new_value
+            record.glucose_val = self.callback.new_value
             record.save()
 
             reply = TextSendMessage(text="修改成功!")
 
         elif self.callback.action == Action.UPDATE_BG_TYPE_CONFIRM:
-            record_type = app_cache.data.record_type
-            record_id = app_cache.data.record_id
+            chinese_to_type = {'飯前': 'before', '飯後': 'after'}
+
+            record_type = self.callback.record_type
+            record_id = self.callback.record_id
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
-            record.type = app_cache.data.new_type
+            record.type = chinese_to_type[self.callback.new_value]
             record.save()
 
             reply = TextSendMessage(text="修改成功!")

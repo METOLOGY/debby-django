@@ -1,3 +1,4 @@
+import datetime
 import warnings
 from abc import ABCMeta
 from typing import TypeVar
@@ -83,9 +84,10 @@ class ReminderData(CacheData):
 class UserSettingData(CacheData):
     reminder_id = 0  # type: int
 
+
 class MyDiaryData(CacheData):
-    record_id = 0 # type: int
-    record_type = '' # type: str
-    new_datetime = '' # type: datetime
-    new_value = 0 # type: int
-    new_type = '' # type: str
+    record_id = 0  # type: int
+    record_type = ''  # type: str
+    new_datetime = ''  # type: datetime.datetime
+    new_value = 0  # type: int
+    new_type = ''  # type: str
