@@ -16,12 +16,11 @@ class ReminderManager(object):
     def __init__(self, callback: ReminderCallback):
         self.callback = callback
 
-    def reply_reminder(self, line_id: str, reminder_id: int):
+    @staticmethod
+    def reply_reminder(line_id: str, reminder_id: int):
         """
         :param line_id: a true line ID.
         :param reminder_id: reminder type.
-
-        This function is designed for celery beat task.
         """
         assert len(line_id) == 33  # check line_id is a true line ID
         reminder = UserReminder.objects.get(id=reminder_id)
@@ -41,31 +40,30 @@ class ReminderManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='好的',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=1,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=2,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                     PostbackTemplateAction(
                         label='10分鐘後再提醒我',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=3,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                 ]
             )
         )
 
         line_bot_api = settings.LINE_BOT_API
-        print(line_id)
         line_bot_api.push_message(to=line_id, messages=reminder_message)
 
     @staticmethod
