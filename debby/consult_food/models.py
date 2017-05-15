@@ -10,3 +10,16 @@ class ConsultFoodModel(models.Model):
     metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣量", blank=True, null=True)
     carbohydrates_equivalent = models.FloatField(verbose_name="醣類份數當量", blank=True, null=True)
     white_rice_equivalent = models.FloatField(verbose_name="幾碗白飯當量", blank=True, null=True)
+
+
+class FoodModel(models.Model):
+    sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, unique=True)
+    modified_calorie = models.FloatField(verbose_name="修正熱量-成分值(kcal)")
+    crude_protein = models.FloatField(verbose_name="粗蛋白-成分值(g)")
+    crude_fat = models.FloatField(verbose_name="粗脂肪-成分值(g)")
+    metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣量")
+
+
+class FoodNameModel(models.Model):
+    known_as_name = models.CharField(verbose_name="代稱", max_length=50)
+    foods = models.ManyToManyField(FoodModel)
