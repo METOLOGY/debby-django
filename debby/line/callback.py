@@ -88,6 +88,10 @@ class ConsultFoodCallback(DerivedAppCallback):
     def text(self) -> str:
         return self.data.get('text')
 
+    @property
+    def food_id(self) -> str:
+        return self.data.get('food_id')
+
 
 class DrugAskCallback(DerivedAppCallback):
     app = App.DRUG_ASK

@@ -79,6 +79,10 @@ class InputHandler(object):
                 callback = BGRecordCallback(self.line_id,
                                             action=app_cache.action,
                                             text=self.text)
+            elif app_cache.app == App.CONSULT_FOOD:
+                callback = ConsultFoodCallback(self.line_id,
+                                               action=app_cache.action,
+                                               text=self.text)
 
             elif app_cache.app == App.USER_SETTING:
                 callback = UserSettingsCallback(self.line_id,
