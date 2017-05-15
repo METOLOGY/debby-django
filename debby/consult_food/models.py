@@ -25,5 +25,5 @@ class FoodModel(models.Model):
 
 
 class FoodNameModel(models.Model):
-    known_as_name = models.CharField(verbose_name="代稱", max_length=50)
-    foods = models.ManyToManyField(FoodModel)
+    known_as_name = models.CharField(verbose_name="代稱", max_length=100)
+    food = models.ForeignKey(FoodModel)
