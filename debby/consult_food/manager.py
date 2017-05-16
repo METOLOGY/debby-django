@@ -63,6 +63,7 @@ class ConsultFoodManager(object):
                     actions = []
                     for i in range(card_num):
                         food_name = d.popleft()  # type: FoodNameModel
+
                         actions.append(
                             PostbackTemplateAction(
                                 label=food_name.food.sample_name,
