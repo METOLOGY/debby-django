@@ -139,40 +139,42 @@ def reply_message(event, line_id, send_message):
         d = deque(send_message)
         i = 0
         s = []
-        while len(d) > 5:
-            s.append(d.popleft())
-            i += 1
-            if i == 5:
-                print(i)
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    s
-                )
-                i = 0
-                s = []
-                break
+        if len(d) > 5:
+            while len(d) > 5:
+                s.append(d.popleft())
+                i += 1
+                if i == 5:
+                    print(i)
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        s
+                    )
+                    i = 0
+                    s = []
+            try:
+                while len(d) > 0:
+                    s.append(d.popleft())
+                    i += 1
+                    if i == 5:
+                        print(i)
+                        line_bot_api.push_message(
+                            to=line_id,
+                            messages=s
+                        )
+                        i = 0
+                        s = []
+                else:
+                    line_bot_api.push_message(
+                        to=line_id,
+                        messages=s
+                    )
+
+            except LineBotApiError as e:
+                print(e)
         else:
             line_bot_api.reply_message(
                 event.reply_token,
                 send_message
             )
-        try:
-            while len(d) > 0:
-                s.append(d.popleft())
-                i += 1
-                if i == 5:
-                    print(i)
-                    line_bot_api.push_message(
-                        to=line_id,
-                        messages=s
-                    )
-                    i = 0
-                    s = []
-            else:
-                line_bot_api.push_message(
-                    to=line_id,
-                    messages=s
-                )
 
-        except LineBotApiError as e:
-            print(e)
+
