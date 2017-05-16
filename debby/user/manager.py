@@ -253,6 +253,7 @@ class UserSettingManager(object):
             else:
                 reminder = UserReminder.objects.get(id=reminder_id)
                 reminder.time = time
+                reminder.status = True
                 reminder.save()
                 reply = [TextSendMessage(text='設定成功！'), self.conversation_closed_message]
 
