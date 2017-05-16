@@ -114,6 +114,7 @@ class FoodRecordManager(object):
     def handle(self) -> Union[SendMessage, None]:
         reply = TextSendMessage(text='FOOD_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id)
+        app_cache.set_expired_time(seconds=60*5)  # set expired time to 5 minutes.
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
