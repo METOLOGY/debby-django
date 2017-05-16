@@ -124,7 +124,7 @@ class MyDiaryManager(object):
             record_type = RecordType.BG
 
             if len(records) == 0:
-                reply = TextSendMessage(text="目前您沒有任何記錄哦～")
+                reply = self.no_record()
             else:
                 for record in records:
                     time = record.time.astimezone().strftime("%H:%M, %x")
@@ -149,6 +149,90 @@ class MyDiaryManager(object):
                                     line_id=self.callback.line_id,
                                     action=Action.DELETE,
                                     record_type=record_type,
+                                    record_id=record.id).url
+                            )
+                        ]
+                    ))
+
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆血糖紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    )
+                )
+
+        elif self.callback.action == Action.DRUG_HISTORY:
+            records = DrugIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            carousels = []
+
+            if len(records) == 0:
+                reply = self.no_record()
+            else:
+                for record in records:
+                    time = record.time.astimezone().strftime("%H:%M, %x")
+                    status = "已服用" if record.status else "尚未服用"
+
+                    message = "服用狀況: {}".format(status)
+                    carousels.append(CarouselColumn(
+                        title="紀錄時間: {}".format(time),
+                        text=message,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DRUG_UPDATE,
+                                    record_id=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_type=RecordType.DRUG,
+                                    record_id=record.id).url
+                            )
+                        ]
+                    ))
+
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆血糖紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    )
+                )
+
+        elif self.callback.action == Action.INSULIN_HISTORY:
+            records = InsulinIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            carousels = []
+
+            if len(records) == 0:
+                reply = self.no_record()
+            else:
+                for record in records:
+                    time = record.time.astimezone().strftime("%H:%M, %x")
+                    status = "已服用" if record.status else "尚未服用"
+
+                    message = "服用狀況: {}".format(status)
+                    carousels.append(CarouselColumn(
+                        title="紀錄時間: {}".format(time),
+                        text=message,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.INSULIN_UPDATE,
+                                    record_id=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_type=RecordType.INSULIN,
                                     record_id=record.id).url
                             )
                         ]
@@ -259,6 +343,63 @@ class MyDiaryManager(object):
                     ]
                 )
             )
+
+        elif self.callback.action == Action.DRUG_UPDATE:
+            reply = TemplateSendMessage(
+                alt_text="請選擇欲修改的項目",
+                template=ButtonsTemplate(
+                    text="請選擇欲修改的項目",
+                    actions=[
+                        PostbackTemplateAction(
+                            label="日期",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_DATE,
+                                record_type=RecordType.DRUG,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label="時間",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_TIME,
+                                record_type=RecordType.DRUG,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                    ]
+                )
+            )
+
+        elif self.callback.action == Action.INSULIN_UPDATE:
+            reply = TemplateSendMessage(
+                alt_text="請選擇欲修改的項目",
+                template=ButtonsTemplate(
+                    text="請選擇欲修改的項目",
+                    actions=[
+                        PostbackTemplateAction(
+                            label="日期",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_DATE,
+                                record_type=RecordType.INSULIN,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label="時間",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_TIME,
+                                record_type=RecordType.INSULIN,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                    ]
+                )
+            )
+
         elif self.callback.action == Action.UPDATE_DATE:
             app_cache.set_next_action(self.callback.app, Action.UPDATE_DATE_CHECK)
             data = MyDiaryData()
