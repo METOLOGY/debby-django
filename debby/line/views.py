@@ -52,7 +52,7 @@ def callback(request):
             line_id = data['events'][0]['source']['userId']
 
             # create a new user in database.
-            UserInit(line_id)
+            user_init(line_id)
 
             handler.handle(body, signature)
         except InvalidSignatureError:
@@ -78,42 +78,7 @@ def handle_message(event: MessageEvent):
     UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
     # return to Line Server
-    d = deque(send_message)
-    i = 0
-    s = []
-    while len(d) > 0:
-        s.append(d.popleft())
-        i += 1
-        if i == 5:
-            print(i)
-            line_bot_api.reply_message(
-                event.reply_token,
-                s
-            )
-            i = 0
-            s = []
-            break
-
-    try:
-        while len(d) > 0:
-            s.append(d.popleft())
-            i += 1
-            if i == 5:
-                print(i)
-                line_bot_api.push_message(
-                    to=line_id,
-                    messages=s
-                )
-                i = 0
-                s = []
-        else:
-            line_bot_api.push_message(
-                to=line_id,
-                messages=s
-            )
-
-    except LineBotApiError as e:
-        print(e)
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
@@ -129,9 +94,7 @@ def handle_image(event: MessageEvent):
     UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
 
     # return to Line Server
-    line_bot_api.reply_message(
-        event.reply_token,
-        send_message)
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(PostbackEvent)
@@ -152,14 +115,63 @@ def postback(event: PostbackEvent):
         )
 
 
-def UserInit(line_id: str):
+def user_init(line_id: str):
     if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
         user = CustomUserModel.objects.create_user(line_id=line_id)
 
         # init reminder
         for reminder_type in ['bg', 'insulin', 'drug']:
-            for time in [datetime.time(7, 0), datetime.time(8, 0), datetime.time(12, 0), datetime.time(18, 0), datetime.time(22, 0)]:
+            for time in [datetime.time(7, 0), datetime.time(8, 0), datetime.time(12, 0), datetime.time(18, 0),
+                         datetime.time(22, 0)]:
                 if time == datetime.time(8, 0) and reminder_type == 'drug':
                     UserReminder.objects.get_or_create(user=user, type=reminder_type, time=time, status=True)
                 else:
                     UserReminder.objects.get_or_create(user=user, type=reminder_type, time=time, status=False)
+
+
+def reply_message(event, line_id, send_message):
+    if type(send_message) is not list:
+        line_bot_api.reply_message(
+            event.reply_token,
+            send_message
+        )
+    d = deque(send_message)
+    i = 0
+    s = []
+    while len(d) > 5:
+        s.append(d.popleft())
+        i += 1
+        if i == 5:
+            print(i)
+            line_bot_api.reply_message(
+                event.reply_token,
+                s
+            )
+            i = 0
+            s = []
+            break
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            s
+        )
+    try:
+        while len(d) > 0:
+            s.append(d.popleft())
+            i += 1
+            if i == 5:
+                print(i)
+                line_bot_api.push_message(
+                    to=line_id,
+                    messages=s
+                )
+                i = 0
+                s = []
+        else:
+            line_bot_api.push_message(
+                to=line_id,
+                messages=s
+            )
+
+    except LineBotApiError as e:
+        print(e)
