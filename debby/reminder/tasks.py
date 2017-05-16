@@ -1,8 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
-import arrow
 import pytz
+from datetime import datetime
 from django_q.models import Schedule
 
 from reminder.manager import ReminderManager
@@ -13,48 +13,52 @@ tz = pytz.timezone('Asia/Taipei')
 
 
 def record_reminder(data):
+    """
+    determine reminder message should be sent or not
+
+    :param data:
+    :return:
+    """
     line_id = data[0]
     reminder_id = data[1]
     reminder = UserReminder.objects.get(id=reminder_id)
-    if reminder.status:
+    time_now =  datetime.now().astimezone(tz).time()
+
+    if reminder.status and time_now.hour == reminder.time.hour and time_now.minute == reminder.time.minute:
         ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
 
 
 def periodic_checking_bg_reminder_setting():
+    """
+    check user personal reminder settings and update schedule tasks by minutes.
+    Once the schedule is created, then the schedule.next_run will be checked every time, if changed, then saved.
+
+    :return:
+    """
     for user in CustomUserModel.objects.all():
         if len(user.line_id) == 33:
             reminders = UserReminder.objects.filter(user=user)
 
             for num, reminder in enumerate(reminders):
-
-                sch, _ = Schedule.objects.get_or_create(
+                sch, created = Schedule.objects.get_or_create(
                     name=user.line_id + '_reminder_' + str(num),
                 )
 
-                sch_ori_time = sch.next_run.astimezone(tz=tz)
+                sch.func = 'reminder.tasks.record_reminder'
+                sch.args = json.dumps([user.line_id, reminder.id])
+                sch.schedule_type = Schedule.DAILY
+                sch.repeats = -1
+                set_time = reminder.time
+                sch.next_run = datetime.today().astimezone(tz).replace(hour=set_time.hour, minute=set_time.minute)
 
-                if sch.repeats == 1 or sch.repeats == -1:
-                    sch_status = True
-                else:
-                    sch_status = False
-
-                if (sch_ori_time.hour != reminder.time.hour and sch_ori_time.minute != reminder.time.minute) or sch_status != reminder.status:
-                    print(sch_ori_time)
-                    print(reminder.time)
-                    print((sch_ori_time.hour != reminder.time.hour and sch_ori_time.minute != reminder.time.minute))
-                    print(sch_status != reminder.status)
-                    sch.func = 'reminder.tasks.record_reminder'
-                    sch.args = json.dumps([user.line_id, reminder.id])
-
-                    if reminder.status:
-                        sch.repeats = 1  # always turn on
-                    else:
-                        sch.repeats = 0  # turn off
-
-                    sch_time = arrow.utcnow().to('Asia/Taipei').replace(
-                        hour=reminder.time.hour, minute=reminder.time.minute
-                    )
-                    sch.next_run = str(sch_time)
-                    sch.schedule_type = Schedule.DAILY
-                    print('save')
+                if created:
                     sch.save()
+                else:
+                    if check_time_changed(sch, reminder):
+                        sch.save()
+
+def check_time_changed(schedule: Schedule, reminder: UserReminder):
+    if schedule.next_run.hour == reminder.time.hour and schedule.next_run.minute == reminder.time.minute:
+        return False
+    else:
+        return True
