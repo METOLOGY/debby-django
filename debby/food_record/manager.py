@@ -5,14 +5,15 @@ from io import BytesIO
 from typing import List, Union
 
 from PIL import Image
+from django.core.cache import cache
 from django.core.files import File
-from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction
+from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, ImageSendMessage
 from linebot.models import TextSendMessage
 
 from debby import settings
-from food_record.models import FoodModel
-from line.callback import FoodRecordCallback
-from line.constant import FoodRecordAction as Action, App
+from food_record.models import FoodModel, TempImageModel
+from line.callback import FoodRecordCallback, MyDiaryCallback
+from line.constant import FoodRecordAction as Action, App, MyDiaryAction
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
@@ -66,8 +67,23 @@ class FoodRecordManager(object):
         food_record.save()
 
     def handle_final_check_before_save(self, data: FoodData) -> List[SendMessage]:
+        reply = []
         time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
         message = '{}{}'.format(time, data.extra_info)
+
+        # Get from temp image
+        query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
+        if query:
+            temp = query[0]
+            host = cache.get("host_name")
+            url = temp.image_upload.url
+            photo = "https://{}{}".format(host, url)
+
+            image_message = ImageSendMessage(
+                original_content_url=photo,
+                preview_image_url=photo
+            )
+            reply.append(image_message)
 
         text_send_message = TextSendMessage(text=message)
 
@@ -83,7 +99,7 @@ class FoodRecordManager(object):
                     ),
                     PostbackTemplateAction(
                         label='修改',
-                        data=FoodRecordCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
+                        data=MyDiaryCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
                     ),
                     PostbackTemplateAction(
                         label='取消',
@@ -92,18 +108,19 @@ class FoodRecordManager(object):
                 ]
             )
         )
-
-        return [text_send_message, send_message]
+        reply.extend((text_send_message, send_message))
+        return reply
 
     def handle(self) -> Union[SendMessage, None]:
-        reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id, app=App.FOOD_RECORD)
+        reply = TextSendMessage(text='FOOD_RECORD ERROR!')
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
             reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
 
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            # init cache again to clean other app's status and data
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             app_cache.data = data
             app_cache.commit()
@@ -112,9 +129,7 @@ class FoodRecordManager(object):
             print(Action.WAIT_FOR_USER_REPLY)
             data = FoodData()
             data.setup_data(app_cache.data)
-            # if self.callback.text.upper() == 'N':
-            #     reply = self.handle_final_check_before_save(data)
-            # else:
+
             if data.extra_info or data.image_id:
                 data.extra_info = "\n".join([data.extra_info, self.callback.text])
             else:
@@ -122,7 +137,7 @@ class FoodRecordManager(object):
 
             reply = self.reply_to_record_detail_template()
             app_cache.data = data
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
         elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
@@ -130,11 +145,20 @@ class FoodRecordManager(object):
             data = FoodData()
             data.image_id = self.callback.image_id
 
+            # save image to temp folder
+            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            temp, _ = TempImageModel.objects.get_or_create(user=user)
+            image_content = self.image_reader.load_image(data.image_id)
+            bytes_io = BytesIO(image_content)
+            file = '{0}_food_image.jpg'.format(self.callback.line_id)
+            temp.image_upload.save(file, File(bytes_io))
+            temp.save()
+
             app_cache.data = data
             app_cache.commit()
 
             reply = self.reply_to_record_detail_template()
-            app_cache.set_next_action(action=Action.WAIT_FOR_USER_REPLY)
+            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
         elif self.callback.action == Action.CHECK_BEFORE_CREATE:
@@ -158,13 +182,14 @@ class FoodRecordManager(object):
                 image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
                 food_record_pk = self.record_image(image_content, data.extra_info)
 
+                # delete temp image
+                TempImageModel.objects.filter(user__line_id=self.callback.line_id).delete()
+
                 if food_record_pk:
                     app_cache.delete()
                     reply = TextSendMessage(text="飲食記錄成功!")
                 else:
                     reply = TextSendMessage(text="記錄失敗!? 可能隔太久沒有動作囉")
-        elif self.callback.action == Action.MODIFY_EXTRA_INFO:
-            reply = TextSendMessage(text="Debby 還不會修改 一起跟Debby努力加油吧!❤")
         elif self.callback.action == Action.CANCEL:
             if not app_cache.data:
                 return None
