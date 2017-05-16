@@ -44,7 +44,9 @@ class InputHandler(object):
         :return: SendMessage
         """
         app_cache = AppCache(self.line_id)
-        if app_cache.is_app_running():
+        special_case = ["血糖紀錄", "飲食紀錄", "食物熱量查詢", "藥物資訊查詢", "我的設定", "我的日記"]
+
+        if app_cache.is_app_running() and self.text not in special_case:
 
             # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
