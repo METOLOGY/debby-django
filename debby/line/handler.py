@@ -45,6 +45,8 @@ class InputHandler(object):
         """
         app_cache = AppCache(self.line_id)
         events = EventModel.objects.filter(phrase=self.text)
+        if not events:
+            events = EventModel.objects.filter(phrase__iexact=self.text)
 
         # event founded in event model(app, action)
         if events:
