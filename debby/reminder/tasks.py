@@ -22,7 +22,7 @@ def record_reminder(data):
     line_id = data[0]
     reminder_id = data[1]
     reminder = UserReminder.objects.get(id=reminder_id)
-    time_now =  datetime.now().astimezone(tz).time()
+    time_now = datetime.now().astimezone(tz).time()
 
     if reminder.status and time_now.hour == reminder.time.hour and time_now.minute == reminder.time.minute:
         ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
@@ -31,7 +31,6 @@ def record_reminder(data):
 def periodic_checking_bg_reminder_setting():
     """
     check user personal reminder settings and update schedule tasks by minutes.
-    Once the schedule is created, then the schedule.next_run will be checked every time, if changed, then saved.
 
     :return:
     """
@@ -50,15 +49,4 @@ def periodic_checking_bg_reminder_setting():
                 sch.repeats = -1
                 set_time = reminder.time
                 sch.next_run = datetime.today().astimezone(tz).replace(hour=set_time.hour, minute=set_time.minute)
-
-                if created:
-                    sch.save()
-                else:
-                    if check_time_changed(sch, reminder):
-                        sch.save()
-
-def check_time_changed(schedule: Schedule, reminder: UserReminder):
-    if schedule.next_run.hour == reminder.time.hour and schedule.next_run.minute == reminder.time.minute:
-        return False
-    else:
-        return True
+                sch.save()
