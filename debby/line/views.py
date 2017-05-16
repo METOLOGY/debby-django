@@ -1,5 +1,6 @@
 import datetime
 import json
+from collections import deque
 
 from django.conf import settings
 from django.core.cache import cache
@@ -77,9 +78,42 @@ def handle_message(event: MessageEvent):
     UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
     # return to Line Server
-    line_bot_api.reply_message(
-        event.reply_token,
-        send_message)
+    d = deque(send_message)
+    i = 0
+    s = []
+    while len(d) > 0:
+        s.append(d.popleft())
+        i += 1
+        if i == 5:
+            print(i)
+            line_bot_api.reply_message(
+                event.reply_token,
+                s
+            )
+            i = 0
+            s = []
+            break
+
+    try:
+        while len(d) > 0:
+            s.append(d.popleft())
+            i += 1
+            if i == 5:
+                print(i)
+                line_bot_api.push_message(
+                    to=line_id,
+                    messages=s
+                )
+                i = 0
+                s = []
+        else:
+            line_bot_api.push_message(
+                to=line_id,
+                messages=s
+            )
+
+    except LineBotApiError as e:
+        print(e)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
