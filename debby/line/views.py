@@ -158,6 +158,8 @@ def UserInit(line_id: str):
 
         # init reminder
         for reminder_type in ['bg', 'insulin', 'drug']:
-            for time in [datetime.time(7, 0), datetime.time(8, 0), datetime.time(12, 0), datetime.time(18, 0),
-                         datetime.time(22, 0)]:
-                UserReminder.objects.create(user=user, type=reminder_type, time=time, status=False)
+            for time in [datetime.time(7, 0), datetime.time(8, 0), datetime.time(12, 0), datetime.time(18, 0), datetime.time(22, 0)]:
+                if time == datetime.time(8, 0) and reminder_type == 'drug':
+                    UserReminder.objects.get_or_create(user=user, type=reminder_type, time=time, status=True)
+                else:
+                    UserReminder.objects.get_or_create(user=user, type=reminder_type, time=time, status=False)

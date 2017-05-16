@@ -48,6 +48,9 @@ class AppCache(object):
         self.set_data(data)
         self.commit()
 
+    def set_expired_time(self, seconds: int):
+        self.expired_time = seconds
+
 
 class CacheData(metaclass=ABCMeta):
     def setup_data(self, data: "C"):
