@@ -88,8 +88,6 @@ class MyDiaryManager(object):
         if self.callback.action == Action.CREATE_FROM_MENU:
             # init cache again to clean other app's status and data
             app_cache.delete()
-            app_cache.set_app(self.callback.app)
-            app_cache.commit()
             reply = TemplateSendMessage(
                 alt_text="請選擇想要檢視的紀錄",
                 template=ButtonsTemplate(
