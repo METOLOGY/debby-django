@@ -110,7 +110,7 @@ class ReminderManager(object):
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='REMINDER ERROR')
-        app_cache = AppCache(self.callback.line_id, app=App.REMINDER)
+        app_cache = AppCache(self.callback.line_id)
 
         print(self.callback.action, self.callback.choice, self.callback.reminder_id)
         if self.callback.action == Action.REPLY_REMINDER:
