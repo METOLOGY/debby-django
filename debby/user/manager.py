@@ -185,7 +185,7 @@ class UserSettingManager(object):
             user_reminders = UserReminder.objects.filter(
                 user__line_id=self.callback.line_id,
                 type=self.callback.choice
-            )
+            ).order_by('time')
 
             carousels = []
             for reminder in user_reminders:
