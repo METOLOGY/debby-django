@@ -19,8 +19,8 @@ from line.constant import App, BGRecordAction, FoodRecordAction
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
 from reminder.manager import ReminderManager
-from user.manager import UserSettingManager
 from user.cache import AppCache
+from user.manager import UserSettingManager
 from user.models import CustomUserModel
 
 
@@ -44,25 +44,6 @@ class InputHandler(object):
         :return: SendMessage
         """
         app_cache = AppCache(self.line_id)
-        events = EventModel.objects.filter(phrase=self.text)
-        if not events:
-            events = EventModel.objects.filter(phrase__iexact=self.text)
-
-        # event founded in event model(app, action)
-        if events:
-            event = random.choice(events)
-            print(event.callback, event.action)
-
-            callback = Callback(line_id=self.line_id,
-                                app=event.callback,
-                                action=event.action,
-                                text=self.text)
-            send_message = CallbackHandler(callback).handle()
-            if send_message:
-                return send_message
-            else:
-                return TextSendMessage(text='哀呀, Debby 犯傻了><')
-
         if app_cache.is_app_running():
 
             # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
@@ -97,6 +78,25 @@ class InputHandler(object):
                                            text=self.text)
 
             return CallbackHandler(callback).handle()
+
+        events = EventModel.objects.filter(phrase=self.text)
+        if not events:
+            events = EventModel.objects.filter(phrase__iexact=self.text)
+
+        # event founded in event model(app, action)
+        if events:
+            event = random.choice(events)
+            print(event.callback, event.action)
+
+            callback = Callback(line_id=self.line_id,
+                                app=event.callback,
+                                action=event.action,
+                                text=self.text)
+            send_message = CallbackHandler(callback).handle()
+            if send_message:
+                return send_message
+            else:
+                return TextSendMessage(text='哀呀, Debby 犯傻了><')
 
         # user might input number directly.
         elif self.text.isdigit():
