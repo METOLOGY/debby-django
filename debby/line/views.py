@@ -135,43 +135,44 @@ def reply_message(event, line_id, send_message):
             event.reply_token,
             send_message
         )
-    d = deque(send_message)
-    i = 0
-    s = []
-    while len(d) > 5:
-        s.append(d.popleft())
-        i += 1
-        if i == 5:
-            print(i)
-            line_bot_api.reply_message(
-                event.reply_token,
-                s
-            )
-            i = 0
-            s = []
-            break
     else:
-        line_bot_api.reply_message(
-            event.reply_token,
-            s
-        )
-    try:
-        while len(d) > 0:
+        d = deque(send_message)
+        i = 0
+        s = []
+        while len(d) > 5:
             s.append(d.popleft())
             i += 1
             if i == 5:
                 print(i)
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    s
+                )
+                i = 0
+                s = []
+                break
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                d
+            )
+        try:
+            while len(d) > 0:
+                s.append(d.popleft())
+                i += 1
+                if i == 5:
+                    print(i)
+                    line_bot_api.push_message(
+                        to=line_id,
+                        messages=s
+                    )
+                    i = 0
+                    s = []
+            else:
                 line_bot_api.push_message(
                     to=line_id,
                     messages=s
                 )
-                i = 0
-                s = []
-        else:
-            line_bot_api.push_message(
-                to=line_id,
-                messages=s
-            )
 
-    except LineBotApiError as e:
-        print(e)
+        except LineBotApiError as e:
+            print(e)
