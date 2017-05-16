@@ -154,7 +154,7 @@ def reply_message(event, line_id, send_message):
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                d
+                send_message
             )
         try:
             while len(d) > 0:
