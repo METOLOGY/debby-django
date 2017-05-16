@@ -122,7 +122,7 @@ def UserInit(line_id: str):
     if CustomUserModel.objects.filter(line_id=line_id).exists() is False:
         user = CustomUserModel.objects.create_user(line_id=line_id)
 
-        # init reminder, three reminder for each type in default
-        for type in ['bg', 'insulin', 'drug']:
-            for time in [datetime.time(9, 00), datetime.time(13, 00), datetime.time(19, 30)]:
-                UserReminder.objects.create(user=user, type=type, time=time, status=True)
+        # init reminder
+        for reminder_type in ['bg', 'insulin', 'drug']:
+            for time in [datetime.time(7, 0), datetime.time(8, 0), datetime.time(12, 0), datetime.time(18, 0), datetime.time(22, 0)]:
+                UserReminder.objects.create(user=user, type=reminder_type, time=time, status=False)
