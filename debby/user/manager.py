@@ -111,15 +111,20 @@ class UserSettingManager(object):
             )
         )
 
-    def confirm_reminder_turn_off(self, reminder_id):
+    def confirm_reminder_turn_on_or_off(self, reminder_id, status: bool):
+        if status:
+            status_zh = '開啟'
+        else:
+            status_zh = '關閉'
+
         return TemplateSendMessage(
-            alt_text='確定要關閉提醒嗎?',
+            alt_text='確定要{}提醒嗎?'.format(status_zh),
             template=ButtonsTemplate(
-                text='確定要關閉提醒嗎?',
+                text='確定要{}提醒嗎?'.format(status_zh),
                 actions=[
                     PostbackTemplateAction(
                         label='確定',
-                        data='app=UserSetting&action=TURN_OFF_REMINDER&reminder_id={}'.format(reminder_id)
+                        data='app=UserSetting&action=TURN_ON_OR_OFF_REMINDER&reminder_id={}'.format(reminder_id)
                     ),
                     PostbackTemplateAction(
                         label='取消',
@@ -176,32 +181,48 @@ class UserSettingManager(object):
             carousels = []
             for reminder in user_reminders:
                 message = '提醒時間：{}\n提醒是否開啟：{}'.format(reminder.time, '是' if reminder.status else '否')
-                print(message)
-                carousels.append(CarouselColumn(
-                    text=message,
-                    actions=[
-                        PostbackTemplateAction(
-                            label='設定時間',
-                            data='app=UserSetting&action=SET_REMINDER_TIME&reminder_id={}'.format(reminder.id)
-                        ),
-                        PostbackTemplateAction(
+
+                set_time_action = PostbackTemplateAction(
+                    label='設定時間',
+                    data='app=UserSetting&action=SET_REMINDER_TIME&reminder_id={}'.format(reminder.id)
+                )
+
+                if reminder.status:
+                    confirm_action = PostbackTemplateAction(
                             label='關閉提醒',
                             data='app=UserSetting&action=CONFIRM_TURN_OFF_REMINDER&reminder_id={}'.format(reminder.id)
-                        ),
-                    ]
+                        )
+                else:
+                    confirm_action = PostbackTemplateAction(
+                        label='開啟提醒',
+                        data='app=UserSetting&action=CONFIRM_TURN_ON_REMINDER&reminder_id={}'.format(reminder.id)
+                    )
+
+                print(confirm_action)
+                actions = [set_time_action, confirm_action]
+                print(actions)
+
+                carousels.append(CarouselColumn(
+                    text=message,
+                    actions=actions
                 ))
             reply = self.reminder_select_carousel(carousels=carousels)
 
         elif self.callback.action == 'CONFIRM_TURN_OFF_REMINDER':
             reminder_id = self.callback.reminder_id
-            reply = self.confirm_reminder_turn_off(reminder_id=reminder_id)
+            reply = self.confirm_reminder_turn_on_or_off(reminder_id=reminder_id, status=False)
 
-        elif self.callback.action == 'TURN_OFF_REMINDER':
+        elif self.callback.action == 'CONFIRM_TURN_ON_REMINDER':
+            reminder_id = self.callback.reminder_id
+            reply = self.confirm_reminder_turn_on_or_off(reminder_id=reminder_id, status=True)
+
+        elif self.callback.action == 'TURN_ON_OR_OFF_REMINDER':
             reminder_id = self.callback.reminder_id
             reminder = UserReminder.objects.get(id=reminder_id)
-            reminder.status = False
+            reminder.status = not reminder.status
             reminder.save()
             reply = TextSendMessage(text='設定完成，已關閉提醒！')
+
 
 
         elif self.callback.action == 'SET_REMINDER_TIME':
