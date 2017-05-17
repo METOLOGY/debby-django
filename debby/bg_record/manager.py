@@ -161,6 +161,7 @@ class BGRecordManager:
 
                 reply = self.reply_record_type()
             elif self.callback.choice == 'no':
+                app_cache.delete()
 
                 # to chat manager
                 # TODO: 這裡有點笨
