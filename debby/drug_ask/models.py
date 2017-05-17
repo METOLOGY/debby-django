@@ -19,6 +19,6 @@ class DrugTypeModel(models.Model):
 class DrugDetailModel(models.Model):
     type = models.CharField(max_length=100, unique=True)
     mechanism = models.CharField(max_length=200)
-    side_effect = models.CharField(max_length=200)
+    side_effect = models.CharField(max_length=200, blank=True, null=True)
     taboo = models.CharField(max_length=200)
-    awareness = models.CharField(max_length=200)
+    awareness = models.CharField(max_length=200, blank=True, null=True)

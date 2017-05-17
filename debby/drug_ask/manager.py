@@ -24,7 +24,7 @@ class DrugAskManager(object):
         message = "請選擇符合的項目:\n"
         return TextSendMessage(text=message + choice_texts)
 
-    def reply_want_which_content(self, fuzzy_drug_name: str = '') -> TemplateSendMessage:
+    def reply_want_which_content(self, fuzzy_drug_name: str, drug_detail_id: str) -> TemplateSendMessage:
         message = "請問您要查詢什麼項目呢?"
         if fuzzy_drug_name:
             message = "{}, 請問您要查詢什麼項目呢?".format(fuzzy_drug_name)
@@ -38,6 +38,7 @@ class DrugAskManager(object):
                         data=DrugAskCallback(
                             line_id=self.callback.line_id,
                             action=Action.READ_DRUG_DETAIL,
+                            drug_detail_id=drug_detail_id,
                             choice=1).url
                     ),
                     PostbackTemplateAction(
@@ -45,6 +46,7 @@ class DrugAskManager(object):
                         data=DrugAskCallback(
                             line_id=self.callback.line_id,
                             action=Action.READ_DRUG_DETAIL,
+                            drug_detail_id=drug_detail_id,
                             choice=2).url
                     ),
                     PostbackTemplateAction(
@@ -52,6 +54,7 @@ class DrugAskManager(object):
                         data=DrugAskCallback(
                             line_id=self.callback.line_id,
                             action=Action.READ_DRUG_DETAIL,
+                            drug_detail_id=drug_detail_id,
                             choice=3).url
                     ),
                     PostbackTemplateAction(
@@ -59,6 +62,7 @@ class DrugAskManager(object):
                         data=DrugAskCallback(
                             line_id=self.callback.line_id,
                             action=Action.READ_DRUG_DETAIL,
+                            drug_detail_id=drug_detail_id,
                             choice=4).url
                     )
                 ]
@@ -67,11 +71,12 @@ class DrugAskManager(object):
         return reply
 
     def handle(self) -> Union[SendMessage, List[SendMessage]]:
-        reply = TextSendMessage(text='ERROR!')
-        app_cache = AppCache(self.callback.line_id, app=App.DRUG_ASK)
+        reply = TextSendMessage(text='DRUG_ASK ERROR!')
+        app_cache = AppCache(self.callback.line_id)
 
         if self.callback.action == Action.READ_FROM_MENU:
-            app_cache.set_next_action(action=Action.READ)
+            # init cache again to clean other app's status and data
+            app_cache.set_next_action(self.callback.app, action=Action.READ)
             app_cache.commit()
 
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
@@ -81,8 +86,6 @@ class DrugAskManager(object):
                 drug_len = len(drug_types)
                 data = DrugAskData()
                 data.drug_types = drug_types
-                app_cache.set_next_action(action=Action.WAIT_DRUG_TYPE_CHOICE)
-                app_cache.save_data(data)
 
                 # find how many template needed
                 def get_each_card_num(choice_num: int) -> list:
@@ -129,42 +132,33 @@ class DrugAskManager(object):
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
 
-                data = DrugAskData()
-                data.drug_detail_pk = drug_detail.pk
-                app_cache.save_data(data)
-                reply = self.reply_want_which_content(drug_detail)
+                reply = self.reply_want_which_content(drug_type.answer, drug_detail.id)
             else:
-                reply = TextSendMessage(text="ERROR!")
+                app_cache.delete()
+                reply = TextSendMessage(text="Debby 找不到您輸入的藥物喔，試試其他的?")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
-            callback = self.callback.convert_to(DrugAskCallback)
-            drug_type = DrugTypeModel.objects.filter(user_choice=callback.fuzzy_drug_name)[0]
+            drug_type = DrugTypeModel.objects.filter(user_choice=self.callback.fuzzy_drug_name)[0]
             drug_detail = DrugDetailModel.objects.filter(type=drug_type.type)
 
             if not drug_detail:
                 reply = TextSendMessage(text='這種藥我還不大熟>"<')
             else:
                 drug_detail = drug_detail[0]
-                data = DrugAskData()
-                data.drug_detail_pk = drug_detail.pk
-                app_cache.save_data(data)
-                reply = self.reply_want_which_content(drug_detail, callback.fuzzy_drug_name)
+                reply = self.reply_want_which_content(drug_type.answer, drug_detail.id)
 
         elif self.callback.action == Action.READ_DRUG_DETAIL:
-            data = app_cache.data  # type: DrugAskData
-            message = "偷偷跟你說, Debby忘記你問甚麼了><, 可以重新問我一遍嗎~"
-            if data:
-                drug_detail_pk = data.drug_detail_pk
+            drug_detail_pk = self.callback.drug_detail_id
 
-                drug_detail = DrugDetailModel.objects.get(pk=drug_detail_pk)
-                message = "Error!"
-                if self.callback.choice == "1":
-                    message = "(1) 作用機轉和服用方式\n" + drug_detail.mechanism
-                elif self.callback.choice == "2":
-                    message = "(2) 不良反應,副作用\n" + drug_detail.side_effect
-                elif self.callback.choice == "3":
-                    message = "(3) 禁忌\n" + drug_detail.taboo
-                elif self.callback.choice == "4":
-                    message = "(4) 注意事項\n" + drug_detail.awareness
+            drug_detail = DrugDetailModel.objects.get(pk=drug_detail_pk)
+            message = "DRUG_ASK READ_DRUG_DETAIL ERROR!"
+            if self.callback.choice == "1":
+                message = "(1) 服用方式\n" + drug_detail.mechanism
+            elif self.callback.choice == "2":
+                message = "(2) 藥物機轉與副作用\n" + drug_detail.side_effect
+            elif self.callback.choice == "3":
+                message = "(3) 禁忌\n" + drug_detail.taboo
+            elif self.callback.choice == "4":
+                message = "(4) 注意事項\n" + drug_detail.awareness
 
             reply = TextSendMessage(text=message)
 

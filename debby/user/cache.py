@@ -1,4 +1,4 @@
-import warnings
+import datetime
 from abc import ABCMeta
 from typing import TypeVar
 
@@ -7,20 +7,21 @@ from django.db.models import QuerySet
 
 
 class AppCache(object):
-    def __init__(self, line_id: str, app: str = '', action: str = ''):
+    def __init__(self, line_id: str):
         self.line_id = line_id
-        self.app = app
-        self.action = action
+
+        self.app = ''
+        self.action = ''
         self.expired_time = 120  # in seconds
         self.data = None
 
-        self._update()
-
-    def _update(self):
-        # update itself from cache
+        # if there is any cache inside user's cache, it will overwrite any information here
         user_cache = cache.get(self.line_id)  # type: AppCache
         if user_cache and type(user_cache) is AppCache:
-            self.__dict__.update(user_cache.__dict__)
+            self._update(user_cache)
+
+    def _update(self, user_cache):
+        self.__dict__.update(user_cache.__dict__)
 
     def is_app_running(self, app: str = '') -> bool:
         if app:
@@ -30,12 +31,8 @@ class AppCache(object):
     def set_app(self, app: str):
         self.app = app
 
-    def set_next_action(self, action: str = ''):
-        self.action = action
-
-    def set_action(self, action: str = ''):
-        warnings.warn("Name changed, use set_next_action instead", DeprecationWarning)
-
+    def set_next_action(self, app: str, action: str):
+        self.app = app
         self.action = action
 
     def set_data(self, data: "C"):
@@ -51,6 +48,9 @@ class AppCache(object):
         self.set_data(data)
         self.commit()
 
+    def set_expired_time(self, seconds: int):
+        self.expired_time = seconds
+
 
 class CacheData(metaclass=ABCMeta):
     def setup_data(self, data: "C"):
@@ -58,6 +58,10 @@ class CacheData(metaclass=ABCMeta):
 
 
 C = TypeVar("C", bound=CacheData)
+
+
+class ConsultFoodData(CacheData):
+    pass
 
 
 class FoodData(CacheData):
@@ -82,3 +86,11 @@ class ReminderData(CacheData):
 
 class UserSettingData(CacheData):
     reminder_id = 0  # type: int
+
+
+class MyDiaryData(CacheData):
+    record_id = 0  # type: int
+    record_type = ''  # type: str
+    new_datetime = ''  # type: datetime.datetime
+    new_value = 0  # type: int
+    new_type = ''  # type: str

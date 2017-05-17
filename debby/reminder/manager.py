@@ -10,18 +10,18 @@ from reminder.models import UserReminder
 from user.cache import AppCache
 from user.cache import ReminderData
 from user.models import CustomUserModel
+import datetime as dt
 
 
 class ReminderManager(object):
     def __init__(self, callback: ReminderCallback):
         self.callback = callback
 
-    def reply_reminder(self, line_id: str, reminder_id: int):
+    @staticmethod
+    def reply_reminder(line_id: str, reminder_id: int):
         """
         :param line_id: a true line ID.
         :param reminder_id: reminder type.
-
-        This function is designed for celery beat task.
         """
         assert len(line_id) == 33  # check line_id is a true line ID
         reminder = UserReminder.objects.get(id=reminder_id)
@@ -41,37 +41,36 @@ class ReminderManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label='好的',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=1,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                     PostbackTemplateAction(
                         label='關閉此次提醒',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=2,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                     PostbackTemplateAction(
                         label='10分鐘後再提醒我',
-                        data=ReminderCallback(line_id=self.callback.line_id,
+                        data=ReminderCallback(line_id=line_id,
                                               action=Action.REPLY_REMINDER,
                                               choice=3,
-                                              reminder_id=reminder.id).url
+                                              reminder_id=reminder_id).url
                     ),
                 ]
             )
         )
 
         line_bot_api = settings.LINE_BOT_API
-        print(line_id)
         line_bot_api.push_message(to=line_id, messages=reminder_message)
 
     @staticmethod
     def reply_reminder_awaits():
         return [
-            TextSendMessage(text='10分鐘後Debby會再次提醒您量血糖'),
+            TextSendMessage(text='10分鐘後Debby會再次提醒您!'),
             TextSendMessage(text='您可至"我的設定"中調整提醒時間')
         ]
 
@@ -111,8 +110,8 @@ class ReminderManager(object):
         return query[0] if len(query) > 0 else None
 
     def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='ERROR')
-        app_cache = AppCache(self.callback.line_id, app=App.REMINDER)
+        reply = TextSendMessage(text='REMINDER ERROR')
+        app_cache = AppCache(self.callback.line_id)
 
         print(self.callback.action, self.callback.choice, self.callback.reminder_id)
         if self.callback.action == Action.REPLY_REMINDER:
@@ -136,15 +135,12 @@ class ReminderManager(object):
                         reply = BGRecordManager(_callback).handle()
 
                     elif reminder.type == 'insulin':
-                        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                        InsulinIntakeModel.objects.create(user=user, status=True)
+                        InsulinIntakeModel.objects.create(user__line_id=self.callback.line_id, status=True)
                         reply = [TextSendMessage(text='紀錄此次已服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 
                     elif reminder.type == 'drug':
-
-                        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                        DrugIntakeModel.objects.create(user=user, status=True)
+                        DrugIntakeModel.objects.create(user__line_id=self.callback.line_id, status=True)
                         reply = [TextSendMessage(text='紀錄此次已服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
                 else:
@@ -158,14 +154,12 @@ class ReminderManager(object):
                     reply = self.reply_next_reminder(reminder=next_reminder)
 
                     if reminder.type == 'insulin':
-                        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                        InsulinIntakeModel.objects.create(user=user, status=False)
+                        InsulinIntakeModel.objects.create(user__line_id=self.callback.line_id, status=False)
                         reply = [TextSendMessage(text='紀錄此次未服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 
                     elif reminder.type == 'drug':
-                        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                        DrugIntakeModel.objects.create(user=user, status=False)
+                        DrugIntakeModel.objects.create(user__line_id=self.callback.line_id, status=False)
                         reply = [TextSendMessage(text='紀錄此次未服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 
@@ -174,7 +168,8 @@ class ReminderManager(object):
 
             elif choice == 3:
                 reminder = UserReminder.objects.get(id=self.callback.reminder_id)
-                reminder.time = reminder.time.replace(minute=reminder.time.minute + 10)
+                later_time = dt.datetime.combine(dt.date(1,1,1),reminder.time) + dt.timedelta(seconds=60).time()
+                reminder.time = later_time
                 reminder.save()
                 reply = self.reply_reminder_awaits()
             else:
