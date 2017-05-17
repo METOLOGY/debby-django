@@ -154,7 +154,7 @@ class MyDiaryCallback(DerivedAppCallback):
 
 
 class UserSettingsCallback(DerivedAppCallback):
-    app = 'UserSetting'
+    app = App.USER_SETTING
 
     @property
     def reminder_id(self) -> str:
@@ -166,4 +166,11 @@ class UserSettingsCallback(DerivedAppCallback):
 
     @property
     def text(self) -> str:
+        return self.data.get('text')
+
+class LineCallback(DerivedAppCallback):
+    app = App.LINE
+
+    @property
+    def text(self):
         return self.data.get('text')

@@ -3,6 +3,7 @@ from linebot.models import PostbackTemplateAction
 from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
+from datetime import datetime
 
 from chat.manager import ChatManager
 from line.callback import BGRecordCallback
@@ -12,7 +13,7 @@ from reminder.models import UserReminder
 from user.cache import AppCache
 from user.cache import BGData
 from user.models import CustomUserModel
-from .models import BGModel
+from .models import BGModel, DrugIntakeModel, InsulinIntakeModel
 
 
 class BGRecordManager:
@@ -221,6 +222,70 @@ class BGRecordManager:
                     reply = reply_common
 
                     # clear cache
+            app_cache.delete()
+
+
+        elif self.callback.action == Action.CREATE_DRUG_RECORD or self.callback.action == Action.CREATE_INSULIN_RECORD:
+            time = datetime.now()
+            show_time = time.strftime('%Y/%m/%d %H:%M')
+            data = BGData()
+            data.record_time = time
+            app_cache.save_data(data)
+
+            if self.callback.action == Action.CREATE_DRUG_RECORD:
+                confirm_action = Action.CREATE_DRUG_RECORD_CONFIRM
+                cancel_action = Action.CREATE_DRUG_RECORD_CANCEL
+            else:
+                confirm_action = Action.CREATE_INSULIN_RECORD_CONFIRM
+                cancel_action = Action.CREATE_INSULIN_RECORD_CANCEL
+
+            reply = TemplateSendMessage(
+                alt_text='您是否確定儲存這次紀錄？',
+                template=ButtonsTemplate(
+                    text='您是否確定儲存這次紀錄: {}？'.format(show_time),
+                    actions=[
+                        PostbackTemplateAction(
+                            label='確定',
+                            data=BGRecordCallback(
+                                line_id=self.callback.line_id,
+                                action=confirm_action
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label='取消',
+                            data=BGRecordCallback(
+                                line_id=self.callback.line_id,
+                                action=cancel_action
+                            ).url
+                        )
+                    ]
+                )
+            )
+
+
+
+        elif self.callback.action == Action.CREATE_DRUG_RECORD_CANCEL or self.callback.action == Action.CREATE_INSULIN_RECORD_CANCEL:
+            reply = TextSendMessage(text='好的！您可再從主選單記錄服用藥物的時間喔！')
+            app_cache.delete()
+
+        elif self.callback.action == Action.CREATE_DRUG_RECORD_CONFIRM:
+            record_time = app_cache.data.record_time
+            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            DrugIntakeModel.objects.create(user=user,
+                                           time=record_time,
+                                           status=True)
+
+            reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
+            app_cache.delete()
+
+        elif self.callback.action == Action.CREATE_INSULIN_RECORD_CONFIRM:
+            record_time = app_cache.data.record_time
+            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            InsulinIntakeModel.objects.create(user=user,
+                                           time=record_time,
+                                           status=True)
+
+            reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
             app_cache.delete()
 
         return reply
