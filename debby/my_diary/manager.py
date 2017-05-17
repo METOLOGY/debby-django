@@ -117,7 +117,7 @@ class MyDiaryManager(object):
                 )
             )
         elif self.callback.action == Action.BG_HISTORY:
-            records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            records = BGModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
             carousels = []
             record_type = RecordType.BG
 
@@ -161,7 +161,7 @@ class MyDiaryManager(object):
                 )
 
         elif self.callback.action == Action.DRUG_HISTORY:
-            records = DrugIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            records = DrugIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
             carousels = []
 
             if len(records) == 0:
@@ -203,7 +203,7 @@ class MyDiaryManager(object):
                 )
 
         elif self.callback.action == Action.INSULIN_HISTORY:
-            records = InsulinIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:6]
+            records = InsulinIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
             carousels = []
 
             if len(records) == 0:
