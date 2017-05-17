@@ -78,6 +78,7 @@ class DrugAskData(CacheData):
 
 class BGData(CacheData):
     text = ''  # type: str
+    record_time = '' # type: datetime.datetime
 
 
 class ReminderData(CacheData):
