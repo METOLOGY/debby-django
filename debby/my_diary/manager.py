@@ -108,11 +108,11 @@ class MyDiaryManager(object):
                             data=MyDiaryCallback(line_id=self.callback.line_id,
                                                  action=Action.DRUG_HISTORY).url
                         ),
-                        PostbackTemplateAction(
-                            label="飲食紀錄",
-                            data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.FOOD_HISTORY).url
-                        ),
+                        # PostbackTemplateAction(
+                        #     label="飲食紀錄",
+                        #     data=MyDiaryCallback(line_id=self.callback.line_id,
+                        #                          action=Action.FOOD_HISTORY).url
+                        # ),
                     ]
                 )
             )
