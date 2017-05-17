@@ -230,7 +230,10 @@ class UserSettingManager(object):
             reminder = UserReminder.objects.get(id=reminder_id)
             reminder.status = not reminder.status
             reminder.save()
-            reply = TextSendMessage(text='設定完成，已關閉提醒！')
+            if reminder.status:
+                reply = TextSendMessage(text='設定完成，已開啟提醒！')
+            else:
+                reply = TextSendMessage(text='設定完成，已關閉提醒！')
 
         elif self.callback.action == 'SET_REMINDER_TIME':
             reminder_id = self.callback.reminder_id
