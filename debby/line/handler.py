@@ -14,11 +14,12 @@ from consult_food.manager import ConsultFoodManager
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
-    DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback
+    DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback, LineCallback
 from line.constant import App, BGRecordAction, FoodRecordAction
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
 from reminder.manager import ReminderManager
+from line.manager import LineManager
 from user.cache import AppCache
 from user.manager import UserSettingManager
 from user.models import CustomUserModel
@@ -73,7 +74,6 @@ class InputHandler(object):
                 callback = UserSettingsCallback(self.line_id,
                                                 action=app_cache.action,
                                                 text=self.text)
-
             elif app_cache.app == App.MY_DIARY:
                 callback = MyDiaryCallback(self.line_id,
                                            action=app_cache.action,
@@ -155,6 +155,7 @@ class CallbackHandler(object):
             self.App(ReminderManager, ReminderCallback),
             self.App(UserSettingManager, UserSettingsCallback),
             self.App(MyDiaryManager, MyDiaryCallback),
+            self.App(LineManager, LineCallback),
         ]
 
     def handle(self) -> Union[SendMessage, None]:
