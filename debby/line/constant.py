@@ -94,6 +94,7 @@ class RecordType(object):
     BG = 'BG'
     INSULIN = 'INSULIN'
     DRUG = 'DRUG'
+    FOOD = 'FOOD'
 
 
 class UserSettingsAction(Action):

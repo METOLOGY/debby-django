@@ -53,8 +53,10 @@ class MyDiaryManager(object):
             record = BGModel.objects.get(id=record_id)
         elif record_type == RecordType.INSULIN:
             record = InsulinIntakeModel.objects.get(id=record_id)
-        else:
+        elif record_type == RecordType.DRUG:
             record = DrugIntakeModel.objects.get(id=record_id)
+        else:
+            record = FoodModel.objects.get(id=record_id)
 
         return record
 
@@ -197,7 +199,7 @@ class MyDiaryManager(object):
 
                 # noinspection PyTypeChecker
                 reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
+                    alt_text="最近的五筆藥物紀錄",
                     template=CarouselTemplate(
                         columns=carousels
                     )
@@ -239,7 +241,7 @@ class MyDiaryManager(object):
 
                 # noinspection PyTypeChecker
                 reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
+                    alt_text="最近的五筆胰島素紀錄",
                     template=CarouselTemplate(
                         columns=carousels
                     )
@@ -261,7 +263,6 @@ class MyDiaryManager(object):
                     url = record.carousel.url
                     photo = "https://{}{}".format(host, url)
 
-
                     message = "紀錄內容： {}".format(note)
                     carousels.append(CarouselColumn(
                         title="紀錄時間: {}".format(time),
@@ -280,7 +281,7 @@ class MyDiaryManager(object):
                                 data=MyDiaryCallback(
                                     line_id=self.callback.line_id,
                                     action=Action.DELETE,
-                                    record_type=RecordType.INSULIN,
+                                    record_type=RecordType.FOOD,
                                     record_id=record.id).url
                             )
                         ]
@@ -288,7 +289,7 @@ class MyDiaryManager(object):
 
                 # noinspection PyTypeChecker
                 reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
+                    alt_text="最近的五筆飲食紀錄",
                     template=CarouselTemplate(
                         columns=carousels
                     )
