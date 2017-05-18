@@ -95,3 +95,4 @@ class MyDiaryData(CacheData):
     new_datetime = ''  # type: datetime.datetime
     new_value = 0  # type: int
     new_type = ''  # type: str
+    text = '' # type: text

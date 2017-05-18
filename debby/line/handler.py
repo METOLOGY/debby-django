@@ -15,7 +15,7 @@ from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
     DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback, LineCallback
-from line.constant import App, BGRecordAction, FoodRecordAction
+from line.constant import App, BGRecordAction, FoodRecordAction, MyDiaryAction
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
 from reminder.manager import ReminderManager
@@ -114,9 +114,20 @@ class InputHandler(object):
             return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
 
     def handle_image(self, image_id):
-        callback = FoodRecordCallback(self.line_id,
-                                      action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
-                                      image_id=image_id)
+        app_cache = AppCache(self.line_id)
+        if app_cache.is_app_running():
+            if app_cache.app == App.FOOD_RECORD:
+                callback = FoodRecordCallback(self.line_id,
+                                              action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
+                                              image_id=image_id)
+            elif app_cache.app == App.MY_DIARY:
+                callback = MyDiaryCallback(self.line_id,
+                                              action=MyDiaryAction.UPDATE_FOOD_PHOTO_CHECK,
+                                              image_id=image_id)
+        else: # directly upload image
+            callback = FoodRecordCallback(self.line_id,
+                                          action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
+                                          image_id=image_id)
         return CallbackHandler(callback).handle()
 
     def handle_postback(self, data):

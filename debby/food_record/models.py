@@ -27,8 +27,8 @@ class FoodModel(models.Model):
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
 
-    def save(self, *args, **kwargs):
-        super(FoodModel, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     super(FoodModel, self).save(*args, **kwargs)
 
     def make_carousel(self):
         """

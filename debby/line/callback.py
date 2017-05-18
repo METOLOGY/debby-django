@@ -152,6 +152,10 @@ class MyDiaryCallback(DerivedAppCallback):
     def text(self) -> str:
         return self.data.get('text')
 
+    @property
+    def image_id(self) -> str:
+        return self.data.get('image_id')
+
 
 class UserSettingsCallback(DerivedAppCallback):
     app = App.USER_SETTING
