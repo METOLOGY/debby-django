@@ -40,7 +40,7 @@ class FoodModel(models.Model):
         except:
             raise Exception()
 
-        size = (339, 512)
+        size = (512, 339)
         image.thumbnail(size, Image.ANTIALIAS)
         carousel = Image.new('RGBA', size, (255, 255, 255, 255))
         carousel.paste(

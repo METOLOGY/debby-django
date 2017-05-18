@@ -1,9 +1,10 @@
 import datetime
-
+from django.core.cache import cache
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
+from food_record.models import FoodModel
 from line.callback import MyDiaryCallback
 from line.constant import MyDiaryAction as Action
 from line.constant import RecordType
@@ -99,9 +100,9 @@ class MyDiaryManager(object):
                                                  action=Action.BG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="胰島素注射紀錄",
+                            label="飲食紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.INSULIN_HISTORY).url
+                                                 action=Action.FOOD_HISTORY).url
                         ),
                         PostbackTemplateAction(
                             label="用藥紀錄",
@@ -109,9 +110,9 @@ class MyDiaryManager(object):
                                                  action=Action.DRUG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="飲食紀錄",
+                            label="胰島素注射紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.FOOD_HISTORY).url
+                                                 action=Action.INSULIN_HISTORY).url
                         ),
                     ]
                 )
@@ -217,6 +218,55 @@ class MyDiaryManager(object):
                     carousels.append(CarouselColumn(
                         title="紀錄時間: {}".format(time),
                         text=message,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.INSULIN_UPDATE,
+                                    record_id=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_type=RecordType.INSULIN,
+                                    record_id=record.id).url
+                            )
+                        ]
+                    ))
+
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆血糖紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    )
+                )
+
+        elif self.callback.action == Action.FOOD_HISTORY:
+            records = FoodModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
+            carousels = []
+
+            if len(records) == 0:
+                reply = self.no_record()
+            else:
+                for record in records:
+                    time = record.time.astimezone().strftime("%H:%M, %x")
+                    note = record.note
+
+                    # copy from food_record/manager.py:78
+                    host = cache.get("host_name")
+                    url = record.carousel.url
+                    photo = "https://{}{}".format(host, url)
+
+
+                    message = "紀錄內容： {}".format(note)
+                    carousels.append(CarouselColumn(
+                        title="紀錄時間: {}".format(time),
+                        text=message,
+                        thumbnail_image_url=photo,
                         actions=[
                             PostbackTemplateAction(
                                 label='修改記錄',
