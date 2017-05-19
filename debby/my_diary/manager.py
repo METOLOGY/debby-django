@@ -1,9 +1,14 @@
 import datetime
-
+from django.core.cache import cache
+from io import BytesIO
+import os
+from django.core.files import File
+from django.conf import settings
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
+from food_record.models import FoodModel
 from line.callback import MyDiaryCallback
 from line.constant import MyDiaryAction as Action
 from line.constant import RecordType
@@ -52,8 +57,10 @@ class MyDiaryManager(object):
             record = BGModel.objects.get(id=record_id)
         elif record_type == RecordType.INSULIN:
             record = InsulinIntakeModel.objects.get(id=record_id)
-        else:
+        elif record_type == RecordType.DRUG:
             record = DrugIntakeModel.objects.get(id=record_id)
+        else:
+            record = FoodModel.objects.get(id=record_id)
 
         return record
 
@@ -99,9 +106,9 @@ class MyDiaryManager(object):
                                                  action=Action.BG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="胰島素注射紀錄",
+                            label="飲食紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.INSULIN_HISTORY).url
+                                                 action=Action.FOOD_HISTORY).url
                         ),
                         PostbackTemplateAction(
                             label="用藥紀錄",
@@ -109,9 +116,9 @@ class MyDiaryManager(object):
                                                  action=Action.DRUG_HISTORY).url
                         ),
                         PostbackTemplateAction(
-                            label="飲食紀錄",
+                            label="胰島素注射紀錄",
                             data=MyDiaryCallback(line_id=self.callback.line_id,
-                                                 action=Action.FOOD_HISTORY).url
+                                                 action=Action.INSULIN_HISTORY).url
                         ),
                     ]
                 )
@@ -196,7 +203,7 @@ class MyDiaryManager(object):
 
                 # noinspection PyTypeChecker
                 reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
+                    alt_text="最近的五筆藥物紀錄",
                     template=CarouselTemplate(
                         columns=carousels
                     )
@@ -238,7 +245,55 @@ class MyDiaryManager(object):
 
                 # noinspection PyTypeChecker
                 reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
+                    alt_text="最近的五筆胰島素紀錄",
+                    template=CarouselTemplate(
+                        columns=carousels
+                    )
+                )
+
+        elif self.callback.action == Action.FOOD_HISTORY:
+            records = FoodModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
+            carousels = []
+
+            if len(records) == 0:
+                reply = self.no_record()
+            else:
+                for record in records:
+                    time = record.time.astimezone().strftime("%H:%M, %x")
+                    note = record.note
+
+                    # copy from food_record/manager.py:78
+                    host = cache.get("host_name")
+                    url = record.carousel.url
+                    photo = "https://{}{}".format(host, url)
+
+                    message = "紀錄內容： {}".format(note)
+                    carousels.append(CarouselColumn(
+                        title="紀錄時間: {}".format(time),
+                        text=message,
+                        thumbnail_image_url=photo,
+                        actions=[
+                            PostbackTemplateAction(
+                                label='修改記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.FOOD_UPDATE,
+                                    record_id=record.id).url
+                            ),
+                            PostbackTemplateAction(
+                                label='刪除記錄',
+                                data=MyDiaryCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.DELETE,
+                                    record_type=RecordType.FOOD,
+                                    record_id=record.id).url
+                            )
+                        ]
+                    ))
+
+                # noinspection PyTypeChecker
+                reply = TemplateSendMessage(
+                    alt_text="最近的五筆飲食紀錄",
                     template=CarouselTemplate(
                         columns=carousels
                     )
@@ -335,6 +390,52 @@ class MyDiaryManager(object):
                                 line_id=self.callback.line_id,
                                 action=Action.UPDATE_BG_TYPE,
                                 record_type=RecordType.BG,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                    ]
+                )
+            )
+
+        elif self.callback.action == Action.FOOD_UPDATE:
+            reply = TemplateSendMessage(
+                alt_text="請選擇欲修改的項目",
+                template=ButtonsTemplate(
+                    text="請選擇欲修改的項目",
+                    actions=[
+                        PostbackTemplateAction(
+                            label="日期",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_DATE,
+                                record_type=RecordType.FOOD,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label="時間",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_TIME,
+                                record_type=RecordType.FOOD,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label="照片",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_FOOD_PHOTO,
+                                record_type=RecordType.FOOD,
+                                record_id=self.callback.record_id
+                            ).url
+                        ),
+                        PostbackTemplateAction(
+                            label="文字說明",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_FOOD_TEXT,
+                                record_type=RecordType.FOOD,
                                 record_id=self.callback.record_id
                             ).url
                         ),
@@ -652,9 +753,152 @@ class MyDiaryManager(object):
             reply = TextSendMessage(text="修改成功!")
             app_cache.delete()
 
-        elif self.callback.action == Action.UPDATE_FOOD_VALUE:
-            # TODO: Not Implemented
-            return NotImplementedError
+        elif self.callback.action == Action.UPDATE_FOOD_TEXT:
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_FOOD_TEXT_CHECK)
+            data = MyDiaryData()
+            data.record_id = self.callback.record_id
+            data.record_type = self.callback.record_type
+            app_cache.save_data(data)
+
+            reply = TemplateSendMessage(
+                alt_text="請輸入新的文字紀錄",
+                template=ButtonsTemplate(
+                    text="請輸入新的文字紀錄",
+                    actions=[
+                        PostbackTemplateAction(
+                            label="取消修改",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_CANCEL
+                            ).url
+                        )
+                    ]
+                )
+            )
+
+        elif self.callback.action == Action.UPDATE_FOOD_TEXT_CHECK:
+            text = self.callback.text
+            record_type = app_cache.data.record_type
+            record_id = app_cache.data.record_id
+            record = self.get_proper_record(record_id=record_id, record_type=record_type)
+
+            if text == '' or text == None:
+                reply = TemplateSendMessage(
+                    alt_text="哎呀！請您輸入文字說明才能修改紀錄喔！",
+                    template=ButtonsTemplate(
+                        text="哎呀！請您輸入文字說明才能修改紀錄喔！",
+                        actions=[
+                            PostbackTemplateAction(
+                                label="重新輸入",
+                                data=MyDiaryCallback(
+                                    line_id=app_cache.line_id,
+                                    action=Action.UPDATE_FOOD_TEXT,
+                                    record_type=record_type,
+                                    record_id=record_id
+                                ).url
+                            ),
+                            PostbackTemplateAction(
+                                label="取消修改",
+                                data=MyDiaryCallback(
+                                    line_id=app_cache.line_id,
+                                    action=Action.UPDATE_CANCEL
+                                ).url
+                            ),
+                        ]
+                    )
+                )
+
+            else:
+                data = app_cache.data
+                data.text = text
+                app_cache.save_data(data)
+
+                reply = self.confirm_template(
+                    line_id=app_cache.line_id,
+                    old=record.note,
+                    new=text,
+                    action=Action.UPDATE_FOOD_TEXT_CONFIRM,
+                    record_id=record_id,
+                    record_type=record_type
+                )
+
+        elif self.callback.action == Action.UPDATE_FOOD_TEXT_CONFIRM:
+            record_type = self.callback.record_type
+            record_id = self.callback.record_id
+            record = self.get_proper_record(record_id=record_id, record_type=record_type)
+            record.note = app_cache.data.text
+            record.save()
+
+            reply = TextSendMessage(text="修改成功!")
+            app_cache.delete()
+
+
+        elif self.callback.action == Action.UPDATE_FOOD_PHOTO:
+            app_cache.set_next_action(self.callback.app, Action.UPDATE_FOOD_PHOTO_CHECK)
+            data = MyDiaryData()
+            data.record_id = self.callback.record_id
+            data.record_type = self.callback.record_type
+            app_cache.save_data(data)
+
+            reply = TemplateSendMessage(
+                alt_text="請重新上傳一張新的影像",
+                template=ButtonsTemplate(
+                    text="請重新上傳一張新的影像",
+                    actions=[
+                        PostbackTemplateAction(
+                            label="取消修改",
+                            data=MyDiaryCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.UPDATE_CANCEL
+                            ).url
+                        )
+                    ]
+                )
+            )
+
+        elif self.callback.action == Action.UPDATE_FOOD_PHOTO_CHECK:
+            text = self.callback.text
+            image_id = self.callback.image_id
+            record_type = app_cache.data.record_type
+            record_id = app_cache.data.record_id
+            record = self.get_proper_record(record_id=record_id, record_type=record_type)
+
+            if (text != '' or text != None) and not image_id:
+                reply = TemplateSendMessage(
+                    alt_text="哎呀！請您上傳圖片才能修改紀錄喔！",
+                    template=ButtonsTemplate(
+                        text="哎呀！請您上傳圖片才能修改紀錄喔！",
+                        actions=[
+                            PostbackTemplateAction(
+                                label="重新上傳",
+                                data=MyDiaryCallback(
+                                    line_id=app_cache.line_id,
+                                    action=Action.UPDATE_FOOD_PHOTO,
+                                    record_type=record_type,
+                                    record_id=record_id
+                                ).url
+                            ),
+                            PostbackTemplateAction(
+                                label="取消修改",
+                                data=MyDiaryCallback(
+                                    line_id=app_cache.line_id,
+                                    action=Action.UPDATE_CANCEL
+                                ).url
+                            ),
+                        ]
+                    )
+                )
+            else:
+                image_id = self.callback.image_id
+                message_content = settings.LINE_BOT_API.get_message_content(message_id=image_id)
+                image = message_content.content
+                ori_filename = os.path.basename(record.food_image_upload.name)
+                record.food_image_upload.save('updated_' + ori_filename, File(BytesIO(image)) )
+                record.save()
+                record.make_carousel()
+
+                reply = TextSendMessage(text="修改成功!")
+                app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_CANCEL:
             reply = TextSendMessage(text="好的！那就不更動您原始的紀錄囉！")
