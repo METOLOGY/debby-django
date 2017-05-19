@@ -35,6 +35,7 @@ class FoodRecordManager(object):
 
             food_record.food_image_upload.save(file, File(bytes_io))
         food_record.save()
+        food_record.make_carousel()
         return food_record.pk
 
     def reply_to_record_detail_template(self):
