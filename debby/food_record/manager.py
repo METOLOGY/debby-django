@@ -13,7 +13,7 @@ from linebot.models import TextSendMessage
 from debby import settings
 from food_record.models import FoodModel, TempImageModel
 from line.callback import FoodRecordCallback, MyDiaryCallback
-from line.constant import FoodRecordAction as Action, App, MyDiaryAction
+from line.constant import FoodRecordAction as Action
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
@@ -40,10 +40,10 @@ class FoodRecordManager(object):
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
-            alt_text="請繼續增加文字說明?",
+            alt_text="您要繼續增加文字嗎?",
             template=ButtonsTemplate(
                 title="記錄飲食",
-                text="請繼續增加文字說明?",
+                text="您要繼續增加文字嗎?",
                 actions=[
                     PostbackTemplateAction(
                         label="不, 我已輸入完畢!",
@@ -52,6 +52,25 @@ class FoodRecordManager(object):
                     PostbackTemplateAction(
                         label="取消紀錄",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL).url
+                    )
+                ]
+            )
+        )
+
+    def reply_if_want_to_record_image(self):
+        message = "請問您是想要記錄飲食嗎?"
+        return TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=[
+                    PostbackTemplateAction(
+                        label="是，我要記錄此食物照片",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY).url
+                    ),
+                    PostbackTemplateAction(
+                        label="否，我只是想聊個天",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL_PHOTO).url
                     )
                 ]
             )
@@ -89,7 +108,7 @@ class FoodRecordManager(object):
         text_send_message = TextSendMessage(text=message)
 
         send_message = TemplateSendMessage(
-            alt_text="您是否確定要存取此次紀錄",
+            alt_text="您是否確定要存取此次紀錄?",
             template=ButtonsTemplate(
                 title="記錄飲食",
                 text="您是否確定要存取此次紀錄?",
@@ -115,7 +134,7 @@ class FoodRecordManager(object):
     def handle(self) -> Union[SendMessage, None]:
         reply = TextSendMessage(text='FOOD_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id)
-        app_cache.set_expired_time(seconds=60*5)  # set expired time to 5 minutes.
+        app_cache.set_expired_time(seconds=60 * 5)  # set expired time to 5 minutes.
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
@@ -132,7 +151,7 @@ class FoodRecordManager(object):
             data = FoodData()
             data.setup_data(app_cache.data)
 
-            if data.extra_info or data.image_id:
+            if data.extra_info:
                 data.extra_info = "\n".join([data.extra_info, self.callback.text])
             else:
                 data.extra_info = self.callback.text
@@ -149,6 +168,7 @@ class FoodRecordManager(object):
 
             # save image to temp folder
             user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            # always use one object data for each user to save temp image
             temp, _ = TempImageModel.objects.get_or_create(user=user)
             image_content = self.image_reader.load_image(data.image_id)
             bytes_io = BytesIO(image_content)
@@ -159,8 +179,7 @@ class FoodRecordManager(object):
             app_cache.data = data
             app_cache.commit()
 
-            reply = self.reply_to_record_detail_template()
-            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
+            reply = self.reply_if_want_to_record_image()
             app_cache.commit()
 
         elif self.callback.action == Action.CHECK_BEFORE_CREATE:
@@ -197,6 +216,9 @@ class FoodRecordManager(object):
                 return None
             app_cache.delete()
             reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
+        elif self.callback.action == Action.CANCEL_PHOTO:
+            app_cache.delete()
+            reply = TextSendMessage(text="哎呀抱歉~Debby不太懂您的意思~還是您想要從主選單開始呢？")
         return reply
 
 
