@@ -91,6 +91,11 @@ class BGRecordManager:
     def reply_record_success() -> TextSendMessage:
         return TextSendMessage(text='記錄成功！')
 
+    @staticmethod
+    def reply_record_invalid():
+        return TextSendMessage(text='請輸入數字才能紀錄血糖哦！')
+
+
     # def reply_to_user_choice(self) -> TextSendMessage:
     #     choice = self.callback.choice
     #     if choice == 'true':
@@ -137,23 +142,27 @@ class BGRecordManager:
         self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
         if self.callback.action == Action.CREATE_FROM_MENU:
+            # init cache again to clean other app's status and data
+            app_cache.set_next_action(self.callback.app, action=Action.CREATE_FROM_VALUE)
+            app_cache.commit()
+            reply = self.reply_please_enter_bg()
+
+        elif self.callback.action == Action.CREATE_FROM_VALUE:
             print(self.callback.text.isdigit())
             if self.callback.text.isdigit() and self.is_input_a_bg_value():
-                self.this_record.glucose_val = int(self.callback.text)
-                reply = self.reply_record_type()
+                # self.this_record.glucose_val = int(self.callback.text)
+                reply = self.reply_confirm_record(self.callback.text)
+
             elif self.callback.text.isdigit() and self.is_input_a_bg_value() is False:
                 reply = [
                     self.reply_bg_range_not_right(),
                     self.reply_please_enter_bg(),
                 ]
             else:
-                # init cache again to clean other app's status and data
-                app_cache.set_next_action(self.callback.app, action=Action.CREATE_FROM_VALUE)
-                app_cache.commit()
-                reply = self.reply_please_enter_bg()
-
-        elif self.callback.action == Action.CREATE_FROM_VALUE:
-            reply = self.reply_confirm_record(self.callback.text)
+                reply = [
+                    self.reply_record_invalid(),
+                    self.reply_please_enter_bg()
+                ]
 
         elif self.callback.action == Action.CONFIRM_RECORD:
             if self.callback.choice == 'yes':
@@ -175,6 +184,7 @@ class BGRecordManager:
                 reply = TextSendMessage(text="okay, 這次就不幫你記錄囉！")
             else:
                 self.this_record.type = self.callback.choice
+                self.this_record.time = datetime.now()
                 self.this_record.save()
 
                 reply_common = [
@@ -182,44 +192,43 @@ class BGRecordManager:
                     self.reply_by_check_value(self.this_record.glucose_val)
                 ]
 
-                try:
-                    if app_cache.data.reminder_id:
-                        id_ = app_cache.data.reminder_id
 
-                        # repeated code here
-                        # TODO: figure out solutions for app communication without looping import.
-                        reminder = UserReminder.objects.get(id=id_)
-                        reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
-                        time = []
-                        for re in reminders:
-                            time.append(re.time)
-                        time = sorted(time)
-                        index = time.index(reminder.time)
-                        next_reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type,
-                                                                     time=time[index + 1])
-                        next_reminder = next_reminders[0] if next_reminders else None
+                if hasattr(app_cache.data, 'reminder_id'):
+                    id_ = app_cache.data.reminder_id
 
-                        type_ = reminder.type
-                        type_zh = ''
-                        if type_ == 'bg':
-                            type_zh = '血糖'
-                        elif type_ == 'insulin':
-                            type_zh = '胰島素'
-                        elif type_ == 'drug':
-                            type_zh = '藥物'
+                    # repeated code here
+                    # TODO: figure out solutions for app communication without looping import.
+                    reminder = UserReminder.objects.get(id=id_)
+                    reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
+                    time = []
+                    for re in reminders:
+                        time.append(re.time)
+                    time = sorted(time)
+                    index = time.index(reminder.time)
+                    next_reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type,
+                                                                 time=time[index + 1])
+                    next_reminder = next_reminders[0] if next_reminders else None
 
-                        if next_reminder is not None:
-                            reply = reply_common + [
-                                TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
-                                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                            ]
-                        else:
-                            reply = reply_common + [
-                                TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
-                                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                            ]
-                except:
-                    # TODO: Not recommend using try/except, it's not clear and explicit where it will throw to here.
+                    type_ = reminder.type
+                    type_zh = ''
+                    if type_ == 'bg':
+                        type_zh = '血糖'
+                    elif type_ == 'insulin':
+                        type_zh = '胰島素'
+                    elif type_ == 'drug':
+                        type_zh = '藥物'
+
+                    if next_reminder is not None:
+                        reply = reply_common + [
+                            TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
+                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+                        ]
+                    else:
+                        reply = reply_common + [
+                            TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
+                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+                        ]
+                else:
                     reply = reply_common
 
                     # clear cache
