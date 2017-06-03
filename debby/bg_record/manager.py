@@ -1,14 +1,15 @@
+from datetime import datetime
+
 from linebot.models import ButtonsTemplate
 from linebot.models import PostbackTemplateAction
 from linebot.models import SendMessage
 from linebot.models import TemplateSendMessage
 from linebot.models import TextSendMessage
-from datetime import datetime
 
 from chat.manager import ChatManager
 from line.callback import BGRecordCallback
 from line.callback import ChatCallback
-from line.constant import BGRecordAction as Action, App
+from line.constant import BGRecordAction as Action
 from reminder.models import UserReminder
 from user.cache import AppCache
 from user.cache import BGData
@@ -17,8 +18,6 @@ from .models import BGModel, DrugIntakeModel, InsulinIntakeModel
 
 
 class BGRecordManager:
-    this_record = BGModel()
-
     ranges = [70, 80, 130, 250, 600]
     conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
                   "請注意是否有低血糖不適症情況發生",
@@ -56,7 +55,7 @@ class BGRecordManager:
     # def reply_reminder(self) -> TemplateSendMessage:
     #     return self.reminder_message
 
-    def reply_record_type(self) -> TemplateSendMessage:
+    def reply_record_type(self, glucose_val) -> TemplateSendMessage:
         return TemplateSendMessage(
             alt_text='餐前血糖還是飯後血糖呢？',
             template=ButtonsTemplate(
@@ -67,14 +66,18 @@ class BGRecordManager:
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.SET_TYPE,
-                            choice='before').url
+                            choice='before',
+                            glucose_val=glucose_val
+                        ).url
                     ),
                     PostbackTemplateAction(
                         label='飯後',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.SET_TYPE,
-                            choice='after').url
+                            choice='after',
+                            glucose_val=glucose_val
+                        ).url
                     ),
                     PostbackTemplateAction(
                         label='取消紀錄',
@@ -94,7 +97,6 @@ class BGRecordManager:
     @staticmethod
     def reply_record_invalid():
         return TextSendMessage(text='請輸入數字才能紀錄血糖哦！')
-
 
     # def reply_to_user_choice(self) -> TextSendMessage:
     #     choice = self.callback.choice
@@ -139,8 +141,6 @@ class BGRecordManager:
         reply = TextSendMessage(text='BG_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id)
 
-        self.this_record.user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-
         if self.callback.action == Action.CREATE_FROM_MENU:
             # init cache again to clean other app's status and data
             app_cache.set_next_action(self.callback.app, action=Action.CREATE_FROM_VALUE)
@@ -150,7 +150,6 @@ class BGRecordManager:
         elif self.callback.action == Action.CREATE_FROM_VALUE:
             print(self.callback.text.isdigit())
             if self.callback.text.isdigit() and self.is_input_a_bg_value():
-                # self.this_record.glucose_val = int(self.callback.text)
                 reply = self.reply_confirm_record(self.callback.text)
 
             elif self.callback.text.isdigit() and self.is_input_a_bg_value() is False:
@@ -166,9 +165,10 @@ class BGRecordManager:
 
         elif self.callback.action == Action.CONFIRM_RECORD:
             if self.callback.choice == 'yes':
-                self.this_record.glucose_val = int(self.callback.text)
 
-                reply = self.reply_record_type()
+                glucose_val = int(self.callback.text)
+
+                reply = self.reply_record_type(glucose_val)
             elif self.callback.choice == 'no':
                 app_cache.delete()
 
@@ -181,17 +181,17 @@ class BGRecordManager:
 
         elif self.callback.action == Action.SET_TYPE:
             if self.callback.choice == 'cancel':
-                reply = TextSendMessage(text="okay, 這次就不幫你記錄囉！")
+                reply = TextSendMessage(text="Okay, 這次就不幫你記錄囉！")
             else:
-                self.this_record.type = self.callback.choice
-                self.this_record.time = datetime.now()
-                self.this_record.save()
+                user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+                record = BGModel.objects.create(user=user,
+                                                type=self.callback.choice,
+                                                glucose_val=self.callback.glucose_val)
 
                 reply_common = [
                     self.reply_record_success(),
-                    self.reply_by_check_value(self.this_record.glucose_val)
+                    self.reply_by_check_value(record.glucose_val)
                 ]
-
 
                 if hasattr(app_cache.data, 'reminder_id'):
                     id_ = app_cache.data.reminder_id
@@ -234,7 +234,6 @@ class BGRecordManager:
                     # clear cache
             app_cache.delete()
 
-
         elif self.callback.action == Action.CREATE_DRUG_RECORD or self.callback.action == Action.CREATE_INSULIN_RECORD:
             time = datetime.now()
             show_time = time.strftime('%Y/%m/%d %H:%M')
@@ -272,8 +271,6 @@ class BGRecordManager:
                 )
             )
 
-
-
         elif self.callback.action == Action.CREATE_DRUG_RECORD_CANCEL or self.callback.action == Action.CREATE_INSULIN_RECORD_CANCEL:
             reply = TextSendMessage(text='好的！您可再從主選單記錄服用藥物的時間喔！')
             app_cache.delete()
@@ -292,8 +289,8 @@ class BGRecordManager:
             record_time = app_cache.data.record_time
             user = CustomUserModel.objects.get(line_id=self.callback.line_id)
             InsulinIntakeModel.objects.create(user=user,
-                                           time=record_time,
-                                           status=True)
+                                              time=record_time,
+                                              status=True)
 
             reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
             app_cache.delete()
