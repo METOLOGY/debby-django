@@ -34,8 +34,9 @@ class FoodRecordManager(object):
             file = '{0}_food_image.jpg'.format(current_user.line_id)
 
             food_record.food_image_upload.save(file, File(bytes_io))
+            food_record.make_carousel()
+
         food_record.save()
-        food_record.make_carousel()
         return food_record.pk
 
     def reply_to_record_detail_template(self):
@@ -95,15 +96,18 @@ class FoodRecordManager(object):
         query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
         if query:
             temp = query[0]
-            host = cache.get("host_name")
-            url = temp.image_upload.url
-            photo = "https://{}{}".format(host, url)
+            now = datetime.datetime.now(datetime.timezone.utc)
+            diff = now - temp.time
+            if diff.seconds < 180:
+                host = cache.get("host_name")
+                url = temp.image_upload.url
+                photo = "https://{}{}".format(host, url)
 
-            image_message = ImageSendMessage(
-                original_content_url=photo,
-                preview_image_url=photo
-            )
-            reply.append(image_message)
+                image_message = ImageSendMessage(
+                    original_content_url=photo,
+                    preview_image_url=photo
+                )
+                reply.append(image_message)
 
         text_send_message = TextSendMessage(text=message)
 
