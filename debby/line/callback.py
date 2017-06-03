@@ -80,6 +80,10 @@ class BGRecordCallback(DerivedAppCallback):
     def text(self):
         return self.data.get('text')
 
+    @property
+    def glucose_val(self):
+        return self.data.get('glucose_val')
+
 
 class ConsultFoodCallback(DerivedAppCallback):
     app = App.CONSULT_FOOD
