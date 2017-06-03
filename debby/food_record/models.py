@@ -1,10 +1,11 @@
-from django.db import models
-from PIL import Image
-from django.core.files.storage import default_storage as storage
-from django.core.files import File
-from io import BytesIO
-from datetime import datetime
 import os
+from datetime import datetime
+from io import BytesIO
+
+from PIL import Image
+from django.core.files import File
+from django.core.files.storage import default_storage as storage
+from django.db import models
 
 # Create your models here.
 from user.models import CustomUserModel
@@ -13,8 +14,9 @@ from user.models import CustomUserModel
 def user_id_path(instance, filename):
     date = datetime.today().date()
     file_type = filename.split('.')[1]
-    today_image_count = len(FoodModel.objects.filter(time__date=date)) + 1 # add one for the new one
-    return '{}/{}'.format(instance.user.line_id, instance.user.line_id + '_' + str(date) + '_' + str(today_image_count) + '.' + file_type)
+    today_image_count = len(FoodModel.objects.filter(time__date=date)) + 1  # add one for the new one
+    return '{}/{}'.format(instance.user.line_id,
+                          instance.user.line_id + '_' + str(date) + '_' + str(today_image_count) + '.' + file_type)
 
 
 class FoodModel(models.Model):
@@ -69,6 +71,7 @@ class FoodModel(models.Model):
 
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
+
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)

@@ -1,9 +1,10 @@
 import datetime
-from django.core.cache import cache
-from io import BytesIO
 import os
-from django.core.files import File
+from io import BytesIO
+
 from django.conf import settings
+from django.core.cache import cache
+from django.core.files import File
 from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, TextSendMessage, \
     CarouselTemplate, CarouselColumn
 
@@ -264,7 +265,11 @@ class MyDiaryManager(object):
 
                     # copy from food_record/manager.py:78
                     host = cache.get("host_name")
-                    url = record.carousel.url
+                    if record.carousel:
+                        url = record.carousel.url
+                    else:
+                        url = '/media/FoodRecord/default.jpg'
+
                     photo = "https://{}{}".format(host, url)
 
                     message = "紀錄內容： {}".format(note)
@@ -782,7 +787,7 @@ class MyDiaryManager(object):
             record_id = app_cache.data.record_id
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
 
-            if text == '' or text == None:
+            if text == '' or text is None:
                 reply = TemplateSendMessage(
                     alt_text="哎呀！請您輸入文字說明才能修改紀錄喔！",
                     template=ButtonsTemplate(
@@ -832,7 +837,6 @@ class MyDiaryManager(object):
             reply = TextSendMessage(text="修改成功!")
             app_cache.delete()
 
-
         elif self.callback.action == Action.UPDATE_FOOD_PHOTO:
             app_cache.set_next_action(self.callback.app, Action.UPDATE_FOOD_PHOTO_CHECK)
             data = MyDiaryData()
@@ -863,7 +867,7 @@ class MyDiaryManager(object):
             record_id = app_cache.data.record_id
             record = self.get_proper_record(record_id=record_id, record_type=record_type)
 
-            if (text != '' or text != None) and not image_id:
+            if (text != '' or text is not None) and not image_id:
                 reply = TemplateSendMessage(
                     alt_text="哎呀！請您上傳圖片才能修改紀錄喔！",
                     template=ButtonsTemplate(
@@ -892,8 +896,12 @@ class MyDiaryManager(object):
                 image_id = self.callback.image_id
                 message_content = settings.LINE_BOT_API.get_message_content(message_id=image_id)
                 image = message_content.content
-                ori_filename = os.path.basename(record.food_image_upload.name)
-                record.food_image_upload.save('updated_' + ori_filename, File(BytesIO(image)) )
+                if not record.food_image_upload.name:
+                    file = '{0}_food_image.jpg'.format(self.callback.line_id)
+                    record.food_image_upload.save(file, File(BytesIO(image)))
+                else:
+                    ori_filename = os.path.basename(record.food_image_upload.name)
+                    record.food_image_upload.save('updated_' + ori_filename, File(BytesIO(image)))
                 record.save()
                 record.make_carousel()
 
