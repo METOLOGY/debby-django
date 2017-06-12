@@ -76,8 +76,8 @@ class FoodModel(models.Model):
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     image_upload = models.ImageField(upload_to='Temp')
-    time = models.DateTimeField(auto_now_add=True)  # upload temp image time
-    record_time = models.DateTimeField(auto_now_add=False, null=True, blank=True)  # final_check_before_save time
+    time = models.DateTimeField(auto_now_add=True)  # may be modified from my_diary
+    create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
     record_note = models.CharField(max_length=200)
 
     def remove_on_image_update(self):
