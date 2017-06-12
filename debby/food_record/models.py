@@ -77,7 +77,7 @@ class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     image_upload = models.ImageField(upload_to='Temp')
     time = models.DateTimeField(auto_now_add=True)  # upload temp image time
-    record_time = models.DateTimeField(auto_now_add=True)  # final_check_before_save time
+    record_time = models.DateTimeField(auto_now_add=False, null=True, blank=True)  # final_check_before_save time
     record_note = models.CharField(max_length=200)
 
     def remove_on_image_update(self):
@@ -99,5 +99,5 @@ class TempImageModel(models.Model):
 
     def save(self, *args, **kwargs):
         # object is possibly being updated, if so, clean up.
-        self.remove_on_image_update()
+        # self.remove_on_image_update()  #TODO:[BETTER APPROACH?] to support food_record/manager line 118 save func
         return super(TempImageModel, self).save(*args, **kwargs)
