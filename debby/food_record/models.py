@@ -75,10 +75,10 @@ class FoodModel(models.Model):
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
-    image_upload = models.ImageField(upload_to='Temp')
+    food_image_upload = models.ImageField(upload_to='Temp')
     time = models.DateTimeField(auto_now_add=True)  # may be modified from my_diary
     create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
-    record_note = models.CharField(max_length=200)
+    note = models.CharField(max_length=200)
 
     def remove_on_image_update(self):
         try:
@@ -88,13 +88,13 @@ class TempImageModel(models.Model):
             # object is not in db, nothing to worry about
             return
         # is the save due to an update of the actual image file?
-        if obj.image_upload and self.image_upload and obj.image_upload != self.image_upload:
+        if obj.image_upload and self.food_image_upload and obj.image_upload != self.food_image_upload:
             # delete the old image file from the storage in favor of the new file
             obj.image_upload.delete()
 
     def delete(self, *args, **kwargs):
         # object is being removed from db, remove the file from storage first
-        self.image_upload.delete()
+        self.food_image_upload.delete()
         return super(TempImageModel, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
