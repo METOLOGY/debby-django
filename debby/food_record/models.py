@@ -75,27 +75,53 @@ class FoodModel(models.Model):
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
-    image_upload = models.ImageField(upload_to='Temp')
-    time = models.DateTimeField(auto_now_add=True)
-
-    def remove_on_image_update(self):
-        try:
-            # is the object in the database yet?
-            obj = TempImageModel.objects.get(id=self.id)
-        except TempImageModel.DoesNotExist:
-            # object is not in db, nothing to worry about
-            return
-        # is the save due to an update of the actual image file?
-        if obj.image_upload and self.image_upload and obj.image_upload != self.image_upload:
-            # delete the old image file from the storage in favor of the new file
-            obj.image_upload.delete()
+    food_image_upload = models.ImageField(upload_to=user_id_path)
+    time = models.DateTimeField(auto_now_add=True)  # may be modified from my_diary
+    create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
+    note = models.CharField(max_length=200)
+    carousel = models.ImageField()
 
     def delete(self, *args, **kwargs):
         # object is being removed from db, remove the file from storage first
-        self.image_upload.delete()
+        self.food_image_upload.delete()
         return super(TempImageModel, self).delete(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        # object is possibly being updated, if so, clean up.
-        self.remove_on_image_update()
-        return super(TempImageModel, self).save(*args, **kwargs)
+    def make_carousel(self):
+        """
+        Create and save the thumbnail for the photo (simple resize with PIL).
+        """
+        fh = storage.open(self.food_image_upload.name)
+        try:
+            image = Image.open(fh)
+        except:
+            raise Exception()
+
+        size = (512, 339)
+        image.thumbnail(size, Image.ANTIALIAS)
+        carousel = Image.new('RGBA', size, (255, 255, 255, 255))
+        carousel.paste(
+            image, (int((size[0] - image.size[0]) // 2), int((size[1] - image.size[1]) // 2))
+        )
+        fh.close()
+
+        # Path to save to, name, and extension
+        carousel_name, carousel_extension = os.path.splitext(self.food_image_upload.name)
+        carousel_extension = carousel_extension.lower()
+
+        carousel_filename = carousel_name + '_carousel' + carousel_extension
+
+        if carousel_extension in ['.jpg', '.jpeg']:
+            FTYPE = 'JPEG'
+        elif carousel_extension == '.gif':
+            FTYPE = 'GIF'
+        elif carousel_extension == '.png':
+            FTYPE = 'PNG'
+        else:
+            return False  # Unrecognized file type
+
+        # Save thumbnail to in-memory file as StringIO
+        temp_file = BytesIO()
+        carousel.save(temp_file, FTYPE)
+
+        # Load a ContentFile into the thumbnail field so it gets saved
+        self.carousel.save(carousel_filename, File(temp_file), save=True)

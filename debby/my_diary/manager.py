@@ -9,9 +9,10 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, PostbackTemplat
     CarouselTemplate, CarouselColumn
 
 from bg_record.models import BGModel, InsulinIntakeModel, DrugIntakeModel
-from food_record.models import FoodModel
-from line.callback import MyDiaryCallback
-from line.constant import MyDiaryAction as Action
+from food_record.manager import FoodRecordManager
+from food_record.models import FoodModel, TempImageModel
+from line.callback import MyDiaryCallback, FoodRecordCallback
+from line.constant import MyDiaryAction as Action, App, FoodRecordAction
 from line.constant import RecordType
 from user.cache import AppCache, MyDiaryData
 
@@ -60,8 +61,12 @@ class MyDiaryManager(object):
             record = InsulinIntakeModel.objects.get(id=record_id)
         elif record_type == RecordType.DRUG:
             record = DrugIntakeModel.objects.get(id=record_id)
-        else:
+        elif record_type == RecordType.FOOD:
             record = FoodModel.objects.get(id=record_id)
+        elif record_type == RecordType.TEMP_FOOD:
+            record = TempImageModel.objects.get(id=record_id)
+        else:
+            raise ValueError("shall all included")
 
         return record
 
@@ -88,6 +93,21 @@ class MyDiaryManager(object):
     @staticmethod
     def no_record() -> TextSendMessage:
         return TextSendMessage(text="抱歉！沒有任何歷史紀錄耶~")
+
+    def is_postprocessing(self):
+        if self.callback.record_type == RecordType.TEMP_FOOD:
+            return True
+        else:
+            return False
+
+    def postprocessing(self, app_cache: AppCache):
+        if self.callback.record_type == RecordType.TEMP_FOOD:
+            app_cache.set_next_action(App.FOOD_RECORD, FoodRecordAction.CHECK_BEFORE_CREATE)
+            app_cache.commit()
+            callback = self.callback.convert_to(FoodRecordCallback)
+            callback.action = FoodRecordAction.CHECK_BEFORE_CREATE
+            reply = FoodRecordManager(callback).handle()
+            return reply
 
     def handle(self):
         reply = TextSendMessage(text="MY_DIARY ERROR!")
@@ -403,6 +423,7 @@ class MyDiaryManager(object):
             )
 
         elif self.callback.action == Action.FOOD_UPDATE:
+            record_type = RecordType.TEMP_FOOD if self.callback.record_type == RecordType.TEMP_FOOD else RecordType.FOOD
             reply = TemplateSendMessage(
                 alt_text="請選擇欲修改的項目",
                 template=ButtonsTemplate(
@@ -413,7 +434,7 @@ class MyDiaryManager(object):
                             data=MyDiaryCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.UPDATE_DATE,
-                                record_type=RecordType.FOOD,
+                                record_type=record_type,
                                 record_id=self.callback.record_id
                             ).url
                         ),
@@ -422,7 +443,7 @@ class MyDiaryManager(object):
                             data=MyDiaryCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.UPDATE_TIME,
-                                record_type=RecordType.FOOD,
+                                record_type=record_type,
                                 record_id=self.callback.record_id
                             ).url
                         ),
@@ -431,7 +452,7 @@ class MyDiaryManager(object):
                             data=MyDiaryCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.UPDATE_FOOD_PHOTO,
-                                record_type=RecordType.FOOD,
+                                record_type=record_type,
                                 record_id=self.callback.record_id
                             ).url
                         ),
@@ -440,7 +461,7 @@ class MyDiaryManager(object):
                             data=MyDiaryCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.UPDATE_FOOD_TEXT,
-                                record_type=RecordType.FOOD,
+                                record_type=record_type,
                                 record_id=self.callback.record_id
                             ).url
                         ),
@@ -733,8 +754,11 @@ class MyDiaryManager(object):
             record.time = self.callback.new_value
             record.save()
 
-            reply = TextSendMessage(text="修改成功!")
-            app_cache.delete()
+            if self.is_postprocessing():
+                reply = self.postprocessing(app_cache)
+            else:
+                reply = TextSendMessage(text="修改成功!")
+                app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_BG_VALUE_CONFIRM:
             record_type = self.callback.record_type
@@ -834,8 +858,11 @@ class MyDiaryManager(object):
             record.note = app_cache.data.text
             record.save()
 
-            reply = TextSendMessage(text="修改成功!")
-            app_cache.delete()
+            if self.is_postprocessing():
+                reply = self.postprocessing(app_cache)
+            else:
+                reply = TextSendMessage(text="修改成功!")
+                app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_FOOD_PHOTO:
             app_cache.set_next_action(self.callback.app, Action.UPDATE_FOOD_PHOTO_CHECK)
@@ -905,8 +932,11 @@ class MyDiaryManager(object):
                 record.save()
                 record.make_carousel()
 
-                reply = TextSendMessage(text="修改成功!")
-                app_cache.delete()
+                if self.is_postprocessing():
+                    reply = self.postprocessing(app_cache)
+                else:
+                    reply = TextSendMessage(text="修改成功!")
+                    app_cache.delete()
 
         elif self.callback.action == Action.UPDATE_CANCEL:
             reply = TextSendMessage(text="好的！那就不更動您原始的紀錄囉！")
