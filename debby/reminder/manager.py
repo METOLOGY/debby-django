@@ -100,14 +100,8 @@ class ReminderManager(object):
 
     @staticmethod
     def find_next_reminder(reminder: UserReminder):
-        reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
-        time = []
-        for re in reminders:
-            time.append(re.time)
-        time = sorted(time)
-        index = time.index(reminder.time)
-        query = UserReminder.objects.filter(user=reminder.user, type=reminder.type, time=time[index + 1])
-        return query[0] if len(query) > 0 else None
+        reminders = UserReminder.objects.filter(user=reminder.user, status=True, type=reminder.type).order_by('time')
+        return reminders[0] if len(reminders) > 0 else None
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='REMINDER ERROR')
