@@ -81,27 +81,10 @@ class TempImageModel(models.Model):
     note = models.CharField(max_length=200)
     carousel = models.ImageField()
 
-    def remove_on_image_update(self):
-        try:
-            # is the object in the database yet?
-            obj = TempImageModel.objects.get(id=self.id)
-        except TempImageModel.DoesNotExist:
-            # object is not in db, nothing to worry about
-            return
-        # is the save due to an update of the actual image file?
-        if obj.image_upload and self.food_image_upload and obj.image_upload != self.food_image_upload:
-            # delete the old image file from the storage in favor of the new file
-            obj.image_upload.delete()
-
     def delete(self, *args, **kwargs):
         # object is being removed from db, remove the file from storage first
         self.food_image_upload.delete()
         return super(TempImageModel, self).delete(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        # object is possibly being updated, if so, clean up.
-        # self.remove_on_image_update()  #TODO:[BETTER APPROACH?] to support food_record/manager line 118 save func
-        return super(TempImageModel, self).save(*args, **kwargs)
 
     def make_carousel(self):
         """
