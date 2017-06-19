@@ -1,5 +1,6 @@
 import math
 from collections import deque
+from itertools import chain
 
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate
 from linebot.models import TextSendMessage
@@ -37,12 +38,26 @@ class ConsultFoodManager(object):
         app_cache.commit()
         return TextSendMessage(text="請輸入食品名稱:")
 
+    def like_query(self):
+        return FoodNameModel.objects.filter(
+            known_as_name__contains=self.callback.text).distinct("food__sample_name")
+
+    def reverse_like_query(self):
+        return FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
+                                           params=[self.callback.text])
+
     def read(self, app_cache: AppCache):
         app_cache.delete()
-        food_names = FoodNameModel.objects.filter(known_as_name=self.callback.text)
+        food_names = FoodNameModel.objects.filter(
+            known_as_name__contains=self.callback.text).distinct("food__sample_name")
+        if len(food_names) < 20:
+            reverse_search_food_names = FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
+                                                                    params=[self.callback.text])
+            reverse_search_food_names = reverse_search_food_names.distinct('food__sample_name')
+            food_names = list(chain(food_names, reverse_search_food_names))
         if len(food_names) > 1:
 
-            card_num_list = get_each_card_num(len(food_names))
+            card_num_list = get_each_card_num(len(food_names[:20]))
             reply = list()
             message = "請問您要查閱的是："
             d = deque(food_names)
