@@ -204,7 +204,6 @@ class FoodRecordManager(object):
 
             app_cache.data = data
             app_cache.commit()
-            print(data.record_id)
 
             reply = self.reply_if_want_to_record_image()
 
@@ -225,9 +224,8 @@ class FoodRecordManager(object):
                 print(Action.CREATE)
                 data = FoodData()
                 data.setup_data(app_cache.data) if app_cache.data else None
-                print(data.record_id)
 
-                query = TempImageModel.objects.filter(id=data.record_id)
+                query = TempImageModel.objects.filter(id=self.callback.record_id)
                 if query:
                     temp = query[0]
                     self.record_food(temp)
