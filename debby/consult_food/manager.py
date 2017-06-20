@@ -1,10 +1,12 @@
 import math
 from collections import deque
+from itertools import chain
 
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate
 from linebot.models import TextSendMessage
 
 from consult_food.models import ConsultFoodModel, FoodNameModel, FoodModel
+from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
 from line.constant import ConsultFoodAction as Action
 from user.cache import AppCache
@@ -13,6 +15,11 @@ from user.cache import AppCache
 class ConsultFoodManager(object):
     def __init__(self, callback: ConsultFoodCallback):
         self.callback = callback
+        self.registered_actions = {
+            Action.READ_FROM_MENU: self.read_from_menu,
+            Action.READ: self.read,
+            Action.WAIT_FOOD_NAME_CHOICE: self.wait_food_name_choice
+        }
 
     @staticmethod
     def reply_content(food: FoodModel) -> TextSendMessage:
@@ -26,68 +33,68 @@ class ConsultFoodManager(object):
             )
         )
 
-    def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='你說的是什麼食物呀，雖然我沒聽過，但感覺好像很好吃!')
-        app_cache = AppCache(self.callback.line_id)
+    def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
+        app_cache.set_next_action(self.callback.app, action=Action.READ)
+        app_cache.commit()
+        return TextSendMessage(text="請輸入食品名稱:")
 
-        if self.callback.action == Action.READ_FROM_MENU:
-            # init cache again to clean other app's status and data
-            app_cache.set_next_action(self.callback.app, action=Action.READ)
-            app_cache.commit()
-            reply = TextSendMessage(text="請輸入食品名稱:")
-        elif self.callback.action == Action.READ:
-            app_cache.delete()
-            food_names = FoodNameModel.objects.filter(known_as_name=self.callback.text)
-            if len(food_names) > 1:
-                # find how many template needed
-                def get_each_card_num(choice_num: int) -> list:
-                    def find_card_len(num):
-                        return math.ceil(num / 4)
+    def like_query(self):
+        return FoodNameModel.objects.filter(
+            known_as_name__contains=self.callback.text).distinct("food__sample_name")
 
-                    def find_button_num(num, _card_len):
-                        return math.ceil(num / _card_len)
+    def reverse_like_query(self):
+        return FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
+                                           params=[self.callback.text])
 
-                    result = []
-                    while choice_num > 0:
-                        card_len = find_card_len(choice_num)
-                        button_num = find_button_num(choice_num, card_len)
-                        result.append(button_num)
-                        choice_num -= button_num
-                    return result
+    def read(self, app_cache: AppCache):
+        app_cache.delete()
+        food_names = FoodNameModel.objects.filter(
+            known_as_name__contains=self.callback.text).distinct("food__sample_name")
+        if len(food_names) < 20:
+            reverse_search_food_names = FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
+                                                                    params=[self.callback.text])
+            reverse_search_food_names = reverse_search_food_names.distinct('food__sample_name')
+            food_names = list(chain(food_names, reverse_search_food_names))
+        if len(food_names) > 1:
 
-                card_num_list = get_each_card_num(len(food_names))
-                reply = list()
-                message = "請問您要查閱的是："
-                d = deque(food_names)
-                for card_num in card_num_list:
-                    actions = []
-                    for i in range(card_num):
-                        food_name = d.popleft()  # type: FoodNameModel
+            card_num_list = get_each_card_num(len(food_names[:20]))
+            reply = list()
+            message = "請問您要查閱的是："
+            d = deque(food_names)
+            for card_num in card_num_list:
+                actions = []
+                for i in range(card_num):
+                    food_name = d.popleft()  # type: FoodNameModel
 
-                        actions.append(
-                            PostbackTemplateAction(
-                                label=food_name.food.sample_name,
-                                data=ConsultFoodCallback(
-                                    line_id=self.callback.line_id,
-                                    action=Action.WAIT_FOOD_NAME_CHOICE,
-                                    food_id=food_name.food.id
-                                ).url
-                            )
-                        )
-                    template_send_message = TemplateSendMessage(
-                        alt_text=message,
-                        template=ButtonsTemplate(
-                            text=message,
-                            actions=actions
+                    actions.append(
+                        PostbackTemplateAction(
+                            label=food_name.food.sample_name,
+                            data=ConsultFoodCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.WAIT_FOOD_NAME_CHOICE,
+                                food_id=food_name.food.id
+                            ).url
                         )
                     )
-                    reply.append(template_send_message)
-            elif len(food_names) == 1:
-                food = food_names[0].food
-                reply = self.reply_content(food)
-            else:
-                reply = TextSendMessage(text="Debby 找不到您輸入的食物喔，試試其他的?")
-        elif self.callback.action == Action.WAIT_FOOD_NAME_CHOICE:
-            food = FoodModel.objects.get(pk=self.callback.food_id)
+                template_send_message = TemplateSendMessage(
+                    alt_text=message,
+                    template=ButtonsTemplate(
+                        text=message,
+                        actions=actions
+                    )
+                )
+                reply.append(template_send_message)
+        elif len(food_names) == 1:
+            food = food_names[0].food
             reply = self.reply_content(food)
+        else:
+            reply = TextSendMessage(text="Debby 找不到您輸入的食物喔，試試其他的?")
         return reply
+
+    def wait_food_name_choice(self, app_cache: AppCache):
+        food = FoodModel.objects.get(pk=self.callback.food_id)
+        return self.reply_content(food)
+
+    def handle(self) -> SendMessage:
+        app_cache = AppCache(self.callback.line_id)
+        return self.registered_actions[self.callback.action](app_cache)
