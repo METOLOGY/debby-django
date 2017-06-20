@@ -69,6 +69,7 @@ class FoodData(CacheData):
     keep_recording = False  # type: bool
     extra_info = ''  # type: str
     image_id = ''  # type: str
+    record_id: int = 0
 
 
 class DrugAskData(CacheData):

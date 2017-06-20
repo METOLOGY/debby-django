@@ -13,7 +13,7 @@ from linebot.models import TextSendMessage
 from debby import settings
 from food_record.models import FoodModel, TempImageModel
 from line.callback import FoodRecordCallback, MyDiaryCallback
-from line.constant import FoodRecordAction as Action, App, MyDiaryAction
+from line.constant import FoodRecordAction as Action, MyDiaryAction, RecordType
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
 
@@ -23,27 +23,22 @@ class FoodRecordManager(object):
         self.callback = callback
         self.image_reader = ImageReader()
 
-    def record_image(self, image_content: bytes, extra_info: str):
+    def record_food(self, temp: TempImageModel):
         current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
-        food_record = FoodModel(user=current_user)
-        if extra_info:
-            food_record.note = extra_info
-        if image_content:
-            bytes_io = BytesIO(image_content)
-            file = '{0}_food_image.jpg'.format(current_user.line_id)
-
-            food_record.food_image_upload.save(file, File(bytes_io))
+        food_record = FoodModel.objects.create(user=current_user,
+                                               note=temp.note,
+                                               food_image_upload=temp.food_image_upload)
+        food_record.time = temp.time
         food_record.save()
         food_record.make_carousel()
-        return food_record.pk
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
-            alt_text="請繼續增加文字說明?",
+            alt_text="您要繼續增加文字嗎?",
             template=ButtonsTemplate(
                 title="記錄飲食",
-                text="請繼續增加文字說明?",
+                text="您要繼續增加文字嗎?",
                 actions=[
                     PostbackTemplateAction(
                         label="不, 我已輸入完畢!",
@@ -57,6 +52,32 @@ class FoodRecordManager(object):
             )
         )
 
+    def reply_if_want_to_record_image(self):
+        message = "請問您是想要記錄飲食嗎?"
+        return TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=[
+                    PostbackTemplateAction(
+                        label="是，我要記錄此食物照片",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY).url
+                    ),
+                    PostbackTemplateAction(
+                        label="否，我只是想聊個天",
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL_PHOTO).url
+                    )
+                ]
+            )
+        )
+
+    def try_delete_temp(self):
+        query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
+        if query:
+            for temp in query:
+                if self.is_temp_expired(temp):
+                    temp.delete()
+
     @staticmethod
     def record_extra_info(record_pk: str, text: str):
         food_record = FoodModel.objects.get(pk=record_pk)
@@ -67,55 +88,89 @@ class FoodRecordManager(object):
             food_record.note = text
         food_record.save()
 
-    def handle_final_check_before_save(self, data: FoodData) -> List[SendMessage]:
-        reply = []
-        time = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S\n")
-        message = '{}{}'.format(time, data.extra_info)
-
-        # Get from temp image
-        query = TempImageModel.objects.filter(user__line_id=self.callback.line_id)
+    @staticmethod
+    def delete_temp(temp_id):
+        query = TempImageModel.objects.filter(id=temp_id)
         if query:
             temp = query[0]
-            host = cache.get("host_name")
-            url = temp.image_upload.url
-            photo = "https://{}{}".format(host, url)
+            temp.delete()
 
-            image_message = ImageSendMessage(
-                original_content_url=photo,
-                preview_image_url=photo
-            )
-            reply.append(image_message)
+    @staticmethod
+    def is_temp_expired(temp: TempImageModel) -> bool:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        diff = now - temp.create_time
+        return True if diff.seconds > 300 else False
 
-        text_send_message = TextSendMessage(text=message)
+    def handle_final_check_before_save(self, data: FoodData) -> TemplateSendMessage:
 
-        send_message = TemplateSendMessage(
-            alt_text="您是否確定要存取此次紀錄",
+        text = data.extra_info if data.extra_info else ""
+
+        # Get from temp image
+        query = TempImageModel.objects.filter(id=data.record_id)
+
+        photo = None
+
+        if not query:  # create in first time
+            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+            temp = TempImageModel.objects.create(user=user,
+                                                 note=text)
+            image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+            if image_content:
+                bytes_io = BytesIO(image_content)
+                file = '{0}_food_image.jpg'.format(self.callback.line_id)
+                temp.food_image_upload.save(file, File(bytes_io))
+                temp.make_carousel()
+
+                host = cache.get("host_name")
+                url = temp.carousel.url
+                photo = "https://{}{}".format(host, url)
+            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+        else:  # may be old or back from my_diary
+            temp = query[0]
+            text = temp.note
+            if temp.food_image_upload:
+                host = cache.get("host_name")
+                url = temp.carousel.url
+                photo = "https://{}{}".format(host, url)
+            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+
+        message = '{}{}'.format(time, text)
+
+        if len(message) > 60:
+            message = message[:50] + "..."
+
+        reply = TemplateSendMessage(
+            alt_text="您是否確定要存取此次紀錄?",
             template=ButtonsTemplate(
-                title="記錄飲食",
-                text="您是否確定要存取此次紀錄?",
+                title="您是否確定要存取此次紀錄?",
+                text=message,
+                thumbnail_image_url=photo,
                 actions=[
                     PostbackTemplateAction(
                         label='儲存',
-                        data=FoodRecordCallback(self.callback.line_id, action=Action.CREATE).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CREATE, record_id=temp.id).url
                     ),
                     PostbackTemplateAction(
                         label='修改',
-                        data=MyDiaryCallback(self.callback.line_id, action=Action.MODIFY_EXTRA_INFO).url
+                        data=MyDiaryCallback(self.callback.line_id, action=MyDiaryAction.FOOD_UPDATE,
+                                             record_type=RecordType.TEMP_FOOD,
+                                             record_id=temp.id).url
                     ),
                     PostbackTemplateAction(
                         label='取消',
-                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL, record_id=temp.id).url
                     ),
                 ]
             )
         )
-        reply.extend((text_send_message, send_message))
         return reply
 
     def handle(self) -> Union[SendMessage, None]:
         reply = TextSendMessage(text='FOOD_RECORD ERROR!')
         app_cache = AppCache(self.callback.line_id)
-        app_cache.set_expired_time(seconds=60*5)  # set expired time to 5 minutes.
+        app_cache.set_expired_time(seconds=60 * 5)  # set expired time to 5 minutes.
+        # always use one object data for each user to save temp image
+        self.try_delete_temp()
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
@@ -132,7 +187,7 @@ class FoodRecordManager(object):
             data = FoodData()
             data.setup_data(app_cache.data)
 
-            if data.extra_info or data.image_id:
+            if data.extra_info:
                 data.extra_info = "\n".join([data.extra_info, self.callback.text])
             else:
                 data.extra_info = self.callback.text
@@ -147,21 +202,10 @@ class FoodRecordManager(object):
             data = FoodData()
             data.image_id = self.callback.image_id
 
-            # save image to temp folder
-            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-            temp, _ = TempImageModel.objects.get_or_create(user=user)
-            image_content = self.image_reader.load_image(data.image_id)
-            bytes_io = BytesIO(image_content)
-            file = '{0}_food_image.jpg'.format(self.callback.line_id)
-            temp.image_upload.save(file, File(bytes_io))
-            temp.save()
-
             app_cache.data = data
             app_cache.commit()
 
-            reply = self.reply_to_record_detail_template()
-            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
-            app_cache.commit()
+            reply = self.reply_if_want_to_record_image()
 
         elif self.callback.action == Action.CHECK_BEFORE_CREATE:
             # avoid cache induced empty error
@@ -181,22 +225,28 @@ class FoodRecordManager(object):
                 data = FoodData()
                 data.setup_data(app_cache.data) if app_cache.data else None
 
-                image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
-                food_record_pk = self.record_image(image_content, data.extra_info)
-
-                # delete temp image
-                TempImageModel.objects.filter(user__line_id=self.callback.line_id).delete()
-
-                if food_record_pk:
+                query = TempImageModel.objects.filter(id=self.callback.record_id)
+                if query:
+                    temp = query[0]
+                    self.record_food(temp)
                     app_cache.delete()
                     reply = TextSendMessage(text="飲食記錄成功!")
                 else:
-                    reply = TextSendMessage(text="記錄失敗!? 可能隔太久沒有動作囉")
+                    reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
+
+                # delete temp image
+                self.try_delete_temp()
+
         elif self.callback.action == Action.CANCEL:
             if not app_cache.data:
                 return None
-            app_cache.delete()
             reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
+            self.delete_temp(app_cache.data.record_id) if self.callback.temp_record_id else None
+            app_cache.delete()
+        elif self.callback.action == Action.CANCEL_PHOTO:
+            reply = TextSendMessage(text="哎呀抱歉~Debby不太懂您的意思~還是您想要從主選單開始呢？")
+            self.delete_temp(app_cache.data.record_id) if self.callback.temp_record_id else None
+            app_cache.delete()
         return reply
 
 

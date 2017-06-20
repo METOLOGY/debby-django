@@ -100,14 +100,8 @@ class ReminderManager(object):
 
     @staticmethod
     def find_next_reminder(reminder: UserReminder):
-        reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
-        time = []
-        for re in reminders:
-            time.append(re.time)
-        time = sorted(time)
-        index = time.index(reminder.time)
-        query = UserReminder.objects.filter(user=reminder.user, type=reminder.type, time=time[index + 1])
-        return query[0] if len(query) > 0 else None
+        reminders = UserReminder.objects.filter(user=reminder.user, status=True, type=reminder.type).order_by('time')
+        return reminders[0] if len(reminders) > 0 else None
 
     def handle(self) -> SendMessage:
         reply = TextSendMessage(text='REMINDER ERROR')
@@ -124,6 +118,7 @@ class ReminderManager(object):
 
                 reminder = UserReminder.objects.get(id=self.callback.reminder_id)
                 next_reminder = self.find_next_reminder(reminder)
+                user = CustomUserModel.objects.get(line_id=self.callback.line_id)
                 if next_reminder is not None:
                     if reminder.type == 'bg':
 
@@ -135,12 +130,12 @@ class ReminderManager(object):
                         reply = BGRecordManager(_callback).handle()
 
                     elif reminder.type == 'insulin':
-                        InsulinIntakeModel.objects.create(user__line_id=self.callback.line_id, status=True)
+                        InsulinIntakeModel.objects.create(user=user, status=True)
                         reply = [TextSendMessage(text='紀錄此次已服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 
                     elif reminder.type == 'drug':
-                        DrugIntakeModel.objects.create(user__line_id=self.callback.line_id, status=True)
+                        DrugIntakeModel.objects.create(user=user, status=True)
                         reply = [TextSendMessage(text='紀錄此次已服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
                 else:
@@ -152,14 +147,14 @@ class ReminderManager(object):
                 if next_reminder is not None:
                     print(reminder)
                     reply = self.reply_next_reminder(reminder=next_reminder)
-
+                    user = CustomUserModel.objects.get(line_id=self.callback.line_id)
                     if reminder.type == 'insulin':
-                        InsulinIntakeModel.objects.create(user__line_id=self.callback.line_id, status=False)
+                        InsulinIntakeModel.objects.create(user=user, status=False)
                         reply = [TextSendMessage(text='紀錄此次未服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 
                     elif reminder.type == 'drug':
-                        DrugIntakeModel.objects.create(user__line_id=self.callback.line_id, status=False)
+                        DrugIntakeModel.objects.create(user=user, status=False)
                         reply = [TextSendMessage(text='紀錄此次未服用')]
                         reply += self.reply_next_reminder(reminder=reminder)
 

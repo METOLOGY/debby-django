@@ -68,6 +68,10 @@ class FoodRecordCallback(DerivedAppCallback):
     def choice(self):
         return self.data.get('choice')
 
+    @property
+    def record_id(self):
+        return self.data.get('record_id')
+
 
 class BGRecordCallback(DerivedAppCallback):
     app = App.BG_RECORD
@@ -79,6 +83,10 @@ class BGRecordCallback(DerivedAppCallback):
     @property
     def text(self):
         return self.data.get('text')
+
+    @property
+    def glucose_val(self):
+        return self.data.get('glucose_val')
 
 
 class ConsultFoodCallback(DerivedAppCallback):
@@ -171,6 +179,7 @@ class UserSettingsCallback(DerivedAppCallback):
     @property
     def text(self) -> str:
         return self.data.get('text')
+
 
 class LineCallback(DerivedAppCallback):
     app = App.LINE
