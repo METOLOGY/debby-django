@@ -50,17 +50,24 @@ class ConsultFoodManager(object):
         app_cache.delete()
         food_names = FoodNameModel.objects.filter(
             known_as_name__contains=self.callback.text).distinct("food__sample_name")
+        distinct_food_names = []
+
         if len(food_names) < 20:
             reverse_search_food_names = FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
                                                                     params=[self.callback.text])
             reverse_search_food_names = reverse_search_food_names.distinct('food__sample_name')
             food_names = list(chain(food_names, reverse_search_food_names))
-        if len(food_names) > 1:
+            distinct_food_names_id = []
+            for ind, food_name in enumerate(food_names):
+                if food_name.id not in distinct_food_names_id:
+                    distinct_food_names_id.append(food_name.id)
+                    distinct_food_names.append(food_name)
+        if len(distinct_food_names) > 1:
 
-            card_num_list = get_each_card_num(len(food_names[:20]))
+            card_num_list = get_each_card_num(len(distinct_food_names[:20]))
             reply = list()
             message = "請問您要查閱的是："
-            d = deque(food_names)
+            d = deque(distinct_food_names)
             for card_num in card_num_list:
                 actions = []
                 for i in range(card_num):
