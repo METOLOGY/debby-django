@@ -7,9 +7,9 @@ from django.core.files import File
 from django.core.files.storage import default_storage as storage
 from django.db import models
 from django.contrib.postgres.fields import JSONField
-from google.cloud import vision
 import io
 import json
+import request
 
 
 # Create your models here.
@@ -84,14 +84,28 @@ class FoodModel(models.Model):
     # modify to fit food_record model.
     def detect_web(self):
         """Detects web annotations given an image."""
-        vision_client = vision.Client()
+        url = 'https://vision.googleapis.com/v1/images:annotate?key={}'.format(GOOGLE_API_KEY)
 
         with io.open(self.food_image_upload.url, 'rb') as image_file:
             content = image_file.read()
 
-        image = vision_client.image(content=content)
+        req = {
+            'request': [
+                {
+                    'image': {
+                        'content': content
+                    },
+                    'features': [
+                        {
+                            "type": "WEB_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
 
-        notes = image.detect_web()
+        r = request.post(url, data=req)
+        data = json.load(r.json())['responses']['webDetection']
 
         # TODO: discuss whether we have to save these results.
         # if notes.pages_with_matching_images:
@@ -117,10 +131,10 @@ class FoodModel(models.Model):
         #         print('Score: {}'.format(image.score))
         #         print('Url  : {}'.format(image.url))
 
-        if notes.web_entities:
+        if data['webEntities']:
             # print('\n{} Web entities found: '.format(len(notes.web_entities)))
             entities = {}
-            for entity in notes.web_entities:
+            for entity in data['webEntities']:
                 entities[entity.description] = entity.score
                 # print('Score      : {}'.format(entity.score))
                 # print('Description: {}'.format(entity.description))
