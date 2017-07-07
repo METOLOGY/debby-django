@@ -6,6 +6,11 @@ from PIL import Image
 from django.core.files import File
 from django.core.files.storage import default_storage as storage
 from django.db import models
+from django.contrib.postgres.fields import JSONField
+from google.cloud import vision
+import io
+import json
+
 
 # Create your models here.
 from user.models import CustomUserModel
@@ -28,6 +33,8 @@ class FoodModel(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
+    webEntities = JSONField()
+
 
     # def save(self, *args, **kwargs):
     #     super(FoodModel, self).save(*args, **kwargs)
@@ -72,6 +79,53 @@ class FoodModel(models.Model):
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
 
+
+    # clone from GCP example: https://cloud.google.com/vision/docs/detecting-web?hl=zh-tw#vision-web-detection-gcs-python
+    # modify to fit food_record model.
+    def detect_web(self):
+        """Detects web annotations given an image."""
+        vision_client = vision.Client()
+
+        with io.open(self.food_image_upload.url, 'rb') as image_file:
+            content = image_file.read()
+
+        image = vision_client.image(content=content)
+
+        notes = image.detect_web()
+
+        # TODO: discuss whether we have to save these results.
+        # if notes.pages_with_matching_images:
+        #     print('\n{} Pages with matching images retrieved')
+        #
+        #     for page in notes.pages_with_matching_images:
+        #         print('Score : {}'.format(page.score))
+        #         print('Url   : {}'.format(page.url))
+        #
+        # if notes.full_matching_images:
+        #     print('\n{} Full Matches found: '.format(
+        #         len(notes.full_matching_images)))
+        #
+        #     for image in notes.full_matching_images:
+        #         print('Score:  {}'.format(image.score))
+        #         print('Url  : {}'.format(image.url))
+        #
+        # if notes.partial_matching_images:
+        #     print('\n{} Partial Matches found: '.format(
+        #         len(notes.partial_matching_images)))
+        #
+        #     for image in notes.partial_matching_images:
+        #         print('Score: {}'.format(image.score))
+        #         print('Url  : {}'.format(image.url))
+
+        if notes.web_entities:
+            # print('\n{} Web entities found: '.format(len(notes.web_entities)))
+            entities = {}
+            for entity in notes.web_entities:
+                entities[entity.description] = entity.score
+                # print('Score      : {}'.format(entity.score))
+                # print('Description: {}'.format(entity.description))
+
+            self.webEntities.save(json.dumps(entities))
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
