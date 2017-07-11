@@ -8,9 +8,9 @@ from django.core.files.storage import default_storage as storage
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.conf import settings
-import io
 import json
 import requests
+import base64
 
 
 # Create your models here.
@@ -34,7 +34,7 @@ class FoodModel(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
-    webEntities = JSONField()
+    webEntities = JSONField(null=True)
 
 
     # def save(self, *args, **kwargs):
@@ -87,14 +87,14 @@ class FoodModel(models.Model):
         """Detects web annotations given an image."""
         url = 'https://vision.googleapis.com/v1/images:annotate?key={}'.format(settings.GOOGLE_VISION_KEY)
 
-        with io.open(self.food_image_upload.url, 'rb') as image_file:
-            content = image_file.read()
+        with open(self.food_image_upload.path, 'rb') as image_file:
+            content = base64.b64encode(image_file.read())
 
         req = {
             'request': [
                 {
                     'image': {
-                        'content': content
+                        'content': content.decode('utf-8')
                     },
                     'features': [
                         {
@@ -106,7 +106,7 @@ class FoodModel(models.Model):
         }
 
         r = requests.post(url, data=req)
-        data = json.load(r.json())['responses']['webDetection']
+        data = r.json()['responses'][0]['webDetection']
 
         # TODO: discuss whether we have to save these results.
         # if notes.pages_with_matching_images:
@@ -140,7 +140,7 @@ class FoodModel(models.Model):
                 # print('Score      : {}'.format(entity.score))
                 # print('Description: {}'.format(entity.description))
 
-            self.webEntities.save(json.dumps(entities))
+            self.webEntities.save(entities)
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
