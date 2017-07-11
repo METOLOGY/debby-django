@@ -7,9 +7,10 @@ from django.core.files import File
 from django.core.files.storage import default_storage as storage
 from django.db import models
 from django.contrib.postgres.fields import JSONField
+from django.conf import settings
 import io
 import json
-import request
+import requests
 
 
 # Create your models here.
@@ -84,7 +85,7 @@ class FoodModel(models.Model):
     # modify to fit food_record model.
     def detect_web(self):
         """Detects web annotations given an image."""
-        url = 'https://vision.googleapis.com/v1/images:annotate?key={}'.format(GOOGLE_API_KEY)
+        url = 'https://vision.googleapis.com/v1/images:annotate?key={}'.format(settings.GOOGLE_VISION_KEY)
 
         with io.open(self.food_image_upload.url, 'rb') as image_file:
             content = image_file.read()
@@ -104,7 +105,7 @@ class FoodModel(models.Model):
             ]
         }
 
-        r = request.post(url, data=req)
+        r = requests.post(url, data=req)
         data = json.load(r.json())['responses']['webDetection']
 
         # TODO: discuss whether we have to save these results.

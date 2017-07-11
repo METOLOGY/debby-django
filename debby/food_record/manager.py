@@ -32,6 +32,7 @@ class FoodRecordManager(object):
         food_record.time = temp.time
         food_record.save()
         food_record.make_carousel()
+        food_record.detect_web()
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
