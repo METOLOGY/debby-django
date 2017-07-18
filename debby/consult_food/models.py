@@ -27,3 +27,29 @@ class FoodModel(models.Model):
 class FoodNameModel(models.Model):
     known_as_name = models.CharField(verbose_name="代稱", max_length=100)
     food = models.ForeignKey(FoodModel)
+
+
+class NutritionModel(models.Model):
+    # six groups
+    fruit_amount = models.FloatField(verbose_name="水果類")
+    vegetable_amount = models.FloatField(verbose_name="蔬菜類")
+    grain_amount = models.FloatField(verbose_name="全榖根莖類")
+    protein_food_amount = models.FloatField(verbose_name="蛋豆魚肉類")
+    diary_amount = models.FloatField(verbose_name="低脂乳品類")
+    oil_amount = models.FloatField(verbose_name="油脂與堅果種子類")
+    # nutrition
+    calories = models.FloatField(verbose_name="熱量")
+    protein = models.FloatField(verbose_name="蛋白質")
+    fat = models.FloatField(verbose_name="脂質")
+    carbohydrates = models.FloatField(verbose_name="碳水化合物")
+
+
+class TaiwanSnackModel(models.Model):
+    name = models.CharField(verbose_name="名稱", max_length=100)
+    nutrition = models.OneToOneField(NutritionModel)
+
+
+class TaiwanSnackNameSynonymModel(models.Model):
+    synonym = models.CharField(verbose_name="代稱", max_length=100)
+    snack = models.ForeignKey(TaiwanSnackModel)
+
