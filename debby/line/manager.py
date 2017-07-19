@@ -1,8 +1,8 @@
 from linebot.models import TemplateSendMessage, ButtonsTemplate, TextSendMessage, PostbackTemplateAction, CarouselTemplate, CarouselColumn
 from line.callback import LineCallback, BGRecordCallback, FoodRecordCallback
-from line.callback import DrugAskCallback, ConsultFoodCallback
+from line.callback import DrugAskCallback, ConsultFoodCallback, MyDiaryCallback
 from user.cache import AppCache
-from line.constant import LineAction, BGRecordAction, FoodRecordAction
+from line.constant import LineAction, BGRecordAction, FoodRecordAction, MyDiaryAction
 from line.constant import DrugAskAction, ConsultFoodAction
 
 
@@ -80,6 +80,30 @@ class LineManager(object):
                     )
                 ]
             ))
+
+
+
+            # the diary part
+            carousels.append(CarouselColumn(
+                title="我的日記",
+                text="請選擇要檢視的記錄項目（最多五筆）",
+                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/summary.png',
+                actions=[
+                    PostbackTemplateAction(
+                        label="血糖紀錄",
+                        data=MyDiaryCallback(line_id=self.callback.line_id,
+                                             action=MyDiaryAction.BG_HISTORY).url
+                    ),
+                    PostbackTemplateAction(
+                        label="飲食紀錄",
+                        data=MyDiaryCallback(line_id=self.callback.line_id,
+                                             action=MyDiaryAction.FOOD_HISTORY).url
+                    ),
+                ]
+            ))
+
+
+
 
             # noinspection PyTypeChecker
             reply = TemplateSendMessage(
