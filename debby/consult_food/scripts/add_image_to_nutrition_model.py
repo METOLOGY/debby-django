@@ -38,8 +38,8 @@ def save_img(img: Image, nutrition_id):
 def run():
     queries = TaiwanSnackModel.objects.all()
     for snack in queries:
-        # img = create_img(snack)
-        # save_img(img, snack.nutrition_id)
+        img = create_img(snack)
+        save_img(img, snack.nutrition_id)
         snack.nutrition.nutrition_amount_image = os.path.join('ConsultFood', 'nutrition_amount',
                                                               '{}.jpeg'.format(snack.nutrition_id))
         snack.nutrition.save()
