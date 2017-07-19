@@ -22,7 +22,7 @@ def create_img(snack: TaiwanSnackModel):
     return img
 
 
-def save_img(img: Image, nutrition_id):
+def save_img(img: Image.Image, nutrition_id):
     print(nutrition_id)
     directory = "../media/ConsultFood"
     if not os.path.exists(directory):
@@ -37,7 +37,7 @@ def save_img(img: Image, nutrition_id):
     directory = "../media/ConsultFood/nutrition_amount_preview"
     if not os.path.exists(directory):
         os.makedirs(directory)
-    bg.thumbnail((240,240), Image.ANTIALIAS)
+    bg.thumbnail((240, 240), Image.ANTIALIAS)
     bg.save('{}/{}.jpeg'.format(directory, nutrition_id))
 
 

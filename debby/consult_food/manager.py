@@ -1,9 +1,7 @@
 from collections import deque
-from itertools import chain
 from typing import List
 
 from django.core.cache import cache
-from django.core.files import temp
 from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
@@ -26,7 +24,15 @@ class ConsultFoodManager(object):
         }
 
     @staticmethod
-    def reply_content(food: FoodModel) -> TextSendMessage:
+    def reply_content(url: str, preview_url: str) -> ImageSendMessage:
+        host = cache.get("host_name")
+        photo = "https://{}{}".format(host, url)
+        preview_photo = "https://{}{}".format(host, preview_url)
+        return ImageSendMessage(original_content_url=photo,
+                                preview_image_url=preview_photo)
+
+    @staticmethod
+    def reply_food_content(food: FoodModel) -> TextSendMessage:
         return TextSendMessage(
             text="每100克{}含有\n熱量{}大卡\n含可代謝醣類{}克\n蛋白質{}克\n脂質{}克".format(
                 food.sample_name,
@@ -37,15 +43,26 @@ class ConsultFoodManager(object):
             )
         )
 
-    @staticmethod
-    def reply_snack_content(snack: TaiwanSnackModel) -> ImageSendMessage:
+    def reply_snack_content(self, snack: TaiwanSnackModel) -> List[ImageSendMessage]:
+        url = snack.nutrition.six_group_portion_image.url
+        preview_url = snack.nutrition.six_group_portion_image_preview.url
+
         host = cache.get("host_name")
-        url = snack.nutrition.nutrition_amount_image.url
         photo = "https://{}{}".format(host, url)
-        preview_url = snack.nutrition.nutrition_amount_image_preview.url
         preview_photo = "https://{}{}".format(host, preview_url)
-        return ImageSendMessage(original_content_url=photo,
-                                preview_image_url=preview_photo)
+        six_group = ImageSendMessage(original_content_url=photo,
+                                     preview_image_url=preview_photo)
+
+        url = snack.nutrition.nutrition_amount_image.url
+        preview_url = snack.nutrition.nutrition_amount_image_preview.url
+
+        host = cache.get("host_name")
+        photo = "https://{}{}".format(host, url)
+        preview_photo = "https://{}{}".format(host, preview_url)
+        calories = ImageSendMessage(original_content_url=photo,
+                                    preview_image_url=preview_photo)
+
+        return [six_group, calories]
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
@@ -106,7 +123,7 @@ class ConsultFoodManager(object):
                 reply.append(template_send_message)
         elif len(food_names) == 1:
             food = food_names[0].food
-            reply = self.reply_content(food)
+            reply = self.reply_food_content(food)
         else:
             reply = None
         return reply
@@ -182,7 +199,7 @@ class ConsultFoodManager(object):
 
     def wait_food_name_choice(self, app_cache: AppCache):
         food = FoodModel.objects.get(pk=self.callback.food_id)
-        return self.reply_content(food)
+        return self.reply_food_content(food)
 
     def wait_snack_food_name_choice(self, app_cache: AppCache):
         snack = TaiwanSnackModel.objects.get(pk=self.callback.food_id)
