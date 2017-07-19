@@ -2,7 +2,10 @@ import math
 
 
 # find how many template needed
-def get_each_card_num(choice_num: int) -> list:
+from typing import List
+
+
+def get_each_card_num(choice_num: int) -> List[int]:
     def find_card_len(num):
         return math.ceil(num / 4)
 
