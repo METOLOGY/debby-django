@@ -27,3 +27,52 @@ class FoodModel(models.Model):
 class FoodNameModel(models.Model):
     known_as_name = models.CharField(verbose_name="代稱", max_length=100)
     food = models.ForeignKey(FoodModel)
+
+
+class NutritionModel(models.Model):
+    # six groups
+    fruit_amount = models.FloatField(verbose_name="水果類")
+    vegetable_amount = models.FloatField(verbose_name="蔬菜類")
+    grain_amount = models.FloatField(verbose_name="全榖根莖類")
+    protein_food_amount = models.FloatField(verbose_name="蛋豆魚肉類")
+    diary_amount = models.FloatField(verbose_name="低脂乳品類")
+    oil_amount = models.FloatField(verbose_name="油脂與堅果種子類")
+    # nutrition
+    gram = models.FloatField(verbose_name="重量")
+    calories = models.FloatField(verbose_name="熱量")
+    protein = models.FloatField(verbose_name="蛋白質")
+    fat = models.FloatField(verbose_name="脂質")
+    carbohydrates = models.FloatField(verbose_name="碳水化合物")
+    six_group_portion_image = models.ImageField(verbose_name="六大類份數圖表",
+                                                upload_to="ConsultFood/six_group_portion/",
+                                                blank=True)
+    nutrition_amount_image = models.ImageField(verbose_name="營養含量圖表",
+                                               upload_to="ConsultFood/nutrition_amount/",
+                                               blank=True)
+
+
+class TaiwanSnackModelManager(models.Manager):
+    def search_by_name(self, name: str):
+        return self.filter(name=name)
+
+    def search_by_synonym(self, name: str):
+        return self.filter(synonyms__synonym=name)
+
+
+class TaiwanSnackModel(models.Model):
+    name = models.CharField(verbose_name="名稱", max_length=100)
+    nutrition = models.OneToOneField(NutritionModel)
+
+    objects = TaiwanSnackModelManager()
+
+
+class TaiwanSnackNameSynonymModelManager(models.Manager):
+    def search_by_name(self, name: str):
+        return self.filter(synonym=name)
+
+
+class TaiwanSnackNameSynonymModel(models.Model):
+    synonym = models.CharField(verbose_name="代稱", max_length=100)
+    snack = models.ForeignKey(TaiwanSnackModel, related_name='synonyms')
+
+    objects = TaiwanSnackNameSynonymModelManager()
