@@ -43,8 +43,12 @@ class NutritionModel(models.Model):
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
     carbohydrates = models.FloatField(verbose_name="碳水化合物")
-    six_group_portion_image = models.ImageField(verbose_name="六大類份數圖表", upload_to="six_group_portion/", blank=True)
-    nutrition_amount_image = models.ImageField(verbose_name="營養含量圖表", upload_to="nutrition_amount/", blank=True)
+    six_group_portion_image = models.ImageField(verbose_name="六大類份數圖表",
+                                                upload_to="ConsultFood/six_group_portion/",
+                                                blank=True)
+    nutrition_amount_image = models.ImageField(verbose_name="營養含量圖表",
+                                               upload_to="ConsultFood/nutrition_amount/",
+                                               blank=True)
 
 
 class TaiwanSnackModelManager(models.Manager):
