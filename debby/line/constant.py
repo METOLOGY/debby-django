@@ -125,5 +125,6 @@ class UserSettingsAction(Action):
 
 
 class LineAction(Action):
+    MAIN_START = 'MAIN_START'
     RECORD_START = 'RECORD_START'
     CONSULT_START = 'CONSULT_START'
