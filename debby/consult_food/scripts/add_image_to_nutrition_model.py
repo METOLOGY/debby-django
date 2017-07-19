@@ -34,12 +34,21 @@ def save_img(img: Image, nutrition_id):
     bg.paste(img, mask=img)
     bg.save('{}/{}.jpeg'.format(directory, nutrition_id))
 
+    directory = "../media/ConsultFood/nutrition_amount_preview"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    bg.thumbnail((240,240), Image.ANTIALIAS)
+    bg.save('{}/{}.jpeg'.format(directory, nutrition_id))
+
 
 def run():
     queries = TaiwanSnackModel.objects.all()
     for snack in queries:
-        # img = create_img(snack)
-        # save_img(img, snack.nutrition_id)
+        img = create_img(snack)
+        save_img(img, snack.nutrition_id)
         snack.nutrition.nutrition_amount_image = os.path.join('ConsultFood', 'nutrition_amount',
                                                               '{}.jpeg'.format(snack.nutrition_id))
+        snack.nutrition.nutrition_amount_image_preview = os.path.join('ConsultFood',
+                                                                      'nutrition_amount_preview',
+                                                                      '{}.jpeg'.format(snack.nutrition_id))
         snack.nutrition.save()

@@ -42,7 +42,10 @@ class ConsultFoodManager(object):
         host = cache.get("host_name")
         url = snack.nutrition.nutrition_amount_image.url
         photo = "https://{}{}".format(host, url)
-        return ImageSendMessage(original_content_url=photo)
+        preview_url = snack.nutrition.nutrition_amount_image_preview.url
+        preview_photo = "https://{}{}".format(host, preview_url)
+        return ImageSendMessage(original_content_url=photo,
+                                preview_image_url=preview_photo)
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
