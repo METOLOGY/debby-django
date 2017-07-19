@@ -38,6 +38,7 @@ class NutritionModel(models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類")
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類")
     # nutrition
+    gram = models.FloatField(verbose_name="重量")
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
