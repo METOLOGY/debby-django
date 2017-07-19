@@ -46,9 +46,15 @@ class NutritionModel(models.Model):
     six_group_portion_image = models.ImageField(verbose_name="六大類份數圖表",
                                                 upload_to="ConsultFood/six_group_portion/",
                                                 blank=True)
+    six_group_portion_image_preview = models.ImageField(verbose_name="六大類份數圖表(preview)",
+                                                        upload_to="ConsultFood/six_group_portion_preview/",
+                                                        blank=True)
     nutrition_amount_image = models.ImageField(verbose_name="營養含量圖表",
                                                upload_to="ConsultFood/nutrition_amount/",
                                                blank=True)
+    nutrition_amount_image_preview = models.ImageField(verbose_name="營養含量圖表(preview)",
+                                                       upload_to="ConsultFood/nutrition_amount/",
+                                                       blank=True)
 
 
 class TaiwanSnackModelManager(models.Manager):
