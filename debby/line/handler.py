@@ -11,15 +11,16 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
+from consult_food.models import TaiwanSnackModel
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
     DrugAskCallback, ReminderCallback, MyDiaryCallback, UserSettingsCallback, LineCallback
-from line.constant import App, BGRecordAction, FoodRecordAction, MyDiaryAction
+from line.constant import App, BGRecordAction, FoodRecordAction, MyDiaryAction, ConsultFoodAction
+from line.manager import LineManager
 from line.models import EventModel
 from my_diary.manager import MyDiaryManager
 from reminder.manager import ReminderManager
-from line.manager import LineManager
 from user.cache import AppCache
 from user.manager import UserSettingManager
 from user.models import CustomUserModel
@@ -32,6 +33,18 @@ class InputHandler(object):
         self.message = message
         self.text = ''
         self.image_id = ''
+
+    @staticmethod
+    def is_answer_in_consult_food(name):
+        orders = [
+            TaiwanSnackModel.objects.search_by_name,
+            TaiwanSnackModel.objects.search_by_synonym
+        ]
+        for order in orders:
+            queries = order(name)
+            if len(queries) > 1:
+                return True
+        return False
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
@@ -109,6 +122,12 @@ class InputHandler(object):
 
             return CallbackHandler(bg_callback).handle()
 
+        elif self.is_answer_in_consult_food(self.text):
+            callback = ConsultFoodCallback(line_id=self.line_id,
+                                           action=ConsultFoodAction.READ,
+                                           text=self.text)
+            return CallbackHandler(callback).handle()
+
         # Debby can't understand what user saying.
         else:
             return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
@@ -122,9 +141,9 @@ class InputHandler(object):
                                               image_id=image_id)
             elif app_cache.app == App.MY_DIARY:
                 callback = MyDiaryCallback(self.line_id,
-                                              action=MyDiaryAction.UPDATE_FOOD_PHOTO_CHECK,
-                                              image_id=image_id)
-        else: # directly upload image
+                                           action=MyDiaryAction.UPDATE_FOOD_PHOTO_CHECK,
+                                           image_id=image_id)
+        else:  # directly upload image
             callback = FoodRecordCallback(self.line_id,
                                           action=FoodRecordAction.DIRECT_UPLOAD_IMAGE,
                                           image_id=image_id)
