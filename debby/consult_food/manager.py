@@ -2,8 +2,10 @@ from collections import deque
 from itertools import chain
 from typing import List
 
+from django.core.cache import cache
+from django.core.files import temp
 from django.db.models import QuerySet
-from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate
+from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
 from consult_food.models import FoodNameModel, FoodModel, TaiwanSnackModel
@@ -36,19 +38,11 @@ class ConsultFoodManager(object):
         )
 
     @staticmethod
-    def reply_snack_content(snack: TaiwanSnackModel) -> TextSendMessage:
-        text = "{}重{}g, 熱量為{}kcal, 蔬菜類{}份, 水果類{}份, 蛋豆魚肉類{}份, 全榖根莖類{}份, 低脂乳品類{}份, 油脂與堅果種子類{}份".format(
-            snack.name,
-            snack.nutrition.gram,
-            snack.nutrition.calories,
-            snack.nutrition.vegetable_amount,
-            snack.nutrition.fruit_amount,
-            snack.nutrition.protein_food_amount,
-            snack.nutrition.grain_amount,
-            snack.nutrition.diary_amount,
-            snack.nutrition.oil_amount
-        )
-        return TextSendMessage(text=text)
+    def reply_snack_content(snack: TaiwanSnackModel) -> ImageSendMessage:
+        host = cache.get("host_name")
+        url = snack.nutrition.nutrition_amount_image.url
+        photo = "https://{}{}".format(host, url)
+        return ImageSendMessage(original_content_url=photo)
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
