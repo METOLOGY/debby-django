@@ -15,9 +15,9 @@ def create_img(snack: TaiwanSnackModel):
     d = ImageDraw.Draw(img)
 
     d.text((80, 530), "熱量：{:.0f}大卡".format(snack.nutrition.calories), font=fnt, fill=(237, 111, 5))
-    d.text((870, 100), "醣類：{:.1f}克".format(snack.nutrition.protein), font=fnt2, fill=(0, 103, 170))
-    d.text((870, 340), "蛋白質：{:.1f}克".format(snack.nutrition.fat), font=fnt2, fill=(0, 103, 170))
-    d.text((870, 570), "脂肪：{:.1f}克".format(snack.nutrition.carbohydrates), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 100), "醣類：{:.1f}克".format(snack.nutrition.carbohydrates), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 340), "蛋白質：{:.1f}克".format(snack.nutrition.protein), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 570), "脂肪：{:.1f}克".format(snack.nutrition.fat), font=fnt2, fill=(0, 103, 170))
     return img
 
 

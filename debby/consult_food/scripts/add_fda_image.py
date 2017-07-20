@@ -14,9 +14,9 @@ def create_img(food: FoodModel):
     d = ImageDraw.Draw(img)
 
     d.text((80, 530), "熱量：{:.0f}大卡".format(food.modified_calorie), font=fnt, fill=(237, 111, 5))
-    d.text((870, 100), "醣類：{:.1f}克".format(food.crude_protein), font=fnt2, fill=(0, 103, 170))
-    d.text((870, 340), "蛋白質：{:.1f}克".format(food.crude_fat), font=fnt2, fill=(0, 103, 170))
-    d.text((870, 570), "脂肪：{:.1f}克".format(food.carbohydrates), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 100), "醣類：{:.1f}克".format(food.carbohydrates), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 340), "蛋白質：{:.1f}克".format(food.crude_protein), font=fnt2, fill=(0, 103, 170))
+    d.text((870, 570), "脂肪：{:.1f}克".format(food.crude_fat), font=fnt2, fill=(0, 103, 170))
     return img
 
 
