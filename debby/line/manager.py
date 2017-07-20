@@ -143,7 +143,7 @@ class LineManager(object):
                 template=CarouselTemplate(
                     columns=carousels
                 )
-            ), TextSendMessage(text="更完整血糖故事請至: http://m.metology.com.tw/")]
+            ), TextSendMessage(text="感謝您的使用!希望您能撥空填寫一下問卷: \n https://www.surveycake.com/s/Mv3Dl")]
 
         if self.callback.action == LineAction.RECORD_START:
             reply = TemplateSendMessage(
