@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List
+from typing import List, Optional, Union
 
 from django.core.cache import cache
 from django.db.models import QuerySet
@@ -32,7 +32,9 @@ class ConsultFoodManager(object):
                                 preview_image_url=preview_photo)
 
     @staticmethod
-    def reply_food_content(food: FoodModel) -> ImageSendMessage:
+    def reply_food_content(food: FoodModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
+        text = TextSendMessage(text="每100克")
+
         url = food.nutrition.nutrition_amount_image.url
         preview_url = food.nutrition.nutrition_amount_image_preview.url
 
@@ -42,10 +44,12 @@ class ConsultFoodManager(object):
         calories = ImageSendMessage(original_content_url=photo,
                                     preview_image_url=preview_photo)
 
-        return calories
+        return [text, calories]
 
     @staticmethod
-    def reply_snack_content(snack: TaiwanSnackModel) -> List[ImageSendMessage]:
+    def reply_snack_content(snack: TaiwanSnackModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
+        text = TextSendMessage(text="每一份")
+
         url = snack.nutrition.six_group_portion_image.url
         preview_url = snack.nutrition.six_group_portion_image_preview.url
 
@@ -64,7 +68,7 @@ class ConsultFoodManager(object):
         calories = ImageSendMessage(original_content_url=photo,
                                     preview_image_url=preview_photo)
 
-        return [six_group, calories]
+        return [text, six_group, calories]
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
