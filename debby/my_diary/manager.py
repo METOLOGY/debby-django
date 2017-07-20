@@ -181,12 +181,15 @@ class MyDiaryManager(object):
                     ))
 
                 # noinspection PyTypeChecker
-                reply = TemplateSendMessage(
-                    alt_text="最近的五筆血糖紀錄",
-                    template=CarouselTemplate(
-                        columns=carousels
-                    )
-                )
+                reply = [
+                    TemplateSendMessage(
+                        alt_text="最近的五筆血糖紀錄",
+                        template=CarouselTemplate(
+                            columns=carousels
+                        )
+                    ),
+                    TextSendMessage("更完整血糖故事請至: http://m.metology.com.tw/")
+                ]
 
         elif self.callback.action == Action.DRUG_HISTORY:
             records = DrugIntakeModel.objects.filter(user__line_id=self.callback.line_id).order_by('-time')[:5]
@@ -317,12 +320,15 @@ class MyDiaryManager(object):
                     ))
 
                 # noinspection PyTypeChecker
-                reply = TemplateSendMessage(
-                    alt_text="最近的五筆飲食紀錄",
-                    template=CarouselTemplate(
-                        columns=carousels
-                    )
-                )
+                reply = [
+                    TemplateSendMessage(
+                        alt_text="最近的五筆飲食紀錄",
+                        template=CarouselTemplate(
+                            columns=carousels
+                        )
+                    ),
+                    TextSendMessage("更完整血糖故事請至: http://m.metology.com.tw/")
+                    ]
 
         elif self.callback.action == Action.DELETE:
             type_ = self.callback.record_type
