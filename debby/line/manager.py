@@ -1,4 +1,7 @@
-from linebot.models import TemplateSendMessage, ButtonsTemplate, TextSendMessage, PostbackTemplateAction, URITemplateAction, MessageTemplateAction, CarouselTemplate, CarouselColumn
+from linebot.models import TemplateSendMessage, ButtonsTemplate, TextSendMessage, PostbackTemplateAction, \
+    URITemplateAction, CarouselTemplate, CarouselColumn
+
+from line.callback import DrugAskCallback, ConsultFoodCallback, MyDiaryCallback, UserSettingsCallback
 from line.callback import LineCallback, BGRecordCallback, FoodRecordCallback
 from line.callback import DrugAskCallback, ConsultFoodCallback, MyDiaryCallback, UserSettingsCallback
 from user.cache import AppCache
@@ -121,14 +124,18 @@ class LineManager(object):
             ))
 
             # the reminder part
+
             carousels.append(CarouselColumn(
                 title="生活市集",
                 text="更完整的互動介面！挑選Debby推薦的飲食來源！",
                 thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/shop.png',
                 actions=[
-                    URITemplateAction(
-                        label='血糖故事',
-                        uri='http://m.metology.com.tw/'
+                    PostbackTemplateAction(
+                        label='如何使用Debby?',
+                        data=LineCallback(
+                            line_id=self.callback.line_id,
+                            action=LineAction.REPLY_INTRO,
+                        ).url
                     ),
                     URITemplateAction(
                         label='Metology商城',
@@ -208,5 +215,18 @@ class LineManager(object):
                     ]
                 )
             )
+
+        elif self.callback.action == LineAction.REPLY_INTRO:
+            text = "您好！我的名字是Debby 我是一位線上虛擬營養衛教師 希望可以幫助您管理日常生活中的大小事哦！您可於下方主選單內選擇:\n" \
+                   "(1) 記錄生活: 可快速記錄血糖值或飲食內容，跟著Debby我的步驟來完成吧！\n" \
+                   "(2) 搜尋相關資訊: 如果您想瞭解食物的營養組成成分，我會依據六大類均衡原則，建議最適合您的攝取量哦！您也可以搜尋糖尿病用藥哦！\n" \
+                   "(3) 我的日記: 您還可即時查詢最近五筆血糖或飲食的紀錄情形，也可以再修改喔!\n" \
+                   "(詳細報表: http://m.metology.com.tw/)\n" \
+                   "(4) 用藥提醒:不要害怕忘記自己要吃藥或量血糖～由我來提醒您時間吧，請放心！\n" \
+                   "(5) 生活超市(尚未營運): 交給Debby我及專業醫師與營養師嚴格篩選，給您最棒最優質的產品，放心享用去～\n" \
+                   "(商城平台: https://jasonli5467684.shoplineapp.com/ )\n" \
+                   "您也可以在訊息欄內直接輸入您想跟我說的話哦！" \
+                   "(例如數字,食物名稱,藥物名稱,或直接上傳照片)，會發現意想不到的驚喜喔^^"
+            reply = TextSendMessage(text=text)
 
         return reply
