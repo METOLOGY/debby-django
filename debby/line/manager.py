@@ -3,8 +3,10 @@ from linebot.models import TemplateSendMessage, ButtonsTemplate, TextSendMessage
 
 from line.callback import DrugAskCallback, ConsultFoodCallback, MyDiaryCallback, UserSettingsCallback
 from line.callback import LineCallback, BGRecordCallback, FoodRecordCallback
-from line.constant import DrugAskAction, ConsultFoodAction
+from line.callback import DrugAskCallback, ConsultFoodCallback, MyDiaryCallback, UserSettingsCallback
+from user.cache import AppCache
 from line.constant import LineAction, BGRecordAction, FoodRecordAction, MyDiaryAction, UserSettingsAction
+from line.constant import DrugAskAction, ConsultFoodAction
 
 
 class LineManager(object):
@@ -14,8 +16,11 @@ class LineManager(object):
     def handle(self):
         reply = TextSendMessage(text='ERROR!')
 
+
         if self.callback.action == LineAction.MAIN_START:
+
             carousels = []
+
 
             # the record part
             carousels.append(CarouselColumn(
@@ -69,7 +74,7 @@ class LineManager(object):
                         ).url
                     ),
                     PostbackTemplateAction(
-                        label='食物營養成份查詢',
+                        label='食物營養成分查詢',
                         data=ConsultFoodCallback(
                             line_id=self.callback.line_id,
                             action=ConsultFoodAction.READ_FROM_MENU
@@ -77,6 +82,8 @@ class LineManager(object):
                     )
                 ]
             ))
+
+
 
             # the diary part
             carousels.append(CarouselColumn(
@@ -119,7 +126,7 @@ class LineManager(object):
             # the reminder part
 
             carousels.append(CarouselColumn(
-                title="其他",
+                title="生活市集",
                 text="更完整的互動介面！挑選Debby推薦的飲食來源！",
                 thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/shop.png',
                 actions=[
@@ -131,19 +138,19 @@ class LineManager(object):
                         ).url
                     ),
                     URITemplateAction(
-                        label='Metology商城(尚未營運)',
+                        label='Metology商城',
                         uri='https://jasonli5467684.shoplineapp.com/'
                     ),
                 ]
             ))
 
             # noinspection PyTypeChecker
-            reply = [TemplateSendMessage(
+            reply = TemplateSendMessage(
                 alt_text='Debby says...',
                 template=CarouselTemplate(
                     columns=carousels
                 )
-            ), TextSendMessage(text="更完整血糖故事請至: http://m.metology.com.tw/")]
+            )
 
         if self.callback.action == LineAction.RECORD_START:
             reply = TemplateSendMessage(
