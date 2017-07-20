@@ -32,18 +32,20 @@ class ConsultFoodManager(object):
                                 preview_image_url=preview_photo)
 
     @staticmethod
-    def reply_food_content(food: FoodModel) -> TextSendMessage:
-        return TextSendMessage(
-            text="每100克{}含有\n熱量{}大卡\n含可代謝醣類{}克\n蛋白質{}克\n脂質{}克".format(
-                food.sample_name,
-                food.modified_calorie,
-                food.metabolic_carbohydrates,
-                food.crude_protein,
-                food.crude_fat
-            )
-        )
+    def reply_food_content(food: FoodModel) -> ImageSendMessage:
+        url = food.nutrition.nutrition_amount_image.url
+        preview_url = food.nutrition.nutrition_amount_image_preview.url
 
-    def reply_snack_content(self, snack: TaiwanSnackModel) -> List[ImageSendMessage]:
+        host = cache.get("host_name")
+        photo = "https://{}{}".format(host, url)
+        preview_photo = "https://{}{}".format(host, preview_url)
+        calories = ImageSendMessage(original_content_url=photo,
+                                    preview_image_url=preview_photo)
+
+        return calories
+
+    @staticmethod
+    def reply_snack_content(snack: TaiwanSnackModel) -> List[ImageSendMessage]:
         url = snack.nutrition.six_group_portion_image.url
         preview_url = snack.nutrition.six_group_portion_image_preview.url
 
@@ -80,7 +82,7 @@ class ConsultFoodManager(object):
     def find_in_food_name_model(self):
         food_names = FoodNameModel.objects.filter(
             known_as_name=self.callback.text).distinct("food__sample_name")
-        distinct_food_names = []
+        # distinct_food_names = []
 
         # if len(food_names) < 20:
         #     reverse_search_food_names = FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
@@ -92,12 +94,12 @@ class ConsultFoodManager(object):
         #         if food_name.id not in distinct_food_names_id:
         #             distinct_food_names_id.append(food_name.id)
         #             distinct_food_names.append(food_name)
-        if len(distinct_food_names) > 1:
+        if len(food_names) > 1:
 
-            card_num_list = get_each_card_num(len(distinct_food_names[:20]))
+            card_num_list = get_each_card_num(len(food_names[:20]))
             reply = list()
             message = "請問您要查閱的是："
-            d = deque(distinct_food_names)
+            d = deque(food_names)
             for card_num in card_num_list:
                 actions = []
                 for i in range(card_num):

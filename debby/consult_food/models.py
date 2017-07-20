@@ -22,6 +22,7 @@ class FoodModel(models.Model):
     carbohydrates = models.FloatField(verbose_name="總碳水化合物-成分值(g)", blank=True, null=True)
     dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)
     metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣類(g)")
+    nutrition = models.OneToOneField('NutritionModel', blank=True, null=True)
 
 
 class FoodNameModel(models.Model):
@@ -31,12 +32,12 @@ class FoodNameModel(models.Model):
 
 class NutritionModel(models.Model):
     # six groups
-    fruit_amount = models.FloatField(verbose_name="水果類")
-    vegetable_amount = models.FloatField(verbose_name="蔬菜類")
-    grain_amount = models.FloatField(verbose_name="全榖根莖類")
-    protein_food_amount = models.FloatField(verbose_name="蛋豆魚肉類")
-    diary_amount = models.FloatField(verbose_name="低脂乳品類")
-    oil_amount = models.FloatField(verbose_name="油脂與堅果種子類")
+    fruit_amount = models.FloatField(verbose_name="水果類", default=0.0)
+    vegetable_amount = models.FloatField(verbose_name="蔬菜類", default=0.0)
+    grain_amount = models.FloatField(verbose_name="全榖根莖類", default=0.0)
+    protein_food_amount = models.FloatField(verbose_name="蛋豆魚肉類", default=0.0)
+    diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
+    oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
     gram = models.FloatField(verbose_name="重量")
     calories = models.FloatField(verbose_name="熱量")
