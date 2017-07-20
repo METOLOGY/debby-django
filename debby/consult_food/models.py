@@ -22,6 +22,7 @@ class FoodModel(models.Model):
     carbohydrates = models.FloatField(verbose_name="總碳水化合物-成分值(g)", blank=True, null=True)
     dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)
     metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣類(g)")
+    nutrition = models.OneToOneField(NutritionModel, blank=True, null=True)
 
 
 class FoodNameModel(models.Model):
