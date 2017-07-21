@@ -120,7 +120,7 @@ class LineManager(object):
 
             carousels.append(CarouselColumn(
                 title="其他",
-                text="看看Debby 會甚麼? 體驗更完整的互動介面！",
+                text="看看 Debby 會甚麼? 有空幫 Debby 填個問券嗎~?",
                 thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/shop.png',
                 actions=[
                     PostbackTemplateAction(
@@ -131,8 +131,8 @@ class LineManager(object):
                         ).url
                     ),
                     URITemplateAction(
-                        label='血糖日記',
-                        uri='http://m.metology.com.tw/'
+                        label='填寫問卷',
+                        uri='https://www.surveycake.com/s/Mv3Dl'
                     ),
                 ]
             ))
@@ -143,7 +143,7 @@ class LineManager(object):
                 template=CarouselTemplate(
                     columns=carousels
                 )
-            ), TextSendMessage(text="感謝您的使用!希望您能撥空填寫一下問卷: \n https://www.surveycake.com/s/Mv3Dl")]
+            )]
 
         if self.callback.action == LineAction.RECORD_START:
             reply = TemplateSendMessage(
