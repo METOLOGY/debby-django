@@ -15,7 +15,7 @@ class LineManager(object):
         reply = TextSendMessage(text='ERROR!')
 
         if self.callback.action == LineAction.MAIN_START:
-            carousels = []
+            carousels = list()
 
             # the record part
             carousels.append(CarouselColumn(
@@ -120,7 +120,7 @@ class LineManager(object):
 
             carousels.append(CarouselColumn(
                 title="其他",
-                text="更完整的互動介面！挑選Debby推薦的飲食來源！",
+                text="看看Debby 會甚麼? 體驗更完整的互動介面！",
                 thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/shop.png',
                 actions=[
                     PostbackTemplateAction(
@@ -131,8 +131,8 @@ class LineManager(object):
                         ).url
                     ),
                     URITemplateAction(
-                        label='Metology商城(尚未營運)',
-                        uri='https://jasonli5467684.shoplineapp.com/'
+                        label='血糖日記',
+                        uri='http://m.metology.com.tw/'
                     ),
                 ]
             ))
