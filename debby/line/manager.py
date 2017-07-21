@@ -17,6 +17,29 @@ class LineManager(object):
         if self.callback.action == LineAction.MAIN_START:
             carousels = list()
 
+            # the search part
+            carousels.append(CarouselColumn(
+                title="搜尋相關資訊",
+                text="請選擇要搜尋的項目",
+                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/search.png',
+                actions=[
+                    PostbackTemplateAction(
+                        label='藥物查詢',
+                        data=DrugAskCallback(
+                            line_id=self.callback.line_id,
+                            action=DrugAskAction.READ_FROM_MENU
+                        ).url
+                    ),
+                    PostbackTemplateAction(
+                        label='食物營養成份查詢',
+                        data=ConsultFoodCallback(
+                            line_id=self.callback.line_id,
+                            action=ConsultFoodAction.READ_FROM_MENU
+                        ).url
+                    )
+                ]
+            ))
+
             # the record part
             carousels.append(CarouselColumn(
                 title="記錄生活",
@@ -52,29 +75,6 @@ class LineManager(object):
                     #         action=BGRecordAction.CREATE_INSULIN_RECORD
                     #     ).url
                     # ),
-                ]
-            ))
-
-            # the search part
-            carousels.append(CarouselColumn(
-                title="搜尋相關資訊",
-                text="請選擇要搜尋的項目",
-                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/search.png',
-                actions=[
-                    PostbackTemplateAction(
-                        label='藥物查詢',
-                        data=DrugAskCallback(
-                            line_id=self.callback.line_id,
-                            action=DrugAskAction.READ_FROM_MENU
-                        ).url
-                    ),
-                    PostbackTemplateAction(
-                        label='食物營養成份查詢',
-                        data=ConsultFoodCallback(
-                            line_id=self.callback.line_id,
-                            action=ConsultFoodAction.READ_FROM_MENU
-                        ).url
-                    )
                 ]
             ))
 
