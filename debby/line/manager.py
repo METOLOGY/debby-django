@@ -131,7 +131,7 @@ class LineManager(object):
                         ).url
                     ),
                     URITemplateAction(
-                        label='填寫問卷',
+                        label='給 Debby 一點回饋吧~',
                         uri='https://www.surveycake.com/s/Mv3Dl'
                     ),
                 ]
