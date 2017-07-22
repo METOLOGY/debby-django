@@ -121,7 +121,7 @@ class LineManager(object):
             carousels.append(CarouselColumn(
                 title="其他",
                 text="看看 Debby 會甚麼? 有空幫 Debby 填個問券嗎~?",
-                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/shop.png',
+                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/else.png',
                 actions=[
                     PostbackTemplateAction(
                         label='如何使用Debby?',
