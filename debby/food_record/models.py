@@ -6,8 +6,10 @@ from PIL import Image
 from django.core.files import File
 from django.core.files.storage import default_storage as storage
 from django.contrib.postgres.fields import JSONField
+from django.conf import settings
 from django.db import models
 import requests
+import base64
 
 # Create your models here.
 from user.models import CustomUserModel
@@ -86,7 +88,7 @@ class FoodModel(models.Model):
             content = base64.b64encode(image_file.read())
 
         req = {
-            'request': [
+            'requests': [
                 {
                     'image': {
                         'content': content.decode('utf-8')
@@ -100,7 +102,7 @@ class FoodModel(models.Model):
             ]
         }
 
-        r = requests.post(url, data=req)
+        r = requests.post(url, json=req)
         data = r.json()['responses'][0]['webDetection']
 
         # TODO: discuss whether we have to save these results.
@@ -131,11 +133,12 @@ class FoodModel(models.Model):
             # print('\n{} Web entities found: '.format(len(notes.web_entities)))
             entities = {}
             for entity in data['webEntities']:
-                entities[entity.description] = entity.score
+                entities[entity['description']] = entity['score']
                 # print('Score      : {}'.format(entity.score))
                 # print('Description: {}'.format(entity.description))
 
-            self.webEntities.save(entities)
+            self.webEntities = entities
+            self.save()
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
