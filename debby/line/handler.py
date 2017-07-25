@@ -11,7 +11,7 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
-from consult_food.models import TaiwanSnackModel
+from consult_food.models import TaiwanSnackModel, FoodNameModel
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
@@ -38,11 +38,12 @@ class InputHandler(object):
     def is_answer_in_consult_food(name):
         orders = [
             TaiwanSnackModel.objects.search_by_name,
-            TaiwanSnackModel.objects.search_by_synonym
+            TaiwanSnackModel.objects.search_by_synonym,
+            FoodNameModel.objects.search_by_known_as_name
         ]
         for order in orders:
             queries = order(name)
-            if len(queries) > 1:
+            if len(queries) >= 1:
                 return True
         return False
 

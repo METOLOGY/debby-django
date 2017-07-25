@@ -25,9 +25,16 @@ class FoodModel(models.Model):
     nutrition = models.OneToOneField('NutritionModel', blank=True, null=True)
 
 
+class FoodNameModelManager(models.Manager):
+    def search_by_known_as_name(self, name: str):
+        return self.filter(known_as_name=name)
+
+
 class FoodNameModel(models.Model):
     known_as_name = models.CharField(verbose_name="代稱", max_length=100)
     food = models.ForeignKey(FoodModel)
+
+    objects = FoodNameModelManager()
 
 
 class NutritionModel(models.Model):
