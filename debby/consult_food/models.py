@@ -94,4 +94,4 @@ class TaiwanSnackNameSynonymModel(models.Model):
 
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
-    nutrition = models.OneToOneField(NutritionModel)
+    nutrition = models.ForeignKey(NutritionModel)
