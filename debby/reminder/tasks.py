@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 import pytz
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from django_q.models import Schedule
 
 from reminder.manager import ReminderManager
@@ -23,9 +23,11 @@ def record_reminder(data):
     reminder_id = data[1]
     reminder = UserReminder.objects.get(id=reminder_id)
     time_now = datetime.now().astimezone(tz).time()
+    time_now_plus_5 = time_now + timedelta(minutes=5)
 
-    if reminder.status and time_now.hour == reminder.time.hour and time_now.minute == reminder.time.minute:
-        ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
+    if reminder.status:
+        if reminder.time <= time_now  <= time_now_plus_5:
+            ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
 
 
 def periodic_checking_bg_reminder_setting():
