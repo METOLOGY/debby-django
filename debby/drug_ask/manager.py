@@ -113,24 +113,22 @@ class DrugAskManager(object):
                     actions = []
                     for i in range(card_num):
                         drug_type = d.popleft()  # type:DrugTypeModel
-                        if drug_type.user_choice:
-                            actions.append(
-                                PostbackTemplateAction(
-                                    label=drug_type.user_choice,
-                                    data=DrugAskCallback(
-                                        line_id=self.callback.line_id,
-                                        action=Action.WAIT_DRUG_TYPE_CHOICE,
-                                        fuzzy_drug_name=drug_type.user_choice).url
-                                ))
-                    if actions:
-                        template_send_message = TemplateSendMessage(
-                            alt_text=message,
-                            template=ButtonsTemplate(
-                                text=message,
-                                actions=actions
-                            )
+                        actions.append(
+                            PostbackTemplateAction(
+                                label=drug_type.user_choice,
+                                data=DrugAskCallback(
+                                    line_id=self.callback.line_id,
+                                    action=Action.WAIT_DRUG_TYPE_CHOICE,
+                                    fuzzy_drug_name=drug_type.user_choice).url
+                            ))
+                    template_send_message = TemplateSendMessage(
+                        alt_text=message,
+                        template=ButtonsTemplate(
+                            text=message,
+                            actions=actions
                         )
-                        reply.append(template_send_message)
+                    )
+                    reply.append(template_send_message)
             elif len(drug_types) == 1:
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
