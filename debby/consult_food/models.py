@@ -32,7 +32,7 @@ class FoodNameModelManager(models.Manager):
 
 class FoodNameModel(models.Model):
     known_as_name = models.CharField(verbose_name="代稱", max_length=100)
-    food = models.ForeignKey(FoodModel)
+    food = models.ForeignKey(FoodModel, related_name='food_names')
 
     objects = FoodNameModelManager()
 
@@ -90,3 +90,8 @@ class TaiwanSnackNameSynonymModel(models.Model):
     snack = models.ForeignKey(TaiwanSnackModel, related_name='synonyms')
 
     objects = TaiwanSnackNameSynonymModelManager()
+
+
+class ICookIngredientModel(models.Model):
+    name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
+    nutrition = models.OneToOneField(NutritionModel)
