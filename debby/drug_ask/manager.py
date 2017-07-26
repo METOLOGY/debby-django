@@ -82,8 +82,8 @@ class DrugAskManager(object):
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
         elif self.callback.action == Action.READ:
             drug_types = DrugTypeModel.objects.filter(question__icontains=self.callback.text)
-            drug_types = [drug_type for drug_type in drug_types if drug_type.user_choice]
             if len(drug_types) > 1:
+                drug_types = [drug_type for drug_type in drug_types if drug_type.user_choice]
                 drug_len = len(drug_types)
                 data = DrugAskData()
                 data.drug_types = drug_types
@@ -113,22 +113,24 @@ class DrugAskManager(object):
                     actions = []
                     for i in range(card_num):
                         drug_type = d.popleft()  # type:DrugTypeModel
-                        actions.append(
-                            PostbackTemplateAction(
-                                label=drug_type.user_choice,
-                                data=DrugAskCallback(
-                                    line_id=self.callback.line_id,
-                                    action=Action.WAIT_DRUG_TYPE_CHOICE,
-                                    fuzzy_drug_name=drug_type.user_choice).url
-                            ))
-                    template_send_message = TemplateSendMessage(
-                        alt_text=message,
-                        template=ButtonsTemplate(
-                            text=message,
-                            actions=actions
+                        if drug_type.user_choice:
+                            actions.append(
+                                PostbackTemplateAction(
+                                    label=drug_type.user_choice,
+                                    data=DrugAskCallback(
+                                        line_id=self.callback.line_id,
+                                        action=Action.WAIT_DRUG_TYPE_CHOICE,
+                                        fuzzy_drug_name=drug_type.user_choice).url
+                                ))
+                    if actions:
+                        template_send_message = TemplateSendMessage(
+                            alt_text=message,
+                            template=ButtonsTemplate(
+                                text=message,
+                                actions=actions
+                            )
                         )
-                    )
-                    reply.append(template_send_message)
+                        reply.append(template_send_message)
             elif len(drug_types) == 1:
                 drug_type = drug_types[0]
                 drug_detail = DrugDetailModel.objects.get(type=drug_type.type)
