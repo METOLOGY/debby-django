@@ -83,7 +83,6 @@ class DrugAskManager(object):
         elif self.callback.action == Action.READ:
             drug_types = DrugTypeModel.objects.filter(question__icontains=self.callback.text)
             if len(drug_types) > 1:
-                drug_types = [drug_type for drug_type in drug_types if drug_type.user_choice]
                 drug_len = len(drug_types)
                 data = DrugAskData()
                 data.drug_types = drug_types
@@ -113,13 +112,17 @@ class DrugAskManager(object):
                     actions = []
                     for i in range(card_num):
                         drug_type = d.popleft()  # type:DrugTypeModel
+                        if not drug_type.user_choice:
+                            name = drug_type.answer
+                        else:
+                            name = drug_type.user_choice
                         actions.append(
                             PostbackTemplateAction(
-                                label=drug_type.user_choice,
+                                label=name,
                                 data=DrugAskCallback(
                                     line_id=self.callback.line_id,
                                     action=Action.WAIT_DRUG_TYPE_CHOICE,
-                                    fuzzy_drug_name=drug_type.user_choice).url
+                                    fuzzy_drug_name=name).url
                             ))
                     template_send_message = TemplateSendMessage(
                         alt_text=message,
@@ -138,7 +141,10 @@ class DrugAskManager(object):
                 app_cache.delete()
                 reply = TextSendMessage(text="Debby 找不到您輸入的藥物喔，試試其他的?")
         elif self.callback.action == Action.WAIT_DRUG_TYPE_CHOICE:
-            drug_type = DrugTypeModel.objects.filter(user_choice=self.callback.fuzzy_drug_name)[0]
+            drug_types = DrugTypeModel.objects.filter(user_choice=self.callback.fuzzy_drug_name)
+            if not drug_types:
+                drug_types = DrugTypeModel.objects.filter(answer=self.callback.fuzzy_drug_name)
+            drug_type = drug_types[0]
             drug_detail = DrugDetailModel.objects.filter(type=drug_type.type)
 
             if not drug_detail:
