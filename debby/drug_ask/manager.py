@@ -82,6 +82,7 @@ class DrugAskManager(object):
             reply = TextSendMessage(text="請輸入藥品名稱(中英文皆可):")
         elif self.callback.action == Action.READ:
             drug_types = DrugTypeModel.objects.filter(question__icontains=self.callback.text)
+            drug_types = [drug_type for drug_type in drug_types if drug_type.user_choice]
             if len(drug_types) > 1:
                 drug_len = len(drug_types)
                 data = DrugAskData()
