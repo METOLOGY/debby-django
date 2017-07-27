@@ -99,13 +99,6 @@ class TaiwanSnackNameSynonymModel(models.Model):
     objects = TaiwanSnackNameSynonymModelManager()
 
 
-class ICookIngredientModelManager(models.Manager):
-    def search_by_name(self, name: str):
-        return self.filter(name=name)
-
-
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
     nutrition = models.ForeignKey(NutritionModel)
-
-    objects = ICookIngredientModelManager()
