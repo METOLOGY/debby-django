@@ -2,12 +2,12 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 import pytz
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from django_q.models import Schedule
 
 from reminder.manager import ReminderManager
 from reminder.models import UserReminder
-from user.models import CustomUserModel
+
 
 tz = pytz.timezone('Asia/Taipei')
 
@@ -22,11 +22,13 @@ def record_reminder(data):
     line_id = data[0]
     reminder_id = data[1]
     reminder = UserReminder.objects.get(id=reminder_id)
+    fake_time = datetime.combine(datetime.now(), reminder.time).astimezone(tz)
+    fake_time_plus_2 = fake_time + timedelta(minutes=2)
     time_now = datetime.now().astimezone(tz).time()
-    time_now_plus_5 = time_now + timedelta(minutes=5)
 
     if reminder.status:
-        if reminder.time <= time_now  <= time_now_plus_5:
+        if fake_time.time() <= time_now  <= fake_time_plus_2.time():
+            print('----{}---- reminder sent to {}: {} ----{}---'.format(fake_time.time(),line_id, time_now, fake_time_plus_2.time()))
             ReminderManager.reply_reminder(line_id=line_id, reminder_id=reminder_id)
 
 
@@ -36,19 +38,25 @@ def periodic_checking_bg_reminder_setting():
 
     :return:
     """
-    for user in CustomUserModel.objects.all():
-        if len(user.line_id) == 33:
-            reminders = UserReminder.objects.filter(user=user)
 
-            for num, reminder in enumerate(reminders):
-                sch, created = Schedule.objects.get_or_create(
-                    name=user.line_id + '_reminder_' + str(num),
-                )
+    reminders = UserReminder.objects.all()
+    for num, reminder in enumerate(reminders):
+        sch, created = Schedule.objects.get_or_create(
+            name=reminder.user.line_id + '_reminder_' + str(num),
+        )
 
-                sch.func = 'reminder.tasks.record_reminder'
-                sch.args = json.dumps([user.line_id, reminder.id])
-                sch.schedule_type = Schedule.DAILY
-                sch.repeats = -1
-                set_time = reminder.time
-                sch.next_run = datetime.today().astimezone(tz).replace(hour=set_time.hour, minute=set_time.minute)
+        if created:
+            sch.func = 'reminder.tasks.record_reminder'
+            sch.args = json.dumps([reminder.user.line_id, reminder.id])
+            sch.schedule_type = Schedule.DAILY
+            sch.repeats = -1
+            sch.next_run = datetime.combine(datetime.now(), reminder.time).astimezone(tz)
+            sch.save()
+            print('created')
+        else:
+            if sch.next_run.astimezone(tz).time() != reminder.time:
+                sch.next_run = datetime.combine(datetime.now(), reminder.time).astimezone(tz)
                 sch.save()
+                print('reminder time changed: {}'.format(sch.id))
+            else:
+                pass
