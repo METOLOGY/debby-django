@@ -198,3 +198,5 @@ Q_CLUSTER = {
     'orm': 'default',
     'catch_up': False
 }
+
+GOOGLE_VISION_KEY = env('GOOGLE_VISION_KEY')
