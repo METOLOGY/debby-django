@@ -1,12 +1,12 @@
 from collections import deque
-from typing import List, Optional, Union
+from typing import List, Union
 
 from django.core.cache import cache
 from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import FoodNameModel, FoodModel, TaiwanSnackModel
+from consult_food.models import FoodNameModel, FoodModel, TaiwanSnackModel, ICookIngredientModel
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
 from line.constant import ConsultFoodAction as Action
@@ -24,20 +24,8 @@ class ConsultFoodManager(object):
         }
 
     @staticmethod
-    def reply_content(url: str, preview_url: str) -> ImageSendMessage:
-        host = cache.get("host_name")
-        photo = "https://{}{}".format(host, url)
-        preview_photo = "https://{}{}".format(host, preview_url)
-        return ImageSendMessage(original_content_url=photo,
-                                preview_image_url=preview_photo)
-
-    @staticmethod
-    def reply_food_content(food: FoodModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
+    def reply_content(url: str, preview_url: str) -> List[Union[TextSendMessage, ImageSendMessage]]:
         text = TextSendMessage(text="每100克")
-
-        url = food.nutrition.nutrition_amount_image.url
-        preview_url = food.nutrition.nutrition_amount_image_preview.url
-
         host = cache.get("host_name")
         photo = "https://{}{}".format(host, url)
         preview_photo = "https://{}{}".format(host, preview_url)
@@ -45,6 +33,20 @@ class ConsultFoodManager(object):
                                     preview_image_url=preview_photo)
 
         return [text, calories]
+
+    def reply_food_content(self, food: FoodModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
+        url = food.nutrition.nutrition_amount_image.url
+        preview_url = food.nutrition.nutrition_amount_image_preview.url
+
+        return self.reply_content(url, preview_url)
+
+    def reply_i_cook_ingredient_content(self, ingredient: ICookIngredientModel) -> \
+            List[Union[TextSendMessage, ImageSendMessage]]:
+
+        url = ingredient.nutrition.nutrition_amount_image.url
+        preview_url = ingredient.nutrition.nutrition_amount_image_preview.url
+
+        return self.reply_content(url, preview_url)
 
     @staticmethod
     def reply_snack_content(snack: TaiwanSnackModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
@@ -188,11 +190,21 @@ class ConsultFoodManager(object):
 
         return reply
 
+    def find_in_i_cook_ingredient(self):
+        reply = None
+        name = self.callback.text
+        results = ICookIngredientModel.objects.search_by_name(name)
+        if results:
+            ingredient = results[0]
+            reply = self.reply_i_cook_ingredient_content(ingredient)
+        return reply
+
     def read(self, app_cache: AppCache):
         app_cache.delete()
         find_order = [
             self.find_in_taiwan_snack,
-            self.find_in_food_name_model
+            self.find_in_food_name_model,
+            self.find_in_i_cook_ingredient,
         ]
         reply = None
         for find_in in find_order:
