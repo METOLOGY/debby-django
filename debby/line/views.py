@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
-from linebot.models import ImageMessage
+from linebot.models import ImageMessage, TextSendMessage, ImageSendMessage
 from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
@@ -71,30 +71,67 @@ def handle_message(event: MessageEvent):
     text = event.message.text
     # print(text)
 
-    input_handler = InputHandler(line_id, event.message)
-    send_message = input_handler.handle()
+    """
+    trick start
+    """
+    user = CustomUserModel.objects.get(line_id=line_id)
+    if user.id == 4 and text == ':demo:':
+        cache.set(line_id, {'app': 'demo'}, 120)
+        text = TextSendMessage(text="準備好了 丟圖來吧!")
+        reply_message(event, line_id, text)
+    # trick end
+    else:
+        input_handler = InputHandler(line_id, event.message)
+        send_message = input_handler.handle()
 
-    # Save to log model.
-    UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
+        # Save to log model.
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
-    # return to Line Server
-    reply_message(event, line_id, send_message)
+        # return to Line Server
+        reply_message(event, line_id, send_message)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
 
-    input_handler = InputHandler(line_id, event.message)
-    send_message = input_handler.handle()
+    """
+    trick start
+    """
+    user = CustomUserModel.objects.get(line_id=line_id)
+    user_cache = cache.get(line_id)
+    if user.id == 4 and user_cache:
+        if user_cache.get('app') == 'demo':
+            host = cache.get("host_name")
+            url = '/media/ConsultFood/demo/1.jpeg'
+            preview_url = '/media/ConsultFood/demo/1_preview.jpeg'
+            photo = "https://{}{}".format(host, url)
+            preview_photo = "https://{}{}".format(host, preview_url)
 
-    # Save to log model.
-    # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
-    # food = FoodModel.objects.last(line_id=line_id)
-    UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
+            message = ImageSendMessage(original_content_url=photo,
+                                       preview_image_url=preview_photo)
 
-    # return to Line Server
-    reply_message(event, line_id, send_message)
+            url = '/media/ConsultFood/demo/2.jpeg'
+            preview_url = '/media/ConsultFood/demo/2_preview.jpeg'
+            photo = "https://{}{}".format(host, url)
+            preview_photo = "https://{}{}".format(host, preview_url)
+
+            message2 = ImageSendMessage(original_content_url=photo,
+                                        preview_image_url=preview_photo)
+            reply_message(event, line_id, [message2, message])
+            cache.delete(line_id)
+    # trick end
+    else:
+        input_handler = InputHandler(line_id, event.message)
+        send_message = input_handler.handle()
+
+        # Save to log model.
+        # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+        # food = FoodModel.objects.last(line_id=line_id)
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
+
+        # return to Line Server
+        reply_message(event, line_id, send_message)
 
 
 @handler.add(PostbackEvent)
@@ -176,5 +213,3 @@ def reply_message(event, line_id, send_message):
                 event.reply_token,
                 send_message
             )
-
-
