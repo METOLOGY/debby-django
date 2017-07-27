@@ -20,3 +20,5 @@ media/
 *.xlsx
 
 debby/debby/settings\.env
+
+chat_table/

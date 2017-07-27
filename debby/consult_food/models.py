@@ -12,6 +12,11 @@ class ConsultFoodModel(models.Model):
     white_rice_equivalent = models.FloatField(verbose_name="幾碗白飯當量", blank=True, null=True)
 
 
+class FoodModelManager(models.Manager):
+    def search_by_known_as_name(self, name: str):
+        return self.filter(food_names__known_as_name=name)
+
+
 class FoodModel(models.Model):
     integration_number = models.CharField(verbose_name="整合編號", max_length=20)
     food_type = models.CharField(verbose_name="食物分類", max_length=20)
@@ -23,6 +28,8 @@ class FoodModel(models.Model):
     dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)
     metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣類(g)")
     nutrition = models.OneToOneField('NutritionModel', blank=True, null=True)
+
+    objects = FoodModelManager()
 
 
 class FoodNameModelManager(models.Manager):
@@ -92,6 +99,13 @@ class TaiwanSnackNameSynonymModel(models.Model):
     objects = TaiwanSnackNameSynonymModelManager()
 
 
+class ICookIngredientModelManager(models.Manager):
+    def search_by_name(self, name: str):
+        return self.filter(name=name)
+
+
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
     nutrition = models.ForeignKey(NutritionModel)
+
+    objects = ICookIngredientModelManager() 
