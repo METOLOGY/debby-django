@@ -163,7 +163,7 @@ class ReminderManager(object):
 
             elif choice == 3:
                 reminder = UserReminder.objects.get(id=self.callback.reminder_id)
-                later_time = dt.datetime.combine(dt.date(1,1,1),reminder.time) + dt.timedelta(seconds=60).time()
+                later_time = (dt.datetime.now() + dt.timedelta(seconds=600)).time()
                 reminder.time = later_time
                 reminder.save()
                 reply = self.reply_reminder_awaits()
