@@ -33,6 +33,7 @@ class FoodRecordManager(object):
         food_record.save()
         if food_record.food_image_upload.name:
             food_record.make_carousel()
+        food_record.detect_web()
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
