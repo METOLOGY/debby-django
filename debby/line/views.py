@@ -72,14 +72,12 @@ def handle_message(event: MessageEvent):
     # print(text)
 
     """
-    trick start
+    future mode setting
     """
-    user = CustomUserModel.objects.get(line_id=line_id)
-    if user.id == 4 and text == ':demo:':
-        cache.set(line_id, {'app': 'demo'}, 120)
-        text = TextSendMessage(text="準備好了 丟圖來吧!")
+    if text == ':future:':
+        cache.set(line_id + '_test', True, 1200)
+        text = TextSendMessage(text="開啟未來模式")
         reply_message(event, line_id, text)
-    # trick end
     else:
         input_handler = InputHandler(line_id, event.message)
         send_message = input_handler.handle()
@@ -95,43 +93,16 @@ def handle_message(event: MessageEvent):
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
 
-    """
-    trick start
-    """
-    user = CustomUserModel.objects.get(line_id=line_id)
-    user_cache = cache.get(line_id)
-    if user.id == 4 and user_cache:
-        if user_cache.get('app') == 'demo':
-            host = cache.get("host_name")
-            url = '/media/ConsultFood/demo/1.jpeg'
-            preview_url = '/media/ConsultFood/demo/1_preview.jpeg'
-            photo = "https://{}{}".format(host, url)
-            preview_photo = "https://{}{}".format(host, preview_url)
+    input_handler = InputHandler(line_id, event.message)
+    send_message = input_handler.handle()
 
-            message = ImageSendMessage(original_content_url=photo,
-                                       preview_image_url=preview_photo)
+    # Save to log model.
+    # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+    # food = FoodModel.objects.last(line_id=line_id)
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
 
-            url = '/media/ConsultFood/demo/2.jpeg'
-            preview_url = '/media/ConsultFood/demo/2_preview.jpeg'
-            photo = "https://{}{}".format(host, url)
-            preview_photo = "https://{}{}".format(host, preview_url)
-
-            message2 = ImageSendMessage(original_content_url=photo,
-                                        preview_image_url=preview_photo)
-            reply_message(event, line_id, [message2, message])
-            cache.delete(line_id)
-    # trick end
-    else:
-        input_handler = InputHandler(line_id, event.message)
-        send_message = input_handler.handle()
-
-        # Save to log model.
-        # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
-        # food = FoodModel.objects.last(line_id=line_id)
-        UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
-
-        # return to Line Server
-        reply_message(event, line_id, send_message)
+    # return to Line Server
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(PostbackEvent)
