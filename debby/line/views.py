@@ -78,10 +78,10 @@ def handle_message(event: MessageEvent):
     future mode setting
     """
     cache.set(line_id + '_test', True, 1200)
-    future_mode = cache.get(line_id + '_test')
+    future_mode = cache.get(line_id + '_future')
 
     if text == ':future:' and not future_mode:
-        cache.set(line_id + '_test', True, 1200)
+        cache.set(line_id + '_future', True, 1200)
         text = TextSendMessage(text="開啟未來模式")
         reply_message(event, line_id, text)
     elif future_mode:
