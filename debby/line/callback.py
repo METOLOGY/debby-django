@@ -73,6 +73,9 @@ class FoodRecordCallback(DerivedAppCallback):
         return self.data.get('record_id')
 
     @property
+    def temp_record_id(self):
+        return self.data.get('temp_record_id')
+    @property
     def food_name(self):
         return self.data.get('food_name')
 
