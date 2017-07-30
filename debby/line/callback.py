@@ -72,6 +72,10 @@ class FoodRecordCallback(DerivedAppCallback):
     def record_id(self):
         return self.data.get('record_id')
 
+    @property
+    def temp_record_id(self):
+        return self.data.get('temp_record_id')
+
 
 class BGRecordCallback(DerivedAppCallback):
     app = App.BG_RECORD
