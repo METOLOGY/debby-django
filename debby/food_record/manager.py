@@ -9,9 +9,11 @@ from django.core.cache import cache
 from django.core.files import File
 from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, ImageSendMessage
 from linebot.models import TextSendMessage
+import requests
+import base64
 
 from debby import settings
-from food_record.models import FoodModel, TempImageModel
+from food_record.models import FoodModel, TempImageModel, FoodRecognitionModel
 from line.callback import FoodRecordCallback, MyDiaryCallback
 from line.constant import FoodRecordAction as Action, MyDiaryAction, RecordType
 from user.cache import AppCache, FoodData
@@ -23,17 +25,21 @@ class FoodRecordManager(object):
         self.callback = callback
         self.image_reader = ImageReader()
 
-    def record_food(self, temp: TempImageModel):
+    def record_food(self, temp: TempImageModel, food_data:FoodData):
         current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
         food_record = FoodModel.objects.create(user=current_user,
                                                note=temp.note,
                                                food_image_upload=temp.food_image_upload)
+        if food_data.food_name:
+            food_record.food_name = food_data.food_name
+        if food_data.food_recognition_pk:
+            food_record.food_recognition = FoodRecognitionModel.objects.get(id=food_data.food_recognition_pk)
+
         food_record.time = temp.time
         food_record.save()
         if food_record.food_image_upload.name:
             food_record.make_carousel()
-        food_record.detect_web()
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
@@ -79,6 +85,35 @@ class FoodRecordManager(object):
             for temp in query:
                 if self.is_temp_expired(temp):
                     temp.delete()
+
+
+    def select_food_template(self, other_food:list):
+        message = '請問是下面其中某一項食物嗎?'
+        postbacks = []
+        for food in other_food:
+            food_name = food['description']
+            postbacks.append(
+                PostbackTemplateAction(
+                    label="{}".format(food_name),
+                    data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY, food_name=food_name).url,
+                ),
+            )
+        postbacks.append(
+            PostbackTemplateAction(
+                label="都不是嗎？",
+                data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY,
+                                        food_name='').url,
+            )
+        )
+
+        return TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=postbacks,
+            )
+        )
+
 
     @staticmethod
     def record_extra_info(record_pk: str, text: str):
@@ -136,7 +171,7 @@ class FoodRecordManager(object):
                 photo = "https://{}{}".format(host, url)
             time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
 
-        message = '{}{}'.format(time, text)
+        message = '{}\n{}{}'.format(data.food_name, time, text)
 
         if len(message) > 60:
             message = message[:50] + "..."
@@ -194,6 +229,9 @@ class FoodRecordManager(object):
             else:
                 data.extra_info = self.callback.text
 
+            if self.callback.food_name:
+                data.food_name = self.callback.food_name
+
             reply = self.reply_to_record_detail_template()
             app_cache.data = data
             app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
@@ -204,10 +242,50 @@ class FoodRecordManager(object):
             data = FoodData()
             data.image_id = self.callback.image_id
 
+            # google vision api start here.
+            image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+            image_content_base64 = base64.b64encode(image_content)
+
+            req = {
+                'requests': [
+                    {
+                        'image': {
+                            'content': image_content_base64.decode('utf-8')
+                        },
+                        'features': [
+                            {
+                                "type": "WEB_DETECTION"
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            r = requests.post('https://vision.googleapis.com/v1/images:annotate?key={}'.format(settings.GOOGLE_VISION_KEY), json=req)
+            vision_data = r.json()['responses'][0]['webDetection']
+
+            food_recognition = FoodRecognitionModel()
+            if 'webEntities' in vision_data:
+                food_recognition.web_entities = vision_data['webEntities']
+            if 'pagesWithMatchingImages' in vision_data:
+                food_recognition.pages_with_matching_images = vision_data['pagesWithMatchingImages']
+            if 'fullMatchingImages' in vision_data:
+                food_recognition.full_matching_images = vision_data['fullMatchingImages']
+            if 'partialMatchingImages' in vision_data:
+                food_recognition.partial_matching_images = vision_data['partialMatchingImages']
+
+            food_recognition.save()
+
+            entities_sorted_by_score = sorted(vision_data['webEntities'], key=lambda x:x['score'], reverse=True)
+
+            data.food_recognition_pk = food_recognition.id
             app_cache.data = data
             app_cache.commit()
 
-            reply = self.reply_if_want_to_record_image()
+            if len(entities_sorted_by_score) <= 3:
+                reply = self.select_food_template(entities_sorted_by_score)
+            else:
+                reply = self.select_food_template(entities_sorted_by_score[0:3])
 
         elif self.callback.action == Action.CHECK_BEFORE_CREATE:
             # avoid cache induced empty error
@@ -230,7 +308,7 @@ class FoodRecordManager(object):
                 query = TempImageModel.objects.filter(id=self.callback.record_id)
                 if query:
                     temp = query[0]
-                    self.record_food(temp)
+                    self.record_food(temp, app_cache.data)
                     app_cache.delete()
                     reply = TextSendMessage(text="飲食記錄成功!")
                 else:

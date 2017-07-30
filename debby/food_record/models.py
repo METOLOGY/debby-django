@@ -6,10 +6,7 @@ from PIL import Image
 from django.core.files import File
 from django.core.files.storage import default_storage as storage
 from django.contrib.postgres.fields import JSONField
-from django.conf import settings
 from django.db import models
-import requests
-import base64
 
 # Create your models here.
 from user.models import CustomUserModel
@@ -23,6 +20,13 @@ def user_id_path(instance, filename):
                           instance.user.line_id + '_' + str(date) + '_' + str(today_image_count) + '.' + file_type)
 
 
+class FoodRecognitionModel(models.Model):
+    pages_with_matching_images = JSONField(blank=True, null=True)
+    full_matching_images = JSONField(blank=True, null=True)
+    partial_matching_images = JSONField(blank=True, null=True)
+    web_entities = JSONField(blank=True, null=True)
+
+
 class FoodModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     calories = models.IntegerField(null=True, blank=True)
@@ -32,7 +36,8 @@ class FoodModel(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
-    webEntities = JSONField(null=True)
+    food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
+
 
     # def save(self, *args, **kwargs):
     #     super(FoodModel, self).save(*args, **kwargs)
@@ -80,65 +85,6 @@ class FoodModel(models.Model):
         # clone from GCP example: https://cloud.google.com/vision/docs/detecting-web?hl=zh-tw#vision-web-detection-gcs-python
         # modify to fit food_record model.
 
-    def detect_web(self):
-        """Detects web annotations given an image."""
-        url = 'https://vision.googleapis.com/v1/images:annotate?key={}'.format(settings.GOOGLE_VISION_KEY)
-
-        with open(self.food_image_upload.path, 'rb') as image_file:
-            content = base64.b64encode(image_file.read())
-
-        req = {
-            'requests': [
-                {
-                    'image': {
-                        'content': content.decode('utf-8')
-                    },
-                    'features': [
-                        {
-                            "type": "WEB_DETECTION"
-                        }
-                    ]
-                }
-            ]
-        }
-
-        r = requests.post(url, json=req)
-        data = r.json()['responses'][0]['webDetection']
-
-        # TODO: discuss whether we have to save these results.
-        # if notes.pages_with_matching_images:
-        #     print('\n{} Pages with matching images retrieved')
-        #
-        #     for page in notes.pages_with_matching_images:
-        #         print('Score : {}'.format(page.score))
-        #         print('Url   : {}'.format(page.url))
-        #
-        # if notes.full_matching_images:
-        #     print('\n{} Full Matches found: '.format(
-        #         len(notes.full_matching_images)))
-        #
-        #     for image in notes.full_matching_images:
-        #         print('Score:  {}'.format(image.score))
-        #         print('Url  : {}'.format(image.url))
-        #
-        # if notes.partial_matching_images:
-        #     print('\n{} Partial Matches found: '.format(
-        #         len(notes.partial_matching_images)))
-        #
-        #     for image in notes.partial_matching_images:
-        #         print('Score: {}'.format(image.score))
-        #         print('Url  : {}'.format(image.url))
-
-        if data['webEntities']:
-            # print('\n{} Web entities found: '.format(len(notes.web_entities)))
-            entities = {}
-            for entity in data['webEntities']:
-                entities[entity['description']] = entity['score']
-                # print('Score      : {}'.format(entity.score))
-                # print('Description: {}'.format(entity.description))
-
-            self.webEntities = entities
-            self.save()
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
@@ -147,6 +93,7 @@ class TempImageModel(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
     note = models.CharField(max_length=200)
     carousel = models.ImageField()
+    food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
 
     def delete(self, *args, **kwargs):
         # object is being removed from db, remove the file from storage first
@@ -192,3 +139,5 @@ class TempImageModel(models.Model):
 
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
+
+
