@@ -1,3 +1,4 @@
+apiai==1.2.3
 Django==1.10.5
 django-cors-headers==2.0.2
 django-extensions==1.7.6
