@@ -1,7 +1,9 @@
 import datetime
 import json
 from collections import deque
+from pprint import pprint
 
+import apiai
 from django.conf import settings
 from django.core.cache import cache
 from django.http.response import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
@@ -70,23 +72,41 @@ def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
     # print(text)
+    send_message = None
 
     """
     future mode setting
     """
-    if text == ':future:':
+    cache.set(line_id + '_test', True, 1200)
+    future_mode = cache.get(line_id + '_test')
+
+    if text == ':future:' and not future_mode:
         cache.set(line_id + '_test', True, 1200)
         text = TextSendMessage(text="開啟未來模式")
         reply_message(event, line_id, text)
+    elif future_mode:
+        ai = apiai.ApiAI(settings.CLIENT_ACCESS_TOKEN)
+        request = ai.text_request()
+        request.session_id = line_id
+        request.query = text
+        response = request.getresponse()
+        js = json.loads(response.read().decode('utf-8'))
+
+        if js['result']['action'] == "input.welcome":
+            text = js['result']['fulfillment']['messages'][0]['speech']
+            send_message = TextSendMessage(text=text)
+        else:
+            input_handler = InputHandler(line_id, event.message)
+            send_message = input_handler.handle()
     else:
         input_handler = InputHandler(line_id, event.message)
         send_message = input_handler.handle()
 
-        # Save to log model.
-        UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
+    # Save to log model.
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
-        # return to Line Server
-        reply_message(event, line_id, send_message)
+    # return to Line Server
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(MessageEvent, message=ImageMessage)

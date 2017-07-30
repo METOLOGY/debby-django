@@ -136,6 +136,7 @@ class InputHandler(object):
 
     def handle_image(self, image_id):
         app_cache = AppCache(self.line_id)
+        callback = None
         if app_cache.is_app_running():
             if app_cache.app == App.FOOD_RECORD:
                 callback = FoodRecordCallback(self.line_id,
