@@ -20,10 +20,10 @@ def user_id_path(instance, filename):
 
 
 class FoodRecognitionModel(models.Model):
-    pages_with_matching_images = models.CharField(max_length=500, blank=True, default="")
-    full_matching_images = models.CharField(max_length=500, blank=True, default="")
-    partial_matching_images = models.CharField(max_length=500, blank=True, default="")
-    web_entities = models.CharField(max_length=500, blank=True, default="")
+    pages_with_matching_images = models.TextField(blank=True, default="")
+    full_matching_images = models.TextField(blank=True, default="")
+    partial_matching_images = models.TextField(blank=True, default="")
+    web_entities = models.TextField(blank=True, default="")
 
 
 class FoodModel(models.Model):
