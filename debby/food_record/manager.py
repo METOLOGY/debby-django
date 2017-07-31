@@ -1,6 +1,7 @@
 import base64
 import datetime
 import io
+import json
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from typing import Union
@@ -239,13 +240,13 @@ class FoodRecordManager(object):
 
         food_recognition = FoodRecognitionModel()
         if 'webEntities' in vision_data:
-            food_recognition.web_entities = vision_data['webEntities']
+            food_recognition.web_entities = json.dumps(vision_data['webEntities'])
         if 'pagesWithMatchingImages' in vision_data:
-            food_recognition.pages_with_matching_images = vision_data['pagesWithMatchingImages']
+            food_recognition.pages_with_matching_images = json.dumps(vision_data['pagesWithMatchingImages'])
         if 'fullMatchingImages' in vision_data:
-            food_recognition.full_matching_images = vision_data['fullMatchingImages']
+            food_recognition.full_matching_images = json.dumps(vision_data['fullMatchingImages'])
         if 'partialMatchingImages' in vision_data:
-            food_recognition.partial_matching_images = vision_data['partialMatchingImages']
+            food_recognition.partial_matching_images = json.dumps(vision_data['partialMatchingImages'])
 
         food_recognition.save()
 
