@@ -204,7 +204,7 @@ def postback(event: PostbackEvent):
         message2 = ImageSendMessage(original_content_url=photo,
                                     preview_image_url=preview_photo)
         reply_message(event, line_id, [message, message2])
-        cache.delete(line_id)
+        cache.delete(line_id + '_demo')
     else:
 
         input_handler = InputHandler(line_id)
