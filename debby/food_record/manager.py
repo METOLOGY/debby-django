@@ -1,17 +1,20 @@
+import base64
 import datetime
 import io
+import json
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
-from typing import List, Union
+from typing import Union
 
+import requests
 from PIL import Image
 from django.core.cache import cache
 from django.core.files import File
-from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, ImageSendMessage
+from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction
 from linebot.models import TextSendMessage
 
 from debby import settings
-from food_record.models import FoodModel, TempImageModel
+from food_record.models import FoodModel, TempImageModel, FoodRecognitionModel
 from line.callback import FoodRecordCallback, MyDiaryCallback
 from line.constant import FoodRecordAction as Action, MyDiaryAction, RecordType
 from user.cache import AppCache, FoodData
@@ -22,13 +25,28 @@ class FoodRecordManager(object):
     def __init__(self, callback: FoodRecordCallback):
         self.callback = callback
         self.image_reader = ImageReader()
+        self.registered_actions = {
+            Action.CREATE_FROM_MENU: self.create_from_menu,
+            Action.WAIT_FOR_USER_REPLY: self.wait_for_user_reply,
+            Action.DIRECT_UPLOAD_IMAGE: self.direct_upload_image,
+            Action.CHECK_BEFORE_CREATE: self.check_before_create,
+            Action.CREATE: self.create,
+            Action.CANCEL: self.cancel,
+            Action.CANCEL_PHOTO: self.cancel_photo
+        }
+        self.app_cache = AppCache(self.callback.line_id)
 
-    def record_food(self, temp: TempImageModel):
+    def record_food(self, temp: TempImageModel, food_data: FoodData):
         current_user = CustomUserModel.objects.get(line_id=self.callback.line_id)
 
         food_record = FoodModel.objects.create(user=current_user,
                                                note=temp.note,
                                                food_image_upload=temp.food_image_upload)
+        if food_data.food_name:
+            food_record.food_name = food_data.food_name
+        if food_data.food_recognition_pk:
+            food_record.food_recognition = FoodRecognitionModel.objects.get(id=food_data.food_recognition_pk)
+
         food_record.time = temp.time
         food_record.save()
         if food_record.food_image_upload.name:
@@ -78,6 +96,34 @@ class FoodRecordManager(object):
             for temp in query:
                 if self.is_temp_expired(temp):
                     temp.delete()
+
+    def select_food_template(self, other_food: list):
+        message = '請問是下面其中某一項食物嗎?'
+        postbacks = []
+        for food in other_food:
+            food_name = food['description']
+            postbacks.append(
+                PostbackTemplateAction(
+                    label="{}".format(food_name),
+                    data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY,
+                                            food_name=food_name).url,
+                ),
+            )
+        postbacks.append(
+            PostbackTemplateAction(
+                label="都不是嗎？",
+                data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY,
+                                        food_name='').url,
+            )
+        )
+
+        return TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=postbacks,
+            )
+        )
 
     @staticmethod
     def record_extra_info(record_pk: str, text: str):
@@ -135,7 +181,7 @@ class FoodRecordManager(object):
                 photo = "https://{}{}".format(host, url)
             time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
 
-        message = '{}{}'.format(time, text)
+        message = '{}\n{}{}'.format(data.food_name, time, text)
 
         if len(message) > 60:
             message = message[:50] + "..."
@@ -166,89 +212,154 @@ class FoodRecordManager(object):
         )
         return reply
 
-    def handle(self) -> Union[SendMessage, None]:
-        reply = TextSendMessage(text='FOOD_RECORD ERROR!')
-        app_cache = AppCache(self.callback.line_id)
-        app_cache.set_expired_time(seconds=60 * 5)  # set expired time to 5 minutes.
-        # always use one object data for each user to save temp image
-        self.try_delete_temp()
+    def ask_vision_api(self):
+        data = FoodData()
+        data.image_id = self.callback.image_id
+        # google vision api start here.
+        image_content = self.image_reader.load_image(data.image_id) if data.image_id else None
+        image_content_base64 = base64.b64encode(image_content)
 
-        if self.callback.action == Action.CREATE_FROM_MENU:
-            print(Action.CREATE_FROM_MENU)
-            reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
+        req = {
+            'requests': [
+                {
+                    'image': {
+                        'content': image_content_base64.decode('utf-8')
+                    },
+                    'features': [
+                        {
+                            "type": "WEB_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
 
-            # init cache again to clean other app's status and data
-            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
-            data = FoodData()
-            app_cache.data = data
-            app_cache.commit()
+        r = requests.post('https://vision.googleapis.com/v1/images:annotate?key={}'.format(settings.GOOGLE_VISION_KEY),
+                          json=req)
+        vision_data = r.json()['responses'][0]['webDetection']
 
-        elif self.callback.action == Action.WAIT_FOR_USER_REPLY:
-            print(Action.WAIT_FOR_USER_REPLY)
-            data = FoodData()
-            data.setup_data(app_cache.data)
+        food_recognition = FoodRecognitionModel()
+        if 'webEntities' in vision_data:
+            food_recognition.web_entities = json.dumps(vision_data['webEntities'])
+        if 'pagesWithMatchingImages' in vision_data:
+            food_recognition.pages_with_matching_images = json.dumps(vision_data['pagesWithMatchingImages'])
+        if 'fullMatchingImages' in vision_data:
+            food_recognition.full_matching_images = json.dumps(vision_data['fullMatchingImages'])
+        if 'partialMatchingImages' in vision_data:
+            food_recognition.partial_matching_images = json.dumps(vision_data['partialMatchingImages'])
 
-            if data.extra_info:
-                data.extra_info = "\n".join([data.extra_info, self.callback.text])
-            else:
-                data.extra_info = self.callback.text
+        food_recognition.save()
 
-            reply = self.reply_to_record_detail_template()
-            app_cache.data = data
-            app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
-            app_cache.commit()
+        entities_sorted_by_score = sorted(vision_data['webEntities'], key=lambda x: x['score'], reverse=True)
 
-        elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
-            print(Action.DIRECT_UPLOAD_IMAGE)
+        data.food_recognition_pk = food_recognition.id
+        self.app_cache.data = data
+        self.app_cache.commit()
+
+        if len(entities_sorted_by_score) <= 3:
+            reply = self.select_food_template(entities_sorted_by_score)
+        else:
+            reply = self.select_food_template(entities_sorted_by_score[0:3])
+        return reply
+
+    def create_from_menu(self):
+        print(Action.CREATE_FROM_MENU)
+        reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
+
+        # init cache again to clean other app's status and data
+        self.app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
+        data = FoodData()
+        self.app_cache.data = data
+        self.app_cache.commit()
+        return reply
+
+    def wait_for_user_reply(self):
+        print(Action.WAIT_FOR_USER_REPLY)
+        data = FoodData()
+        data.setup_data(self.app_cache.data)
+
+        if data.extra_info:
+            data.extra_info = "\n".join([data.extra_info, self.callback.text])
+        else:
+            data.extra_info = self.callback.text
+
+        if self.callback.food_name:
+            data.food_name = self.callback.food_name
+
+        reply = self.reply_to_record_detail_template()
+        self.app_cache.data = data
+        self.app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
+        self.app_cache.commit()
+        return reply
+
+    def direct_upload_image(self):
+        print(Action.DIRECT_UPLOAD_IMAGE)
+        future_mode = cache.get(self.callback.line_id + '_future')
+        if future_mode:
+            reply = self.ask_vision_api()
+        else:
             data = FoodData()
             data.image_id = self.callback.image_id
 
-            app_cache.data = data
-            app_cache.commit()
+            self.app_cache.data = data
+            self.app_cache.commit()
 
             reply = self.reply_if_want_to_record_image()
 
-        elif self.callback.action == Action.CHECK_BEFORE_CREATE:
-            # avoid cache induced empty error
-            if not app_cache.data:
-                return None
-            print(Action.CHECK_BEFORE_CREATE)
-            data = FoodData()
-            data.setup_data(app_cache.data) if app_cache.data else None
-            reply = self.handle_final_check_before_save(data)
-
-        elif self.callback.action == Action.CREATE:
-            # avoid cache induced empty error
-            if not app_cache.data:
-                reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
-            else:
-                print(Action.CREATE)
-                data = FoodData()
-                data.setup_data(app_cache.data) if app_cache.data else None
-
-                query = TempImageModel.objects.filter(id=self.callback.record_id)
-                if query:
-                    temp = query[0]
-                    self.record_food(temp)
-                    app_cache.delete()
-                    reply = TextSendMessage(text="飲食記錄成功!")
-                else:
-                    reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
-
-                # delete temp image
-                self.try_delete_temp()
-
-        elif self.callback.action == Action.CANCEL:
-            if not app_cache.data:
-                return None
-            reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
-            self.delete_temp(app_cache.data.record_id) if self.callback.temp_record_id else None
-            app_cache.delete()
-        elif self.callback.action == Action.CANCEL_PHOTO:
-            reply = TextSendMessage(text="哎呀抱歉~Debby不太懂您的意思~還是您想要從主選單開始呢？")
-            self.delete_temp(app_cache.data.record_id) if self.callback.temp_record_id else None
-            app_cache.delete()
         return reply
+
+    def check_before_create(self):
+        # avoid cache induced empty error
+        if not self.app_cache.data:
+            return None
+        print(Action.CHECK_BEFORE_CREATE)
+        data = FoodData()
+        data.setup_data(self.app_cache.data) if self.app_cache.data else None
+        reply = self.handle_final_check_before_save(data)
+        return reply
+
+    def create(self):
+        # avoid cache induced empty error
+        if not self.app_cache.data:
+            reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
+        else:
+            print(Action.CREATE)
+            data = FoodData()
+            data.setup_data(self.app_cache.data) if self.app_cache.data else None
+
+            query = TempImageModel.objects.filter(id=self.callback.record_id)
+            if query:
+                temp = query[0]
+                self.record_food(temp, self.app_cache.data)
+                self.app_cache.delete()
+                reply = TextSendMessage(text="飲食記錄成功!")
+            else:
+                reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
+
+            # delete temp image
+            self.try_delete_temp()
+        return reply
+
+    def cancel(self):
+        if not self.app_cache.data:
+            return None
+        reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
+        self.delete_temp(self.app_cache.data.record_id) if self.callback.temp_record_id else None
+        self.app_cache.delete()
+        return reply
+
+    def cancel_photo(self):
+        reply = TextSendMessage(text="哎呀抱歉~Debby不太懂您的意思~還是您想要從主選單開始呢？")
+        self.delete_temp(self.app_cache.data.record_id) if self.callback.temp_record_id else None
+        self.app_cache.delete()
+        return reply
+
+    def handle(self) -> Union[SendMessage, None]:
+        self.app_cache.set_expired_time(seconds=60 * 5) # set expired time to 5 minutes.
+        # always use one object data for each user to save temp image
+        self.try_delete_temp()
+
+        return self.registered_actions[self.callback.action]()
 
 
 class __AbstractImageReader(metaclass=ABCMeta):

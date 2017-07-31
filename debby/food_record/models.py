@@ -80,6 +80,8 @@ class FoodModel(models.Model):
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
 
+        # clone from GCP example: https://cloud.google.com/vision/docs/detecting-web?hl=zh-tw#vision-web-detection-gcs-python
+        # modify to fit food_record model.
 
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)

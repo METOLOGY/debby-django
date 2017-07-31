@@ -70,6 +70,8 @@ class FoodData(CacheData):
     extra_info = ''  # type: str
     image_id = ''  # type: str
     record_id: int = 0
+    food_name: str = ''
+    food_recognition_pk = ''
 
 
 class DrugAskData(CacheData):
