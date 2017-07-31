@@ -15,7 +15,8 @@ from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
 
-from line.handler import InputHandler
+from line.callback import ConsultFoodCallback
+from line.handler import InputHandler, CallbackHandler
 from reminder.models import UserReminder
 from user.models import CustomUserModel
 from user.models import UserLogModel
@@ -95,15 +96,20 @@ def handle_message(event: MessageEvent):
         response = request.getresponse()
         js = json.loads(response.read().decode('utf-8'))
 
-        if js['result']['action'] == "input.welcome":
-            text = js['result']['fulfillment']['messages'][0]['speech']
-            send_message = TextSendMessage(text=text)
+        input_handler = InputHandler(line_id)
+        registered_actions = {
+            "input.welcome": input_handler.reply_welcome,
+            "food.ask": input_handler.reply_food_ask
+        }
+        action = js['result']['action']
+        if action in registered_actions:
+            send_message = registered_actions[action](js)
         else:
-            input_handler = InputHandler(line_id, event.message)
-            send_message = input_handler.handle()
+            input_handler = InputHandler(line_id)
+            send_message = input_handler.handle(event.message)
     else:
-        input_handler = InputHandler(line_id, event.message)
-        send_message = input_handler.handle()
+        input_handler = InputHandler(line_id)
+        send_message = input_handler.handle(event.message)
 
     # Save to log model.
     UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
@@ -116,8 +122,8 @@ def handle_message(event: MessageEvent):
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
 
-    input_handler = InputHandler(line_id, event.message)
-    send_message = input_handler.handle()
+    input_handler = InputHandler(line_id)
+    send_message = input_handler.handle(event.message)
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
