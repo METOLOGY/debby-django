@@ -75,10 +75,9 @@ def handle_message(event: MessageEvent):
     # print(text)
     send_message = None
     """
-        trick start
-        """
-    user = CustomUserModel.objects.get(line_id=line_id)
-    if user.id == 13 and text == ':demo:':
+    trick start
+    """
+    if text == ':demo:':
         cache.set(line_id + '_demo', 240)
         text = TextSendMessage(text="準備好了 丟圖來吧!")
         reply_message(event, line_id, text)
@@ -130,9 +129,8 @@ def handle_image(event: MessageEvent):
     """
     trick start
     """
-    user = CustomUserModel.objects.get(line_id=line_id)
     demo_mode = cache.get(line_id + '_demo')
-    if user.id == 13 and demo_mode:
+    if demo_mode:
         message = '請問是下面其中某一項食物嗎?'
         postbacks = [
             PostbackTemplateAction(
@@ -184,9 +182,8 @@ def postback(event: PostbackEvent):
     """
     trick start
     """
-    user = CustomUserModel.objects.get(line_id=line_id)
     demo_mode = cache.get(line_id + '_demo')
-    if user.id == 13 and demo_mode:
+    if demo_mode:
         host = cache.get("host_name")
         url = '/media/ConsultFood/demo/1.jpg'
         preview_url = '/media/ConsultFood/demo/1_preview.jpg'
