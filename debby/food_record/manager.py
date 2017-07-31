@@ -208,6 +208,7 @@ class FoodRecordManager(object):
         app_cache.set_expired_time(seconds=60 * 5)  # set expired time to 5 minutes.
         # always use one object data for each user to save temp image
         self.try_delete_temp()
+        future_mode = cache.get(self.callback.line_id + '_future')
 
         if self.callback.action == Action.CREATE_FROM_MENU:
             print(Action.CREATE_FROM_MENU)
@@ -237,7 +238,7 @@ class FoodRecordManager(object):
             app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
             app_cache.commit()
 
-        elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE:
+        elif self.callback.action == Action.DIRECT_UPLOAD_IMAGE and future_mode:
             print(Action.DIRECT_UPLOAD_IMAGE)
             data = FoodData()
             data.image_id = self.callback.image_id

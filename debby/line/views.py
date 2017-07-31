@@ -77,7 +77,6 @@ def handle_message(event: MessageEvent):
     """
     future mode setting
     """
-    cache.set(line_id + '_test', True, 1200)
     future_mode = cache.get(line_id + '_future')
 
     if text == ':future:' and not future_mode:
