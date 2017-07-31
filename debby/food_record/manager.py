@@ -251,6 +251,7 @@ class FoodRecordManager(object):
         food_recognition.save()
 
         entities_sorted_by_score = sorted(vision_data['webEntities'], key=lambda x: x['score'], reverse=True)
+        entities_sorted_by_score = [x for x in entities_sorted_by_score if 'description' in x]
 
         data.food_recognition_pk = food_recognition.id
         self.app_cache.data = data

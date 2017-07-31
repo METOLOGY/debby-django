@@ -1,7 +1,6 @@
 import datetime
 import json
 from collections import deque
-from pprint import pprint
 
 import apiai
 from django.conf import settings
@@ -11,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from linebot.exceptions import (
     InvalidSignatureError,
     LineBotApiError)
-from linebot.models import ImageMessage, TextSendMessage, ImageSendMessage
+from linebot.models import ImageMessage, TextSendMessage
 from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
@@ -81,8 +80,13 @@ def handle_message(event: MessageEvent):
 
     if text == ':future:' and not future_mode:
         cache.set(line_id + '_future', True, 1200)
-        text = TextSendMessage(text="開啟未來模式")
-        reply_message(event, line_id, text)
+        send_message = TextSendMessage(text="開啟未來模式，開始計時20分鐘")
+    elif text == ':future:' and future_mode:
+        cache.set(line_id + '_future', True, 1200)
+        send_message = TextSendMessage(text="延長未來模式，重新開始計時20分鐘")
+    elif text == ':close:' and future_mode:
+        cache.delete(line_id + '_future')
+        send_message = TextSendMessage(text="關閉未來模式")
     elif future_mode:
         ai = apiai.ApiAI(settings.CLIENT_ACCESS_TOKEN)
         request = ai.text_request()
