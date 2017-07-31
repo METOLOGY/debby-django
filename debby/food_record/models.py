@@ -5,7 +5,6 @@ from io import BytesIO
 from PIL import Image
 from django.core.files import File
 from django.core.files.storage import default_storage as storage
-from django.contrib.postgres.fields import JSONField
 from django.db import models
 
 # Create your models here.
@@ -21,10 +20,10 @@ def user_id_path(instance, filename):
 
 
 class FoodRecognitionModel(models.Model):
-    pages_with_matching_images = JSONField(blank=True, null=True)
-    full_matching_images = JSONField(blank=True, null=True)
-    partial_matching_images = JSONField(blank=True, null=True)
-    web_entities = JSONField(blank=True, null=True)
+    pages_with_matching_images = models.CharField(max_length=500, blank=True, default="")
+    full_matching_images = models.CharField(max_length=500, blank=True, default="")
+    partial_matching_images = models.CharField(max_length=500, blank=True, default="")
+    web_entities = models.CharField(max_length=500, blank=True, default="")
 
 
 class FoodModel(models.Model):
@@ -37,7 +36,6 @@ class FoodModel(models.Model):
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
     food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
-
 
     # def save(self, *args, **kwargs):
     #     super(FoodModel, self).save(*args, **kwargs)
@@ -81,7 +79,6 @@ class FoodModel(models.Model):
 
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
-
 
 
 class TempImageModel(models.Model):
@@ -137,5 +134,3 @@ class TempImageModel(models.Model):
 
         # Load a ContentFile into the thumbnail field so it gets saved
         self.carousel.save(carousel_filename, File(temp_file), save=True)
-
-
