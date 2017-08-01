@@ -27,9 +27,10 @@ from user.models import CustomUserModel
 
 
 class InputHandler(object):
-    def __init__(self, line_id: str):
+    def __init__(self, line_id: str, message: Message = None):
         self.line_id = line_id
         self.current_user = CustomUserModel.objects.get(line_id=line_id)
+        self.message = message
         self.text = ''
         self.image_id = ''
 
@@ -156,28 +157,13 @@ class InputHandler(object):
         callback = Callback(**data_dict) if data_dict.get("line_id") else Callback(line_id=self.line_id, **data_dict)
         return CallbackHandler(callback).handle()
 
-    def handle(self, message: Message):
-        if isinstance(message, TextMessage):
-            self.text = message.text
+    def handle(self):
+        if isinstance(self.message, TextMessage):
+            self.text = self.message.text
             return self.find_best_answer_for_text()
 
-        elif isinstance(message, ImageMessage):
-            return self.handle_image(message.id)
-
-    @staticmethod
-    def reply_text_response(js: dict):
-        print('reply_text_response')
-        text = js['result']['fulfillment']['messages'][0]['speech']
-        return TextSendMessage(text=text)
-
-    def reply_food_ask(self, js: dict):
-        print('reply_food_ask')
-        food_name = js['result']['parameters']['food_name'][0]
-        app_cache = AppCache(self.line_id)
-        callback_data = ConsultFoodCallback(self.line_id,
-                                            action=ConsultFoodAction.READ,
-                                            text=food_name)
-        return CallbackHandler(callback_data).handle()
+        elif isinstance(self.message, ImageMessage):
+            return self.handle_image(self.message.id)
 
 
 class CallbackHandler(object):

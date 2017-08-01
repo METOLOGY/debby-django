@@ -31,8 +31,8 @@ def step_impl(context, input_text):
     #  'type': 'template'}
     tm = TextMessage(text=input_text)
     event = MessageEvent(message=tm)
-    input_handler = InputHandler(context.current_user)
-    context.send_message = input_handler.handle(event.message)
+    input_handler = InputHandler(context.current_user, event.message)
+    context.send_message = input_handler.handle()
 
 
 @given('選單 "嗨，現在要記錄血糖嗎？"')
