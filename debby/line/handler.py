@@ -165,8 +165,8 @@ class InputHandler(object):
             return self.handle_image(message.id)
 
     @staticmethod
-    def reply_welcome(js: dict):
-        print('reply_welcome')
+    def reply_text_response(js: dict):
+        print('reply_text_response')
         text = js['result']['fulfillment']['messages'][0]['speech']
         return TextSendMessage(text=text)
 

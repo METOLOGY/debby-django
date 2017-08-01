@@ -15,8 +15,7 @@ from linebot.models import (
     MessageEvent, TextMessage, PostbackEvent
 )
 
-from line.callback import ConsultFoodCallback
-from line.handler import InputHandler, CallbackHandler
+from line.handler import InputHandler
 from reminder.models import UserReminder
 from user.models import CustomUserModel
 from user.models import UserLogModel
@@ -67,6 +66,11 @@ def callback(request):
         return HttpResponseNotAllowed(['POST'])
 
 
+def is_using_api_ai_text_response(js: dict):
+    return js['result']['fulfillment']['messages'][0]['type'] == 0 and \
+           js['result']['fulfillment']['messages'][0]['speech']
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
@@ -97,16 +101,18 @@ def handle_message(event: MessageEvent):
         js = json.loads(response.read().decode('utf-8'))
 
         input_handler = InputHandler(line_id)
-        registered_actions = {
-            "input.welcome": input_handler.reply_welcome,
-            "food.ask": input_handler.reply_food_ask
-        }
-        action = js['result']['action']
-        if action in registered_actions:
-            send_message = registered_actions[action](js)
+        if is_using_api_ai_text_response(js):
+            send_message = input_handler.reply_text_response(js)
         else:
-            input_handler = InputHandler(line_id)
-            send_message = input_handler.handle(event.message)
+            registered_actions = {
+                "food.ask": input_handler.reply_food_ask
+            }
+            action = js['result']['action']
+            if action in registered_actions:
+                send_message = registered_actions[action](js)
+            else:
+                input_handler = InputHandler(line_id)
+                send_message = input_handler.handle(event.message)
     else:
         input_handler = InputHandler(line_id)
         send_message = input_handler.handle(event.message)
