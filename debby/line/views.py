@@ -67,16 +67,17 @@ def callback(request):
     else:
         return HttpResponseNotAllowed(['POST'])
 
+
 def is_using_api_ai_text_response(js: dict):
     return js['result']['fulfillment']['messages'][0]['type'] == 0 and \
            js['result']['fulfillment']['messages'][0]['speech']
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
     # print(text)
-    send_message = None
     """
     trick start
     """
@@ -125,11 +126,11 @@ def handle_message(event: MessageEvent):
             input_handler = InputHandler(line_id)
             send_message = input_handler.handle(event.message)
 
-            # Save to log model.
-            UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
+        # Save to log model.
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
-            # return to Line Server
-            reply_message(event, line_id, send_message)
+        # return to Line Server
+        reply_message(event, line_id, send_message)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
@@ -173,8 +174,8 @@ def handle_image(event: MessageEvent):
 
     # trick end
     else:
-        input_handler = InputHandler(line_id, event.message)
-        send_message = input_handler.handle()
+        input_handler = InputHandler(line_id)
+        send_message = input_handler.handle(event.message)
 
         # Save to log model.
         # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
