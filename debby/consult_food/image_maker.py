@@ -1,3 +1,5 @@
+import os
+from enum import Enum, auto
 from typing import NamedTuple, List, NewType, Tuple, Union
 
 from PIL import Image, ImageFont, ImageDraw
@@ -6,6 +8,11 @@ from PIL import Image, ImageFont, ImageDraw
 class Point(NamedTuple):
     x: int
     y: int
+
+
+class TextSize(NamedTuple):
+    w: int
+    h: int
 
 
 class PositionInfo(NamedTuple):
@@ -36,7 +43,7 @@ class SixGroupPortionMaker:
     y_range = 3
 
     default_daily_portion = [2.5, 2, 3, 4, 1.5, 4]
-    default_each_meal_portion = list(map(lambda i: i/3, default_daily_portion))
+    default_each_meal_portion = list(map(lambda i: i / 3, default_daily_portion))
 
     def __init__(self):
         self.img = self.open_element('../nutrition/bg_six_group.png', (1024, 1024))
@@ -127,6 +134,235 @@ class SixGroupPortionMaker:
         self.draw_line(self.light_blue, array, 1, self.default_each_meal_portion[group_index])
         self.draw_line(self.blue, array, 2, self.default_daily_portion[group_index])
 
-    def draw_groups(self, portions: List[Union[int, float]]):
+    def make_img(self, portions: List[Union[int, float]]):
         for index, portion in enumerate(portions):
             self.draw_single_group(index, portion)
+
+    def save(self, file_name: str):
+        self.img.convert('RGB')
+        self.img.save(file_name)
+
+
+class AlignRule(Enum):
+    center = auto()
+    left = auto()
+    right = auto()
+    bottom = auto()
+    top = auto()
+
+
+class Alignment:
+    def __init__(self, position: Point, text_size: TextSize):
+        self.position = position
+        self.text_size = text_size
+        self.rules = {
+            AlignRule.center: self.calc_center,
+            AlignRule.left: self.calc_left_or_top,
+            AlignRule.top: self.calc_left_or_top,
+            AlignRule.right: self.calc_right_or_bottom,
+            AlignRule.bottom: self.calc_right_or_bottom
+        }
+
+    @staticmethod
+    def calc_center(position: float, font_size: float):
+        return position - font_size / 2
+
+    @staticmethod
+    def calc_left_or_top(position: float, font_size: float):
+        return position
+
+    @staticmethod
+    def calc_right_or_bottom(position: float, font_size: float):
+        return position - font_size
+
+    def get_aligned_position(self, rule: Tuple[AlignRule, AlignRule]) -> Tuple[float, float]:
+        x = self.rules[rule[0]](self.position.x, self.text_size.w)
+        y = self.rules[rule[1]](self.position.y, self.text_size.h)
+        return x, y
+
+
+class CaloriesParameters(NamedTuple):
+    sample_name: str
+    calories: float
+    carbohydrates_grams: float
+    carbohydrates_percentages: float
+    fat_grams: float
+    fat_percentages: float
+    protein_grams: float
+    protein_percentages: float
+
+
+class CaloriesMaker:
+    class WordProperties(Enum):
+        carbohydrates_gram = auto()
+        carbohydrates_percentages = auto()
+        carbohydrates_bar = auto()
+        fat_gram = auto()
+        fat_percentages = auto()
+        fat_bar = auto()
+        protein_gram = auto()
+        protein_percentages = auto()
+        protein_bar = auto()
+
+    class FontProperties(NamedTuple):
+        position: Point
+        font_size: int
+        rule: Tuple[AlignRule, AlignRule]
+        color: Tuple[int, int, int]
+
+    class RectangleProperties(NamedTuple):
+        one_hundred_percentage_positions: List[Point]
+        color: Tuple[int, int, int]
+
+    nutrition_path = '../nutrition'
+    fnt_path = os.path.join(nutrition_path, 'msjhbd.ttc')
+    word_properties = {
+        WordProperties.carbohydrates_gram: FontProperties(
+            position=Point(590, 400),
+            font_size=55,
+            rule=(AlignRule.right, AlignRule.bottom),
+            color=(33, 23, 17)
+        ),
+        WordProperties.fat_gram: FontProperties(
+            position=Point(590, 660),
+            font_size=55,
+            rule=(AlignRule.right, AlignRule.bottom),
+            color=(33, 23, 17)
+        ),
+        WordProperties.protein_gram: FontProperties(
+            position=Point(590, 915),
+            font_size=55,
+            rule=(AlignRule.right, AlignRule.bottom),
+            color=(33, 23, 17)
+        ),
+        WordProperties.carbohydrates_percentages: FontProperties(
+            position=Point(640, 310),
+            font_size=50,
+            rule=(AlignRule.left, AlignRule.top),
+            color=(33, 23, 17)
+        ),
+        WordProperties.fat_percentages: FontProperties(
+            position=Point(640, 570),
+            font_size=50,
+            rule=(AlignRule.left, AlignRule.top),
+            color=(33, 23, 17)
+        ),
+        WordProperties.protein_percentages: FontProperties(
+            position=Point(640, 830),
+            font_size=50,
+            rule=(AlignRule.left, AlignRule.top),
+            color=(33, 23, 17)
+        ),
+        WordProperties.carbohydrates_bar: RectangleProperties(
+            one_hundred_percentage_positions=[Point(640, 390), Point(940, 440)],
+            color=(241, 137, 0)
+        ),
+        WordProperties.fat_bar: RectangleProperties(
+            one_hundred_percentage_positions=[Point(640, 650), Point(940, 700)],
+            color=(129, 172, 153)
+        ),
+        WordProperties.protein_bar: RectangleProperties(
+            one_hundred_percentage_positions=[Point(640, 910), Point(940, 960)],
+            color=(129, 172, 153)
+        )
+    }
+
+    def __init__(self):
+        self.img = Image.open(os.path.join(self.nutrition_path, 'calories.png'))
+        self.img = self.img.convert('RGBA')
+        self.draw = ImageDraw.Draw(self.img)
+
+    def _draw_text(self, text: str, properties: FontProperties):
+        fnt = ImageFont.truetype(self.fnt_path, properties.font_size)
+        w, h = self.draw.textsize(text, font=fnt)
+        a = Alignment(position=properties.position, text_size=TextSize(w, h))
+        position = a.get_aligned_position(rule=properties.rule)
+        self.draw.text(position, text, font=fnt, fill=properties.color)
+
+    def draw_sample_name(self, text: str):
+        properties = self.FontProperties(
+            position=Point(290, 140),
+            font_size=45,
+            rule=(AlignRule.center, AlignRule.center),
+            color=(255, 255, 255)
+        )
+        self._draw_text(text, properties)
+
+    def draw_calories(self, num: float):
+        properties = self.FontProperties(
+            position=Point(800, 175),
+            font_size=80,
+            rule=(AlignRule.right, AlignRule.bottom),
+            color=(255, 252, 0)
+        )
+        self._draw_text("{:.1f}".format(num), properties)
+
+        properties = self.FontProperties(
+            position=Point(940, 175),
+            font_size=65,
+            rule=(AlignRule.right, AlignRule.bottom),
+            color=(255, 252, 0)
+        )
+        self._draw_text("大卡", properties)
+
+    def draw_gram(self, num: float, properties: FontProperties):
+        self._draw_text("{:.1f} 克".format(num), properties)
+
+    def draw_percentage(self, percentage: float, properties: FontProperties):
+        self._draw_text("{:.1f} %".format(percentage), properties)
+
+    def draw_percentage_bar(self, percentage: float, properties: RectangleProperties):
+        p100p = properties.one_hundred_percentage_positions
+        p100_width = p100p[1].x - p100p[0].x
+        p_width = percentage / 100 * p100_width
+        positions = [(p100p[0].x, p100p[0].y), (p100p[0].x + p_width, p100p[1].y)]
+        self.draw.rectangle(positions, fill=properties.color)
+
+    def draw_carbohydrates(self, gram: float, percentage: float):
+        self.draw_gram(gram, self.word_properties[self.WordProperties.carbohydrates_gram])
+        self.draw_percentage(percentage, self.word_properties[self.WordProperties.carbohydrates_percentages])
+        self.draw_percentage_bar(percentage, self.word_properties[self.WordProperties.carbohydrates_bar])
+
+    def draw_fat(self, gram: float, percentage: float):
+        self.draw_gram(gram, self.word_properties[self.WordProperties.fat_gram])
+        self.draw_percentage(percentage, self.word_properties[self.WordProperties.fat_percentages])
+        self.draw_percentage_bar(percentage, self.word_properties[self.WordProperties.fat_bar])
+
+    def draw_protein(self, gram: float, percentage: float):
+        self.draw_gram(gram, self.word_properties[self.WordProperties.protein_gram])
+        self.draw_percentage(percentage, self.word_properties[self.WordProperties.protein_percentages])
+        self.draw_percentage_bar(percentage, self.word_properties[self.WordProperties.protein_bar])
+
+    def make_img(self, properties: CaloriesParameters):
+        self.draw_sample_name(properties.sample_name)
+        self.draw_calories(properties.calories)
+        self.draw_carbohydrates(properties.carbohydrates_grams, properties.carbohydrates_percentages)
+        self.draw_fat(properties.fat_grams, properties.fat_percentages)
+        self.draw_protein(properties.protein_grams, properties.protein_percentages)
+
+    def save(self, file_name: str):
+        self.img.convert('RGB')
+        self.img.save(file_name)
+
+
+def run():
+    portions = [1, 0, 0, 0, 0, 1]
+    processor = SixGroupPortionMaker()
+    processor.make_img(portions)
+
+    properties = CaloriesParameters(
+        sample_name="珍珠奶茶珍珠奶茶",
+        calories=1289.5,
+        carbohydrates_grams=129,
+        carbohydrates_percentages=86,
+        fat_grams=20,
+        fat_percentages=10,
+        protein_grams=4,
+        protein_percentages=4
+    )
+    cm = CaloriesMaker()
+    cm.make_img(properties)
+
+
+if __name__ == '__main__':
+    run()
