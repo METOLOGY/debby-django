@@ -27,12 +27,60 @@ class ColorImg(NamedTuple):
 
 HasHalfCircle = NewType('HasHalfCircle', bool)
 CircleMatrix = NewType('CircleMatrix', List[List[int]])
+Amount = NewType('Amount', Union[int, float])
+
+
+class AlignRule(Enum):
+    center = auto()
+    left = auto()
+    right = auto()
+    bottom = auto()
+    top = auto()
+
+
+class Alignment:
+    def __init__(self, position: Point, text_size: TextSize):
+        self.position = position
+        self.text_size = text_size
+        self.rules = {
+            AlignRule.center: self.calc_center,
+            AlignRule.left: self.calc_left_or_top,
+            AlignRule.top: self.calc_left_or_top,
+            AlignRule.right: self.calc_right_or_bottom,
+            AlignRule.bottom: self.calc_right_or_bottom
+        }
+
+    @staticmethod
+    def calc_center(position: float, font_size: float):
+        return position - font_size / 2
+
+    @staticmethod
+    def calc_left_or_top(position: float, font_size: float):
+        return position
+
+    @staticmethod
+    def calc_right_or_bottom(position: float, font_size: float):
+        return position - font_size
+
+    def get_aligned_position(self, rule: Tuple[AlignRule, AlignRule]) -> Tuple[float, float]:
+        x = self.rules[rule[0]](self.position.x, self.text_size.w)
+        y = self.rules[rule[1]](self.position.y, self.text_size.h)
+        return x, y
+
+
+class SixGroupParameters(NamedTuple):
+    grains: Amount
+    fruits: Amount
+    vegetables: Amount
+    protein_foods: Amount
+    diaries: Amount
+    oil: Amount
 
 
 class SixGroupPortionMaker:
-    portion_rows = [230, 640]
+    portion_rows = [260, 670]
     circle_rows = [380, 790]
-    portion_columns = [220, 545, 880]
+    portion_columns = [245, 570, 905]
     circle_columns = [40, 373, 707]
 
     diameter = 35
@@ -94,13 +142,15 @@ class SixGroupPortionMaker:
 
     def draw_portion_num(self, position: Point, num: int):
         if num - int(num) != 0:  # if num have decimal part like 4.2
-            position = (position.x - 30, position.y)  # shift 30 pixels
             text = "{:.1f}".format(num)
         else:
-            position = (position.x, position.y)
-            text = str(num)
+            text = str(int(num))
 
-        self.draw.text(position, text, font=self.fnt, fill=(255, 255, 0))
+        w, h = self.draw.textsize(text, font=self.fnt)
+        a = Alignment(position=position, text_size=TextSize(w, h))
+        final_position = a.get_aligned_position(rule=(AlignRule.center, AlignRule.center))
+
+        self.draw.text(final_position, text, font=self.fnt, fill=(255, 255, 0))
 
     def draw_background(self, array):
         for y in range(self.y_range):
@@ -109,6 +159,8 @@ class SixGroupPortionMaker:
 
     @staticmethod
     def calc_how_many_circles(num: Union[int, float]) -> Tuple[int, HasHalfCircle]:
+        if num > 7:
+            num = 7
         decimal = num - int(num)
         if decimal < 0.25:
             return int(num), False  # circle numbers, should draw circle
@@ -134,51 +186,14 @@ class SixGroupPortionMaker:
         self.draw_line(self.light_blue, array, 1, self.default_each_meal_portion[group_index])
         self.draw_line(self.blue, array, 2, self.default_daily_portion[group_index])
 
-    def make_img(self, portions: List[Union[int, float]]):
-        for index, portion in enumerate(portions):
+    def make_img(self, portions: SixGroupParameters):
+        portion_list = list(portions)
+        for index, portion in enumerate(portion_list):
             self.draw_single_group(index, portion)
 
     def save(self, file_name: str):
         self.img.convert('RGB')
         self.img.save(file_name)
-
-
-class AlignRule(Enum):
-    center = auto()
-    left = auto()
-    right = auto()
-    bottom = auto()
-    top = auto()
-
-
-class Alignment:
-    def __init__(self, position: Point, text_size: TextSize):
-        self.position = position
-        self.text_size = text_size
-        self.rules = {
-            AlignRule.center: self.calc_center,
-            AlignRule.left: self.calc_left_or_top,
-            AlignRule.top: self.calc_left_or_top,
-            AlignRule.right: self.calc_right_or_bottom,
-            AlignRule.bottom: self.calc_right_or_bottom
-        }
-
-    @staticmethod
-    def calc_center(position: float, font_size: float):
-        return position - font_size / 2
-
-    @staticmethod
-    def calc_left_or_top(position: float, font_size: float):
-        return position
-
-    @staticmethod
-    def calc_right_or_bottom(position: float, font_size: float):
-        return position - font_size
-
-    def get_aligned_position(self, rule: Tuple[AlignRule, AlignRule]) -> Tuple[float, float]:
-        x = self.rules[rule[0]](self.position.x, self.text_size.w)
-        y = self.rules[rule[1]](self.position.y, self.text_size.h)
-        return x, y
 
 
 class CaloriesParameters(NamedTuple):
@@ -346,9 +361,8 @@ class CaloriesMaker:
 
 
 def run():
-    portions = [1, 0, 0, 0, 0, 1]
     processor = SixGroupPortionMaker()
-    processor.make_img(portions)
+    processor.make_img(SixGroupParameters(1, 0, 0, 0, 0, 1))
 
     properties = CaloriesParameters(
         sample_name="珍珠奶茶珍珠奶茶",
