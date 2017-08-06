@@ -71,6 +71,10 @@ class NutritionModel(models.Model):
                                                        upload_to="ConsultFood/nutrition_amount/",
                                                        blank=True)
 
+    def is_six_group_exist(self):
+        return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
+               + self.diary_amount + self.oil_amount > 0
+
 
 class TaiwanSnackModelManager(models.Manager):
     def search_by_name(self, name: str):
@@ -108,4 +112,4 @@ class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
     nutrition = models.ForeignKey(NutritionModel)
 
-    objects = ICookIngredientModelManager() 
+    objects = ICookIngredientModelManager()
