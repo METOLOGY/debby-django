@@ -70,7 +70,7 @@ class ConsultFoodManager(object):
         calories = ImageSendMessage(original_content_url=photo,
                                     preview_image_url=preview_photo)
 
-        return [text, six_group, calories]
+        return [text, calories, six_group]
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
