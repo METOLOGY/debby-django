@@ -86,6 +86,7 @@ class TaiwanSnackModelManager(models.Manager):
 
 class TaiwanSnackModel(models.Model):
     name = models.CharField(verbose_name="名稱", max_length=100)
+    count_word = models.CharField(verbose_name="量詞", max_length=20)
     nutrition = models.OneToOneField(NutritionModel)
 
     objects = TaiwanSnackModelManager()
