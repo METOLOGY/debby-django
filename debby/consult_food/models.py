@@ -46,6 +46,7 @@ class FoodNameModel(models.Model):
 
 class NutritionModel(models.Model):
     # six groups
+    name = models.CharField(max_length=30, verbose_name="名稱", default="")
     fruit_amount = models.FloatField(verbose_name="水果類", default=0.0)
     vegetable_amount = models.FloatField(verbose_name="蔬菜類", default=0.0)
     grain_amount = models.FloatField(verbose_name="全榖根莖類", default=0.0)
