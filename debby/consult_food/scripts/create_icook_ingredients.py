@@ -1,6 +1,6 @@
 from typing import Dict, Union
 
-from consult_food.models import FoodNameModel, TaiwanSnackModel, FoodModel, ICookIngredientModel
+from consult_food.models import TaiwanSnackModel, FoodModel, ICookIngredientModel
 from debby.utils import load_from_json_file
 
 
@@ -8,7 +8,8 @@ def is_name_exist(name: str):
     orders = [
         TaiwanSnackModel.objects.search_by_name,
         TaiwanSnackModel.objects.search_by_synonym,
-        FoodNameModel.objects.search_by_known_as_name,
+        FoodModel.objects.search_by_name,
+        FoodModel.objects.search_by_synonyms
     ]
 
     for order in orders:
@@ -39,4 +40,4 @@ def run():
             else:
                 print("fda name: ", fda_name)
                 fda_food = queries[0]
-                ICookIngredientModel.objects.create(name=name, nutrition=fda_food.nutrition)
+                ICookIngredientModel.objects.get_or_create(name=name, nutrition=fda_food.nutrition)

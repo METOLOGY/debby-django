@@ -37,7 +37,7 @@ def create_six_group(nutrition):
         save_img(maker.img, nutrition.id, 'six_group_portion')
 
 
-def create_calories(name, nutrition):
+def create_calories(nutrition):
     carbohydrates_calories = nutrition.carbohydrates * 4
     fat_calories = nutrition.fat * 9
     protein_calories = nutrition.protein * 4
@@ -46,7 +46,7 @@ def create_calories(name, nutrition):
     fat_percentages = fat_calories / total * 100
     protein_percentages = protein_calories / total * 100
 
-    parameters = CaloriesParameters(sample_name=name,
+    parameters = CaloriesParameters(sample_name=nutrition.name,
                                     calories=nutrition.calories,
                                     carbohydrates_grams=nutrition.carbohydrates,
                                     carbohydrates_percentages=carbohydrates_percentages,
@@ -91,7 +91,7 @@ def run():
             print("nutrition id:{}".format(nutrition.id))
 
             create_six_group(nutrition)
-            create_calories(food.name, nutrition)
+            create_calories(nutrition)
 
             save_to_nutrition(nutrition)
 
@@ -106,7 +106,7 @@ def run():
             print("nutrition id:{}".format(nutrition.id))
 
             create_six_group(nutrition)
-            create_calories(food.sample_name, nutrition)
+            create_calories(nutrition)
 
             save_to_nutrition(nutrition)
 

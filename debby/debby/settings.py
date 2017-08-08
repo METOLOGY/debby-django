@@ -41,6 +41,7 @@ SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT')
 
 ALLOWED_HOSTS = [
     env('NGROK_URL'),
+    '127.0.0.1',
     'localhost',
     'debby.metology.com.tw',
     '140.114.71.167',  # server ip for hsnl@NCHU
@@ -61,8 +62,10 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'django_extensions',
     'django_celery_beat',
-    'grappelli',
-    'django_q'
+    # 'grappelli',
+    'django_q',
+    'jet.dashboard',
+    'jet'
 ]
 
 BUILD_APPS = [

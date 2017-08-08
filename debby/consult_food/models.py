@@ -1,51 +1,74 @@
+from typing import NamedTuple
+
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
 # Create your models here.
-class ConsultFoodModel(models.Model):
-    sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, blank=False, unique=True)
-    modified_calorie = models.FloatField(verbose_name="修正熱量-成分值(kcal)", blank=True, null=True)  # kcal
-    carbohydrates = models.FloatField(verbose_name="總碳水化合物-成分值(g)", blank=True, null=True)  # g
-    dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)  # g
-    metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣量", blank=True, null=True)
-    carbohydrates_equivalent = models.FloatField(verbose_name="醣類份數當量", blank=True, null=True)
-    white_rice_equivalent = models.FloatField(verbose_name="幾碗白飯當量", blank=True, null=True)
+from django.utils.safestring import mark_safe
 
 
-class FoodModelManager(models.Manager):
-    def search_by_known_as_name(self, name: str):
-        return self.filter(food_names__known_as_name=name)
+class SynonymModelManager(models.Manager):
+    def search_by_synonym(self, name: str):
+        return self.filter(synonym=name)
 
 
-class FoodModel(models.Model):
-    integration_number = models.CharField(verbose_name="整合編號", max_length=20)
-    food_type = models.CharField(verbose_name="食物分類", max_length=20)
-    sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, unique=True)
-    modified_calorie = models.FloatField(verbose_name="修正熱量-成分值(kcal)")
-    crude_protein = models.FloatField(verbose_name="粗蛋白-成分值(g)")
-    crude_fat = models.FloatField(verbose_name="粗脂肪-成分值(g)")
-    carbohydrates = models.FloatField(verbose_name="總碳水化合物-成分值(g)", blank=True, null=True)
-    dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)
-    metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣類(g)")
-    nutrition = models.OneToOneField('NutritionModel', blank=True, null=True)
+class SynonymModel(models.Model):
+    synonym = models.CharField(verbose_name="代稱", max_length=100)
 
-    objects = FoodModelManager()
+    # Generic
 
+    content_type = models.ForeignKey(ContentType, limit_choices_to={"model__in": ("FoodModel", "TaiwanSnackModel")})
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
 
-class FoodNameModelManager(models.Manager):
-    def search_by_known_as_name(self, name: str):
-        return self.filter(known_as_name=name)
+    objects = SynonymModelManager()
+
+    def __str__(self):
+        return "id: {}, synonym: {}".format(self.id, self.synonym)
 
 
-class FoodNameModel(models.Model):
-    known_as_name = models.CharField(verbose_name="代稱", max_length=100)
-    food = models.ForeignKey(FoodModel, related_name='food_names')
+class Nutrition(NamedTuple):
+    name: str
+    # nutrition
+    gram: float
+    calories: float
+    protein: float
+    fat: float
+    carbohydrates: float
+    # six groups
+    fruit_amount: float = 0.0
+    vegetable_amount: float = 0.0
+    grain_amount: float = 0.0
+    protein_food_amount: float = 0.0
+    diary_amount: float = 0.0
+    oil_amount: float = 0.0
 
-    objects = FoodNameModelManager()
+
+class NutritionModelManager(models.Manager):
+    #  TODO: Experimental. It seems nonsense
+    def is_nutrition_already_exist(self, nutrition: Nutrition):
+        q = self.filter(
+            name=nutrition.name,
+            gram=nutrition.gram,
+            calories=nutrition.calories,
+            protein=nutrition.protein,
+            fat=nutrition.fat,
+            carbohydrates=nutrition.carbohydrates,
+            fruit_amount=nutrition.fruit_amount,
+            vegetable_amount=nutrition.vegetable_amount,
+            grain_amount=nutrition.grain_amount,
+            protein_food_amount=nutrition.protein_food_amount,
+            diary_amount=nutrition.diary_amount,
+            oil_amount=nutrition.oil_amount
+        )
+        return q.count() > 0
 
 
 class NutritionModel(models.Model):
     # six groups
+    name = models.CharField(max_length=30, verbose_name="名稱", default="")
     fruit_amount = models.FloatField(verbose_name="水果類", default=0.0)
     vegetable_amount = models.FloatField(verbose_name="蔬菜類", default=0.0)
     grain_amount = models.FloatField(verbose_name="全榖根莖類", default=0.0)
@@ -53,7 +76,7 @@ class NutritionModel(models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
-    gram = models.FloatField(verbose_name="重量")
+    gram = models.FloatField(verbose_name="重量", blank=True)
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
@@ -75,6 +98,41 @@ class NutritionModel(models.Model):
         return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
                + self.diary_amount + self.oil_amount > 0
 
+    objects = NutritionModelManager()
+
+    def __str__(self):
+        return "id: {}, name: {}".format(self.id, self.name)
+
+class FoodModelManager(models.Manager):
+    def search_by_name(self, name: str):
+        return self.filter(sample_name=name)
+
+    def search_by_synonyms(self, name: str):
+        return self.filter(synonyms__synonym=name)
+
+
+class FoodModel(models.Model):
+    integration_number = models.CharField(verbose_name="整合編號", max_length=20)
+    food_type = models.CharField(verbose_name="食物分類", max_length=20)
+    sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, unique=True)
+    modified_calorie = models.FloatField(verbose_name="修正熱量-成分值(kcal)")
+    crude_protein = models.FloatField(verbose_name="粗蛋白-成分值(g)")
+    crude_fat = models.FloatField(verbose_name="粗脂肪-成分值(g)")
+    carbohydrates = models.FloatField(verbose_name="總碳水化合物-成分值(g)", blank=True, null=True)
+    dietary_fiber = models.FloatField(verbose_name="膳食纖維-成分值(g)", blank=True, null=True)
+    metabolic_carbohydrates = models.FloatField(verbose_name="可代謝醣類(g)")
+    nutrition = models.OneToOneField(NutritionModel, blank=True, null=True)
+    synonyms = GenericRelation(SynonymModel)
+
+    objects = FoodModelManager()
+
+    def list_synonyms(self):
+        synonyms = self.synonyms.all()
+        synonym_list = [s.synonym for s in synonyms]
+        return ', '.join(synonym_list)
+
+    list_synonyms.short_description = "代稱"
+
 
 class TaiwanSnackModelManager(models.Manager):
     def search_by_name(self, name: str):
@@ -86,21 +144,20 @@ class TaiwanSnackModelManager(models.Manager):
 
 class TaiwanSnackModel(models.Model):
     name = models.CharField(verbose_name="名稱", max_length=100)
+    place = models.CharField(verbose_name="地方", max_length=20, default="")
+    count_word = models.CharField(verbose_name="量詞", max_length=20, default="")
     nutrition = models.OneToOneField(NutritionModel)
+    synonyms = GenericRelation(SynonymModel)
 
     objects = TaiwanSnackModelManager()
 
+    def list_synonyms(self):
+        synonyms = self.synonyms.all()
+        synonym_list = [s.synonym for s in synonyms]
+        return ', '.join(synonym_list)
 
-class TaiwanSnackNameSynonymModelManager(models.Manager):
-    def search_by_name(self, name: str):
-        return self.filter(synonym=name)
-
-
-class TaiwanSnackNameSynonymModel(models.Model):
-    synonym = models.CharField(verbose_name="代稱", max_length=100)
-    snack = models.ForeignKey(TaiwanSnackModel, related_name='synonyms')
-
-    objects = TaiwanSnackNameSynonymModelManager()
+    def __str__(self):
+        return self.name
 
 
 class ICookIngredientModelManager(models.Manager):
