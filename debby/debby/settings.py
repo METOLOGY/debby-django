@@ -45,6 +45,7 @@ ALLOWED_HOSTS = [
     'localhost',
     'debby.metology.com.tw',
     '140.114.71.167',  # server ip for hsnl@NCHU
+    env('AWS_IP'), # server ip for amazon
 ]
 
 # Application definition
