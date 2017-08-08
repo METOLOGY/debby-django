@@ -1,3 +1,4 @@
+import re
 from collections import deque
 from typing import List, Union
 
@@ -83,40 +84,15 @@ class ConsultFoodManager(object):
         return TextSendMessage(text="請輸入食品名稱:")
 
     def find_in_food_name_model(self):
-        food_model = FoodModel.objects.search_by_name(self.callback.text)
-        if not food_model:
-            food_model = FoodModel.objects.search_by_synonyms(self.callback.text)
-        if len(food_model) > 1:
-
-            card_num_list = get_each_card_num(len(food_model[:20]))
-            reply = list()
-            message = "請問您要查閱的是："
-            d = deque(food_model)
-            for card_num in card_num_list:
-                actions = []
-                for i in range(card_num):
-                    food = d.popleft()  # type: FoodModel
-
-                    actions.append(
-                        PostbackTemplateAction(
-                            label=food.sample_name,
-                            data=ConsultFoodCallback(
-                                line_id=self.callback.line_id,
-                                action=Action.WAIT_FOOD_NAME_CHOICE,
-                                food_id=food.id
-                            ).url
-                        )
-                    )
-                template_send_message = TemplateSendMessage(
-                    alt_text=message,
-                    template=ButtonsTemplate(
-                        text=message,
-                        actions=actions
-                    )
-                )
-                reply.append(template_send_message)
-        elif len(food_model) == 1:
-            food = food_model[0]
+        queries = FoodModel.objects.search_by_name(self.callback.text)
+        if not queries:
+            queries = FoodModel.objects.search_by_synonyms(self.callback.text)
+        if len(queries) > 20:
+            queries = queries[:20]
+        if len(queries) > 1:
+            reply = self.ask_which_one(queries)
+        elif len(queries) == 1:
+            food = queries[0]
             reply = self.reply_fda_content(food)
         else:
             reply = None
@@ -127,17 +103,40 @@ class ConsultFoodManager(object):
         reply = list()
         message = "請問您要查閱的是:"
         d = deque(queries)
+        labels = []
         for card_num in card_num_list:
             actions = []
             for i in range(card_num):
                 query = d.popleft()
                 if isinstance(query, TaiwanSnackModel):
+                    place = query.place.rstrip('小吃').rstrip('伴手禮')
+                    label = "{}的{}".format(place, query.name)
+                    if label in labels:
+                        number_string_list = re.findall(r'\d+', label)
+                        if not number_string_list:
+                            label += " (2)"
+                        else:
+                            num = int(number_string_list[0])
+                            label += " ({})".format(num)
+                    else:
+                        labels.append(label)
                     actions.append(
                         PostbackTemplateAction(
-                            label=query.name,
+                            label=label,
                             data=ConsultFoodCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.WAIT_SNACK_NAME_CHOICE,
+                                food_id=query.id
+                            ).url
+                        )
+                    )
+                elif isinstance(query, FoodModel):
+                    actions.append(
+                        PostbackTemplateAction(
+                            label=query.sample_name,
+                            data=ConsultFoodCallback(
+                                line_id=self.callback.line_id,
+                                action=Action.WAIT_FOOD_NAME_CHOICE,
                                 food_id=query.id
                             ).url
                         )
@@ -154,25 +153,20 @@ class ConsultFoodManager(object):
         return reply
 
     def find_in_taiwan_snack(self):
-        def only_one_result(_results):
-            return len(_results) == 1
-
-        def more_than_one_results(_results):
-            return len(_results) > 1
-
         reply = None
         name = self.callback.text
-        results = TaiwanSnackModel.objects.search_by_name(name)
-        if results:
-            snack = results[0]
-            reply = self.reply_snack_content(snack)
+        queries = TaiwanSnackModel.objects.search_by_name(name)
+        if not queries:
+            queries = TaiwanSnackModel.objects.search_by_synonym(name)
+
+        if not queries:
+            reply = None
         else:
-            results = TaiwanSnackModel.objects.search_by_synonym(name)
-            if more_than_one_results(results):
-                reply = self.ask_which_one(results)
-            elif only_one_result(results):
-                snack = results[0]
+            if len(queries) == 1:
+                snack = queries[0]
                 reply = self.reply_snack_content(snack)
+            elif len(queries) > 1:
+                reply = self.ask_which_one(queries)
 
         return reply
 
