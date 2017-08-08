@@ -1,3 +1,5 @@
+from typing import NamedTuple
+
 from django.db import models
 
 
@@ -44,6 +46,43 @@ class FoodNameModel(models.Model):
     objects = FoodNameModelManager()
 
 
+class Nutrition(NamedTuple):
+    name: str
+    # nutrition
+    gram: float
+    calories: float
+    protein: float
+    fat: float
+    carbohydrates: float
+    # six groups
+    fruit_amount: float = 0.0
+    vegetable_amount: float = 0.0
+    grain_amount: float = 0.0
+    protein_food_amount: float = 0.0
+    diary_amount: float = 0.0
+    oil_amount: float = 0.0
+
+
+class NutritionModelManager(models.Manager):
+    #  TODO: Experimental. It seems nonsense
+    def is_nutrition_already_exist(self, nutrition: Nutrition):
+        q = self.filter(
+            name=nutrition.name,
+            gram=nutrition.gram,
+            calories=nutrition.calories,
+            protein=nutrition.protein,
+            fat=nutrition.fat,
+            carbohydrates=nutrition.carbohydrates,
+            fruit_amount=nutrition.fruit_amount,
+            vegetable_amount=nutrition.vegetable_amount,
+            grain_amount=nutrition.grain_amount,
+            protein_food_amount=nutrition.protein_food_amount,
+            diary_amount=nutrition.diary_amount,
+            oil_amount=nutrition.oil_amount
+        )
+        return q.count() > 0
+
+
 class NutritionModel(models.Model):
     # six groups
     name = models.CharField(max_length=30, verbose_name="名稱", default="")
@@ -75,6 +114,8 @@ class NutritionModel(models.Model):
     def is_six_group_exist(self):
         return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
                + self.diary_amount + self.oil_amount > 0
+
+    objects = NutritionModelManager()
 
 
 class TaiwanSnackModelManager(models.Manager):
