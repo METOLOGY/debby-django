@@ -54,7 +54,7 @@ class CustomUserModel(AbstractUser):
         verbose_name_plural = 'users'
 
     def __str__(self):
-        return self.id
+        return str(self.id)
 
 
 class UserSettingModel(models.Model):

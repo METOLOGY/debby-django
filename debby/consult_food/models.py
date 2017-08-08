@@ -6,6 +6,9 @@ from django.db import models
 
 
 # Create your models here.
+from django.utils.safestring import mark_safe
+
+
 class SynonymModelManager(models.Manager):
     def search_by_synonym(self, name: str):
         return self.filter(synonym=name)
@@ -15,7 +18,8 @@ class SynonymModel(models.Model):
     synonym = models.CharField(verbose_name="代稱", max_length=100)
 
     # Generic
-    content_type = models.ForeignKey(ContentType)
+
+    content_type = models.ForeignKey(ContentType, limit_choices_to={"model__in": ("FoodModel", "TaiwanSnackModel")})
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
 
@@ -96,6 +100,8 @@ class NutritionModel(models.Model):
 
     objects = NutritionModelManager()
 
+    def __str__(self):
+        return "id: {}, name: {}".format(self.id, self.name)
 
 class FoodModelManager(models.Manager):
     def search_by_name(self, name: str):
@@ -120,6 +126,13 @@ class FoodModel(models.Model):
 
     objects = FoodModelManager()
 
+    def list_synonyms(self):
+        synonyms = self.synonyms.all()
+        synonym_list = [s.synonym for s in synonyms]
+        return ', '.join(synonym_list)
+
+    list_synonyms.short_description = "代稱"
+
 
 class TaiwanSnackModelManager(models.Manager):
     def search_by_name(self, name: str):
@@ -137,6 +150,14 @@ class TaiwanSnackModel(models.Model):
     synonyms = GenericRelation(SynonymModel)
 
     objects = TaiwanSnackModelManager()
+
+    def list_synonyms(self):
+        synonyms = self.synonyms.all()
+        synonym_list = [s.synonym for s in synonyms]
+        return ', '.join(synonym_list)
+
+    def __str__(self):
+        return self.name
 
 
 class ICookIngredientModelManager(models.Manager):

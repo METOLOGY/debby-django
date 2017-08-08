@@ -37,3 +37,4 @@ class UserSettingsAdmin(admin.ModelAdmin):
 class UserLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'request_text', 'response', 'time',)
     readonly_fields = ('user','request_text', 'response', 'time',)
+    list_filter = ('user', )
