@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import ConsultFoodModel
+
+from .models import ConsultFoodModel, TaiwanSnackModel
 
 
 # Register your models here.
@@ -13,3 +14,8 @@ class ConsultFoodAdmin(admin.ModelAdmin):
               'carbohydrates', 'dietary_fiber',
               'metabolic_carbohydrates', 'carbohydrates_equivalent',
               'white_rice_equivalent')
+
+
+@admin.register(TaiwanSnackModel)
+class TaiwanSnackFoodAdmin(admin.ModelAdmin):
+    list_display = ('name', 'count_word')
