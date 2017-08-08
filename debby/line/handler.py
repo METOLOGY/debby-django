@@ -11,7 +11,7 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
-from consult_food.models import TaiwanSnackModel, FoodNameModel, ICookIngredientModel
+from consult_food.models import TaiwanSnackModel, ICookIngredientModel, FoodModel
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
@@ -39,7 +39,8 @@ class InputHandler(object):
             TaiwanSnackModel.objects.search_by_name,
             TaiwanSnackModel.objects.search_by_synonym,
             ICookIngredientModel.objects.search_by_name,
-            FoodNameModel.objects.search_by_known_as_name
+            FoodModel.objects.search_by_name,
+            FoodModel.objects.search_by_synonyms,
         ]
         for order in orders:
             queries = order(name)

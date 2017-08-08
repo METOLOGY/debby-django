@@ -98,8 +98,11 @@ class NutritionModel(models.Model):
 
 
 class FoodModelManager(models.Manager):
-    def search_by_known_as_name(self, name: str):
-        return self.filter(food_names__known_as_name=name)
+    def search_by_name(self, name: str):
+        return self.filter(sample_name=name)
+
+    def search_by_synonyms(self, name: str):
+        return self.filter(synonyms__synonym=name)
 
 
 class FoodModel(models.Model):

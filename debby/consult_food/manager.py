@@ -6,7 +6,7 @@ from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import FoodNameModel, FoodModel, TaiwanSnackModel, ICookIngredientModel
+from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
 from line.constant import ConsultFoodAction as Action
@@ -77,47 +77,28 @@ class ConsultFoodManager(object):
         app_cache.commit()
         return TextSendMessage(text="請輸入食品名稱:")
 
-    def like_query(self):
-        return FoodNameModel.objects.filter(
-            known_as_name__contains=self.callback.text).distinct("food__sample_name")
-
-    def reverse_like_query(self):
-        return FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
-                                           params=[self.callback.text])
-
     def find_in_food_name_model(self):
-        food_names = FoodNameModel.objects.filter(
-            known_as_name=self.callback.text).distinct("food__sample_name")
-        # distinct_food_names = []
+        food_model = FoodModel.objects.search_by_name(self.callback.text)
+        if not food_model:
+            food_model = FoodModel.objects.search_by_synonyms(self.callback.text)
+        if len(food_model) > 1:
 
-        # if len(food_names) < 20:
-        #     reverse_search_food_names = FoodNameModel.objects.extra(where=["%s LIKE CONCAT('%%',known_as_name,'%%')"],
-        #                                                             params=[self.callback.text])
-        #     reverse_search_food_names = reverse_search_food_names.distinct('food__sample_name')
-        #     food_names = list(chain(food_names, reverse_search_food_names))
-        #     distinct_food_names_id = []
-        #     for ind, food_name in enumerate(food_names):
-        #         if food_name.id not in distinct_food_names_id:
-        #             distinct_food_names_id.append(food_name.id)
-        #             distinct_food_names.append(food_name)
-        if len(food_names) > 1:
-
-            card_num_list = get_each_card_num(len(food_names[:20]))
+            card_num_list = get_each_card_num(len(food_model[:20]))
             reply = list()
             message = "請問您要查閱的是："
-            d = deque(food_names)
+            d = deque(food_model)
             for card_num in card_num_list:
                 actions = []
                 for i in range(card_num):
-                    food_name = d.popleft()  # type: FoodNameModel
+                    food = d.popleft()  # type: FoodModel
 
                     actions.append(
                         PostbackTemplateAction(
-                            label=food_name.food.sample_name,
+                            label=food.sample_name,
                             data=ConsultFoodCallback(
                                 line_id=self.callback.line_id,
                                 action=Action.WAIT_FOOD_NAME_CHOICE,
-                                food_id=food_name.food.id
+                                food_id=food.id
                             ).url
                         )
                     )
@@ -129,8 +110,8 @@ class ConsultFoodManager(object):
                     )
                 )
                 reply.append(template_send_message)
-        elif len(food_names) == 1:
-            food = food_names[0].food
+        elif len(food_model) == 1:
+            food = food_model[0]
             reply = self.reply_food_content(food)
         else:
             reply = None
