@@ -49,7 +49,7 @@ def create_fda_food_name_model():
         food_model.save()
 
 
-def get_nutrition(food_model: FoodModel):
+def get_nutrition(food_model: FoodModel) -> Nutrition:
     protein = food_model.crude_protein
     fat = food_model.crude_fat
     carbohydrates = food_model.carbohydrates
