@@ -23,3 +23,5 @@ venv/
 debby/debby/settings\.env
 
 chat_table/
+
+debby/db\.sqlite3-journal
