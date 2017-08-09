@@ -80,6 +80,7 @@ def handle_message(event: MessageEvent):
     """
     future mode setting
     """
+    # cache.set(line_id + '_future', True, 1200)
     future_mode = cache.get(line_id + '_future')
 
     if text == ':future:' and not future_mode:
@@ -91,27 +92,6 @@ def handle_message(event: MessageEvent):
     elif text == ':close:' and future_mode:
         cache.delete(line_id + '_future')
         send_message = TextSendMessage(text="關閉未來模式")
-    elif future_mode:
-        ai = apiai.ApiAI(settings.CLIENT_ACCESS_TOKEN)
-        request = ai.text_request()
-        request.session_id = line_id
-        request.query = text
-        response = request.getresponse()
-        js = json.loads(response.read().decode('utf-8'))
-
-        input_handler = InputHandler(line_id)
-        if is_using_api_ai_text_response(js):
-            send_message = input_handler.reply_text_response(js)
-        else:
-            registered_actions = {
-                "food.ask": input_handler.reply_food_ask
-            }
-            action = js['result']['action']
-            if action in registered_actions:
-                send_message = registered_actions[action](js)
-            else:
-                input_handler = InputHandler(line_id)
-                send_message = input_handler.handle(event.message)
     else:
         input_handler = InputHandler(line_id)
         send_message = input_handler.handle(event.message)
