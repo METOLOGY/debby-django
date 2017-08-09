@@ -13,6 +13,10 @@ class SynonymModelManager(models.Manager):
     def search_by_synonym(self, name: str):
         return self.filter(synonym=name)
 
+    # Generic
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
 
 class SynonymModel(models.Model):
     synonym = models.CharField(verbose_name="代稱", max_length=100)

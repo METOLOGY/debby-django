@@ -18,13 +18,20 @@ from .models import BGModel, DrugIntakeModel, InsulinIntakeModel
 
 
 class BGRecordManager:
-    ranges = [70, 80, 130, 250, 600]
-    conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
-                  "請注意是否有低血糖不適症情況發生",
-                  "Good!血糖控制的還不錯喔!",
-                  "血糖還是稍微偏高,要多注意喔!",
-                  "注意是否有尿酮酸中毒,若有不適請盡速就醫!",
-                  "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
+    before_ranges = [70, 80, 130, 250, 600]
+    before_conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
+                         "請注意是否有低血糖不適症情況發生",
+                         "Good!血糖控制的還不錯喔!",
+                         "血糖還是稍微偏高,要多注意喔!",
+                         "注意是否有尿酮酸中毒,若有不適請盡速就醫!",
+                         "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
+    after_ranges = [70, 120, 160, 250, 600]
+    after_conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
+                         "吃飽了嗎?可以考慮再吃一些水果喔! ",
+                         "Good!飯後血糖落於正常值喔! ",
+                         "血糖還是稍微偏高,要多注意喔!",
+                         "血糖太高了! 請考慮立刻使用藥物控制! ",
+                         "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
 
     def __init__(self, callback: BGRecordCallback):
         self.callback = callback
@@ -41,15 +48,25 @@ class BGRecordManager:
     def reply_bg_range_not_right():
         return TextSendMessage(text='您輸入的血糖範圍好像怪怪的，請確認血糖範圍在20 ~ 999之間～')
 
-    def reply_by_check_value(self, value: int) -> TextSendMessage:
-        value = float(value)
+    @staticmethod
+    def get_range_index(ranges: list, value: float):
         ind = 0
-        for ind, r in enumerate(self.ranges):
+        for ind, r in enumerate(ranges):
             if value <= r:
                 break
-            elif ind == len(self.ranges) - 1:
+            elif ind == len(ranges) - 1:
                 ind += 1
-        message = self.conditions[ind]
+        return ind
+
+    def reply_by_check_value(self, choice: str, value: int) -> TextSendMessage:
+        value = float(value)
+        message = None
+        if choice == 'before':
+            ind = self.get_range_index(self.before_ranges, value)
+            message = self.before_conditions[ind]
+        elif choice == 'after':
+            ind = self.get_range_index(self.after_ranges, value)
+            message = self.after_conditions[ind]
         return TextSendMessage(text=message)
 
     # def reply_reminder(self) -> TemplateSendMessage:
@@ -190,7 +207,7 @@ class BGRecordManager:
 
                 reply_common = [
                     self.reply_record_success(),
-                    self.reply_by_check_value(record.glucose_val)
+                    self.reply_by_check_value(self.callback.choice, record.glucose_val)
                 ]
 
                 if hasattr(app_cache.data, 'reminder_id'):

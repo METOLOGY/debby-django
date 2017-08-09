@@ -23,3 +23,16 @@ class EventModel(models.Model):
     action = models.CharField(max_length=30, blank=False)
 
     objects = EventModelManager()
+
+
+class ReservedKeywordsModelManager(models.Manager):
+    def is_reserved_keywords(self, text: str) -> bool:
+        return self.filter(keyword=text)
+
+
+class ReservedKeywordsModel(models.Model):
+    keyword = models.CharField(max_length=30)
+    callback = models.CharField(max_length=30)
+    action = models.CharField(max_length=30)
+
+    objects = ReservedKeywordsModelManager()
