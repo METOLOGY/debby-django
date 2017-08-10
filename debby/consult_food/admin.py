@@ -3,7 +3,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 
-from .models import TaiwanSnackModel, SynonymModel, NutritionModel, FoodModel
+from .models import TaiwanSnackModel, SynonymModel, NutritionModel, FoodModel, ICookIngredientModel
 
 
 class SynonymModelInline(GenericTabularInline):
@@ -61,3 +61,28 @@ class FoodModelAdmin(admin.ModelAdmin):
 
     nutrition_link.allow_tags = True
     nutrition_link.short_description = "營養呈現"
+
+
+@admin.register(ICookIngredientModel)
+class ICookIngredientModelAdmin(admin.ModelAdmin):
+    inlines = [SynonymModelInline]
+    list_display = ('id', 'name', 'source_link', 'nutrition_link',)
+
+    def source_link(self, obj):
+        if obj.source.startswith('https'):
+            return '<a href={}>第三方網頁</a>'.format(obj.source)
+        else:
+            return obj.source
+
+    def nutrition_link(self, obj):
+        if obj.nutrition:
+            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+            return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
+        else:
+            return ''
+
+    nutrition_link.allow_tags = True
+    nutrition_link.short_description = "營養呈現"
+
+    source_link.allow_tags = True
+    source_link.shot_description = "原連結"

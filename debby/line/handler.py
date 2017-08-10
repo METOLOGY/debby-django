@@ -53,9 +53,10 @@ class InputHandler(object):
         orders = [
             TaiwanSnackModel.objects.search_by_name,
             TaiwanSnackModel.objects.search_by_synonym,
-            ICookIngredientModel.objects.search_by_name,
             FoodModel.objects.search_by_name,
             FoodModel.objects.search_by_synonyms,
+            ICookIngredientModel.objects.search_by_name,
+            ICookIngredientModel.objects.search_by_synonym
         ]
         for order in orders:
             queries = order(name)
