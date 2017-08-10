@@ -19,7 +19,7 @@ from line.callback import FoodRecordCallback, MyDiaryCallback
 from line.constant import FoodRecordAction as Action, MyDiaryAction, RecordType
 from user.cache import AppCache, FoodData
 from user.models import CustomUserModel
-
+from consult_food.models import WikiFoodTranslateModel
 
 class FoodRecordManager(object):
     def __init__(self, callback: FoodRecordCallback):
@@ -98,7 +98,8 @@ class FoodRecordManager(object):
                     temp.delete()
 
     def select_food_template(self, other_food: list):
-        message = '請問是下面其中某一項食物嗎?'
+        message = '請問是下面其中某一項食物嗎?' if len(other_food) > 0 else '無法辨識食物，建議一次只拍一種食物就好囉!'
+        negative_message = '都不是嗎？' if len(other_food) > 0 else '沒關係, 不用辨識了!'
         postbacks = []
         for food in other_food:
             food_name = food['description']
@@ -111,7 +112,7 @@ class FoodRecordManager(object):
             )
         postbacks.append(
             PostbackTemplateAction(
-                label="都不是嗎？",
+                label=negative_message,
                 data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY,
                                         food_name='').url,
             )
@@ -124,6 +125,7 @@ class FoodRecordManager(object):
                 actions=postbacks,
             )
         )
+
 
     @staticmethod
     def record_extra_info(record_pk: str, text: str):
@@ -252,6 +254,14 @@ class FoodRecordManager(object):
 
         entities_sorted_by_score = sorted(vision_data['webEntities'], key=lambda x: x['score'], reverse=True)
         entities_sorted_by_score = [x for x in entities_sorted_by_score if 'description' in x]
+
+        entities_sorted_by_score_zh_tw = []
+        for ent in entities_sorted_by_score:
+            try:
+                obj = WikiFoodTranslateModel.objects.get(english=ent)
+                entities_sorted_by_score_zh_tw.append(obj.chinese)
+            except WikiFoodTranslateModel.DoesNotExist:
+                pass
 
         data.food_recognition_pk = food_recognition.id
         self.app_cache.data = data

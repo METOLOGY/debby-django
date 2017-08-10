@@ -109,3 +109,8 @@ class ICookIngredientModel(models.Model):
     nutrition = models.ForeignKey(NutritionModel)
 
     objects = ICookIngredientModelManager() 
+
+
+class WikiFoodTranslateModel(models.Model):
+    english = models.CharField(verbose_name='en', max_length=30)
+    chinese = models.CharField(verbose_name='zh-tw', max_length=30, blank=True, default=True)
