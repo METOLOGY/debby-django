@@ -1,12 +1,13 @@
+import os
 from typing import NamedTuple
 
+from PIL import Image
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-
 # Create your models here.
-from django.utils.safestring import mark_safe
+from consult_food.image_maker import CaloriesParameters, CaloriesMaker, SixGroupParameters, SixGroupPortionMaker
 
 
 class SynonymModelManager(models.Manager):
@@ -17,6 +18,7 @@ class SynonymModelManager(models.Manager):
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
+
 
 class SynonymModel(models.Model):
     synonym = models.CharField(verbose_name="代稱", max_length=100)
@@ -48,6 +50,13 @@ class Nutrition(NamedTuple):
     protein_food_amount: float = 0.0
     diary_amount: float = 0.0
     oil_amount: float = 0.0
+
+    def is_valid(self):
+        return self.gram is not None and \
+               self.calories is not None and \
+               self.protein is not None and \
+               self.fat is not None and \
+               self.carbohydrates is not None
 
 
 class NutritionModelManager(models.Manager):
@@ -102,10 +111,79 @@ class NutritionModel(models.Model):
         return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
                + self.diary_amount + self.oil_amount > 0
 
+    @staticmethod
+    def save_img(img: Image, nutrition_id: int, type_name: str):
+        directory = "../media/ConsultFood"
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        directory = "../media/ConsultFood/" + type_name
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        img2 = img.convert('RGB')
+        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
+
+        directory = "../media/ConsultFood/" + type_name + "_preview"
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        img2.thumbnail((240, 240), Image.ANTIALIAS)
+        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
+
+    def make_calories_image(self):
+        carbohydrates_calories = self.carbohydrates * 4
+        fat_calories = self.fat * 9
+        protein_calories = self.protein * 4
+        total = carbohydrates_calories + fat_calories + protein_calories
+        if total != 0:
+            carbohydrates_percentages = carbohydrates_calories / total * 100
+            fat_percentages = fat_calories / total * 100
+            protein_percentages = protein_calories / total * 100
+        else:
+            carbohydrates_percentages = 0
+            fat_percentages = 0
+            protein_percentages = 0
+        parameters = CaloriesParameters(sample_name=self.name,
+                                        calories=self.calories,
+                                        carbohydrates_grams=self.carbohydrates,
+                                        carbohydrates_percentages=carbohydrates_percentages,
+                                        fat_grams=self.fat,
+                                        fat_percentages=fat_percentages,
+                                        protein_grams=self.protein,
+                                        protein_percentages=protein_percentages)
+        maker = CaloriesMaker()
+        maker.make_img(parameters)
+        self.save_img(maker.img, self.id, 'nutrition_amount')
+        self.nutrition_amount_image = os.path.join('ConsultFood',
+                                                   'nutrition_amount',
+                                                   '{}.jpeg'.format(self.id))
+        self.nutrition_amount_image_preview = os.path.join('ConsultFood',
+                                                           'nutrition_amount_preview',
+                                                           '{}.jpeg'.format(self.id))
+
+    def create_six_group(self):
+        if self.is_six_group_exist():
+            parameters = SixGroupParameters(grains=self.grain_amount,
+                                            fruits=self.fruit_amount,
+                                            vegetables=self.vegetable_amount,
+                                            protein_foods=self.protein_food_amount,
+                                            diaries=self.diary_amount,
+                                            oil=self.oil_amount)
+            maker = SixGroupPortionMaker()
+            maker.make_img(parameters)
+            self.save_img(maker.img, self.id, 'six_group_portion')
+
+            self.six_group_portion_image = os.path.join('ConsultFood',
+                                                        'six_group_portion',
+                                                        '{}.jpeg'.format(self.id))
+            self.six_group_portion_image_preview = os.path.join('ConsultFood',
+                                                                'six_group_portion_preview',
+                                                                '{}.jpeg'.format(self.id))
+
     objects = NutritionModelManager()
 
     def __str__(self):
         return "id: {}, name: {}".format(self.id, self.name)
+
 
 class FoodModelManager(models.Manager):
     def search_by_name(self, name: str):
@@ -171,6 +249,14 @@ class ICookIngredientModelManager(models.Manager):
 
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
-    nutrition = models.ForeignKey(NutritionModel)
+    nutrition = models.ForeignKey(NutritionModel, null=True, blank=True)
+    source = models.CharField(max_length=100, default="TFDA")
+
+    gram = models.FloatField(verbose_name="重量", null=True, blank=True, default=0.0)
+    calories = models.FloatField(verbose_name="熱量", null=True, blank=True, default=0.0)
+    protein = models.FloatField(verbose_name="蛋白質", null=True, blank=True, default=0.0)
+    fat = models.FloatField(verbose_name="脂質", null=True, blank=True, default=0.0)
+    carbohydrates = models.FloatField(verbose_name="碳水化合物", null=True, blank=True, default=0.0)
+    sodium = models.FloatField(verbose_name="鈉", null=True, blank=True, default=0.0)
 
     objects = ICookIngredientModelManager()
