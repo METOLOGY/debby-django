@@ -250,7 +250,7 @@ class ICookIngredientModelManager(models.Manager):
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
     nutrition = models.ForeignKey(NutritionModel, null=True, blank=True)
-    source = models.CharField(max_length=200, default="TFDA")
+    source = models.TextField(default="TFDA")
 
     gram = models.FloatField(verbose_name="重量", null=True, blank=True, default=0.0)
     calories = models.FloatField(verbose_name="熱量", null=True, blank=True, default=0.0)
