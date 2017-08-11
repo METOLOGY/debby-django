@@ -25,7 +25,8 @@ class SynonymModel(models.Model):
 
     # Generic
 
-    content_type = models.ForeignKey(ContentType, limit_choices_to={"model__in": ("FoodModel", "TaiwanSnackModel")})
+    content_type = models.ForeignKey(ContentType, limit_choices_to={"model__in": ("FoodModel", "TaiwanSnackModel",
+                                                                                  "ICookIngredientModel")})
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
 
