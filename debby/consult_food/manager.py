@@ -174,6 +174,8 @@ class ConsultFoodManager(object):
         reply = None
         name = self.callback.text
         results = ICookIngredientModel.objects.search_by_name(name)
+        if not results:
+            results = ICookIngredientModel.objects.search_by_synonym(name)
         if results:
             ingredient = results[0]
             reply = self.reply_i_cook_ingredient_content(ingredient)
