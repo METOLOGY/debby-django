@@ -99,7 +99,7 @@ class FoodRecordManager(object):
 
     def select_food_template(self, other_food: list):
         message = '請問是下面其中某一項食物嗎?' if len(other_food) > 0 else '無法辨識食物，建議一次只拍一種食物就好囉!'
-        negative_message = '都不是嗎？' if len(other_food) > 0 else '沒關係, 不用辨識了!'
+        negative_message = '都不是嗎？' if len(other_food) > 0 else '沒關係～'
         postbacks = []
         for food in other_food:
             food_name = food['description']
