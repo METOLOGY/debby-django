@@ -268,5 +268,5 @@ class ICookIngredientModel(models.Model):
 
 
 class WikiFoodTranslateModel(models.Model):
-    english = models.CharField(verbose_name='en', max_length=50)
-    chinese = models.CharField(verbose_name='zh-tw', max_length=50, blank=True, default=True)
+    english = models.CharField(verbose_name='en', max_length=100)
+    chinese = models.CharField(verbose_name='zh-tw', max_length=100, blank=True, default=True)
