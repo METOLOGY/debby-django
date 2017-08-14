@@ -1,7 +1,10 @@
+import json
 import random
 from typing import Union
 from urllib.parse import parse_qsl
 
+import apiai
+from django.core.cache import cache
 from linebot.models import ImageMessage
 from linebot.models import Message
 from linebot.models import SendMessage
@@ -11,7 +14,8 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
-from consult_food.models import TaiwanSnackModel, FoodNameModel, ICookIngredientModel
+from consult_food.models import TaiwanSnackModel, ICookIngredientModel, FoodModel
+from debby import settings
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
 from line.callback import FoodRecordCallback, Callback, BGRecordCallback, ChatCallback, ConsultFoodCallback, \
@@ -32,14 +36,27 @@ class InputHandler(object):
         self.current_user = CustomUserModel.objects.get(line_id=line_id)
         self.text = ''
         self.image_id = ''
+        self.api_ai = self.setup_api_ai()
+
+        self.registered_actions = {
+            "food.ask": self.reply_food_ask,
+            "smalltalk": self.reply_text_response
+        }
+
+    @staticmethod
+    def setup_api_ai():
+        ai = apiai.ApiAI(settings.CLIENT_ACCESS_TOKEN)
+        return ai
 
     @staticmethod
     def is_answer_in_consult_food(name):
         orders = [
             TaiwanSnackModel.objects.search_by_name,
             TaiwanSnackModel.objects.search_by_synonym,
+            FoodModel.objects.search_by_name,
+            FoodModel.objects.search_by_synonyms,
             ICookIngredientModel.objects.search_by_name,
-            FoodNameModel.objects.search_by_known_as_name
+            ICookIngredientModel.objects.search_by_synonym
         ]
         for order in orders:
             queries = order(name)
@@ -62,38 +79,26 @@ class InputHandler(object):
         special_case = ["血糖紀錄", "飲食紀錄", "食物熱量查詢", "藥物資訊查詢", "我的設定", "我的日記", "Go, Debby!"]
 
         if app_cache.is_app_running() and self.text not in special_case:
-
-            # TODO: 這裡可能可寫的更彈性一點，但目前還沒有想法
             print('Start from app_cache', app_cache.line_id, app_cache.app, app_cache.action)
-            callback = None
-            if app_cache.app == App.FOOD_RECORD:
-                callback = FoodRecordCallback(self.line_id,
-                                              action=app_cache.action,
-                                              text=self.text
-                                              )
-            elif app_cache.app == App.DRUG_ASK:
-                callback = DrugAskCallback(self.line_id,
-                                           action=app_cache.action,
-                                           text=self.text)
-            elif app_cache.app == App.BG_RECORD:
-                callback = BGRecordCallback(self.line_id,
-                                            action=app_cache.action,
-                                            text=self.text)
-            elif app_cache.app == App.CONSULT_FOOD:
-                callback = ConsultFoodCallback(self.line_id,
-                                               action=app_cache.action,
-                                               text=self.text)
-
-            elif app_cache.app == App.USER_SETTING:
-                callback = UserSettingsCallback(self.line_id,
-                                                action=app_cache.action,
-                                                text=self.text)
-            elif app_cache.app == App.MY_DIARY:
-                callback = MyDiaryCallback(self.line_id,
-                                           action=app_cache.action,
-                                           text=self.text)
-
+            callback = Callback(line_id=self.line_id,
+                                app=app_cache.app,
+                                action=app_cache.action,
+                                text=self.text)
             return CallbackHandler(callback).handle()
+
+        future_mode = cache.get(self.line_id + '_future')
+        if self.text not in special_case and future_mode:
+            request = self.api_ai.text_request()
+            request.session_id = self.line_id
+            request.query = self.text
+            response = request.getresponse()
+            js = json.loads(response.read().decode('utf-8'))
+            action = js['result']['action']
+            registered_action = self.find_registered_actions(action)
+            if action != "input.unknown":
+                if registered_action:
+                    send_message = registered_action(js)
+                    return send_message
 
         events = EventModel.objects.filter(phrase=self.text)
         if not events:
@@ -131,7 +136,11 @@ class InputHandler(object):
 
         # Debby can't understand what user saying.
         else:
-            return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
+            if future_mode:
+                send_message = self.reply_text_response(js)
+                return send_message
+            else:
+                return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
 
     def handle_image(self, image_id):
         app_cache = AppCache(self.line_id)
@@ -177,6 +186,16 @@ class InputHandler(object):
                                             action=ConsultFoodAction.READ,
                                             text=food_name)
         return CallbackHandler(callback_data).handle()
+
+    def find_registered_actions(self, action: str):
+        first_split_action_name = action.split('.')[0]
+        if action in self.registered_actions:
+            return self.registered_actions[action]
+        elif first_split_action_name in self.registered_actions:
+            return self.registered_actions[first_split_action_name]
+        else:
+            return None
+
 
 
 class CallbackHandler(object):

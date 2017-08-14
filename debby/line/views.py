@@ -77,155 +77,64 @@ def is_using_api_ai_text_response(js: dict):
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
     text = event.message.text
-    # print(text)
     """
-    trick start
+    future mode setting
     """
-    if text == ':demo:':
-        cache.set(line_id + '_demo', 240)
-        text = TextSendMessage(text="準備好了 丟圖來吧!")
-        reply_message(event, line_id, text)
+    # cache.set(line_id + '_future', True, 1200)
+    future_mode = cache.get(line_id + '_future')
+
+    if text == ':future:' and not future_mode:
+        cache.set(line_id + '_future', True, 1200)
+        send_message = TextSendMessage(text="開啟未來模式，開始計時20分鐘")
+    elif text == ':future:' and future_mode:
+        cache.set(line_id + '_future', True, 1200)
+        send_message = TextSendMessage(text="延長未來模式，重新開始計時20分鐘")
+    elif text == ':close:' and future_mode:
+        cache.delete(line_id + '_future')
+        send_message = TextSendMessage(text="關閉未來模式")
     else:
+        input_handler = InputHandler(line_id)
+        send_message = input_handler.handle(event.message)
 
-        """
-        future mode setting
-        """
-        future_mode = cache.get(line_id + '_future')
+    # Save to log model.
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
 
-        if text == ':future:' and not future_mode:
-            cache.set(line_id + '_future', True, 1200)
-            send_message = TextSendMessage(text="開啟未來模式，開始計時20分鐘")
-        elif text == ':future:' and future_mode:
-            cache.set(line_id + '_future', True, 1200)
-            send_message = TextSendMessage(text="延長未來模式，重新開始計時20分鐘")
-        elif text == ':close:' and future_mode:
-            cache.delete(line_id + '_future')
-            send_message = TextSendMessage(text="關閉未來模式")
-        elif future_mode:
-            ai = apiai.ApiAI(settings.CLIENT_ACCESS_TOKEN)
-            request = ai.text_request()
-            request.session_id = line_id
-            request.query = text
-            response = request.getresponse()
-            js = json.loads(response.read().decode('utf-8'))
-
-            input_handler = InputHandler(line_id)
-            if is_using_api_ai_text_response(js):
-                send_message = input_handler.reply_text_response(js)
-            else:
-                registered_actions = {
-                    "food.ask": input_handler.reply_food_ask
-                }
-                action = js['result']['action']
-                if action in registered_actions:
-                    send_message = registered_actions[action](js)
-                else:
-                    input_handler = InputHandler(line_id)
-                    send_message = input_handler.handle(event.message)
-        else:
-            input_handler = InputHandler(line_id)
-            send_message = input_handler.handle(event.message)
-
-        # Save to log model.
-        UserLogModel.objects.save_to_log(line_id=line_id, input_text=text, send_message=send_message)
-
-        # return to Line Server
-        reply_message(event, line_id, send_message)
+    # return to Line Server
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(MessageEvent, message=ImageMessage)
 def handle_image(event: MessageEvent):
     line_id = event.source.sender_id
 
-    """
-    trick start
-    """
-    demo_mode = cache.get(line_id + '_demo')
-    if demo_mode:
-        message = '請問是下面其中某一項食物嗎?'
-        postbacks = [
-            PostbackTemplateAction(
-                label="(1) 豬腳麵線",
-                data=Callback(line_id, app='demo').url,
-            ),
-            PostbackTemplateAction(
-                label="(2) 炒麵",
-                data=Callback(line_id, app='demo').url,
-            ),
-            PostbackTemplateAction(
-                label="(3) 鴨肉羹",
-                data=Callback(line_id, app='demo').url,
-            ),
-            PostbackTemplateAction(
-                label="(4) 都不是嗎?",
-                data=Callback(line_id, app='demo').url,
-            ),
-        ]
+    input_handler = InputHandler(line_id)
+    send_message = input_handler.handle(event.message)
 
-        send_message = TemplateSendMessage(
-            alt_text=message,
-            template=ButtonsTemplate(
-                text=message,
-                actions=postbacks,
-            )
-        )
+    # Save to log model.
+    # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
+    # food = FoodModel.objects.last(line_id=line_id)
+    UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
 
-        reply_message(event, line_id, send_message)
-
-    # trick end
-    else:
-        input_handler = InputHandler(line_id)
-        send_message = input_handler.handle(event.message)
-
-        # Save to log model.
-        # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
-        # food = FoodModel.objects.last(line_id=line_id)
-        UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
-
-        # return to Line Server
-        reply_message(event, line_id, send_message)
+    # return to Line Server
+    reply_message(event, line_id, send_message)
 
 
 @handler.add(PostbackEvent)
 def postback(event: PostbackEvent):
     line_id = event.source.sender_id
 
-    """
-    trick start
-    """
-    demo_mode = cache.get(line_id + '_demo')
-    if demo_mode:
-        host = cache.get("host_name")
-        url = '/media/ConsultFood/demo/1.jpg'
-        preview_url = '/media/ConsultFood/demo/1_preview.jpg'
-        photo = "https://{}{}".format(host, url)
-        preview_photo = "https://{}{}".format(host, preview_url)
+    input_handler = InputHandler(line_id)
+    send_message = input_handler.handle_postback(event.postback.data)
 
-        message = ImageSendMessage(original_content_url=photo,
-                                   preview_image_url=preview_photo)
+    if send_message:
+        # Save to log model.
+        UserLogModel.objects.save_to_log(line_id=line_id, input_text=event.postback.data, send_message=send_message)
 
-        url = '/media/ConsultFood/demo/2.jpg'
-        preview_url = '/media/ConsultFood/demo/2_preview.jpg'
-        photo = "https://{}{}".format(host, url)
-        preview_photo = "https://{}{}".format(host, preview_url)
-
-        message2 = ImageSendMessage(original_content_url=photo,
-                                    preview_image_url=preview_photo)
-        reply_message(event, line_id, [message, message2])
-        cache.delete(line_id + '_demo')
-    else:
-        input_handler = InputHandler(line_id)
-        send_message = input_handler.handle_postback(event.postback.data)
-
-        if send_message:
-            # Save to log model.
-            UserLogModel.objects.save_to_log(line_id=line_id, input_text=event.postback.data, send_message=send_message)
-
-            # return to Line Server
-            line_bot_api.reply_message(
-                event.reply_token,
-                send_message
-            )
+        # return to Line Server
+        line_bot_api.reply_message(
+            event.reply_token,
+            send_message
+        )
 
 
 def user_init(line_id: str):

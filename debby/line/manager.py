@@ -98,23 +98,25 @@ class LineManager(object):
             ))
 
             # the reminder part
-            carousels.append(CarouselColumn(
-                title="用藥提醒",
-                text="請選擇要設定的提醒項目",
-                thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/reminder.png',
-                actions=[
-                    PostbackTemplateAction(
-                        label='服用藥物',
-                        data=UserSettingsCallback(line_id=self.callback.line_id, action=UserSettingsAction.SET_REMINDER,
-                                                  choice='drug').url
-                    ),
-                    PostbackTemplateAction(
-                        label='量測血糖',
-                        data=UserSettingsCallback(line_id=self.callback.line_id, action=UserSettingsAction.SET_REMINDER,
-                                                  choice='bg').url
-                    ),
-                ]
-            ))
+
+            ### temporarily remove reminder: 8/5
+            # carousels.append(CarouselColumn(
+            #     title="用藥提醒",
+            #     text="請選擇要設定的提醒項目",
+            #     thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/reminder.png',
+            #     actions=[
+            #         PostbackTemplateAction(
+            #             label='服用藥物',
+            #             data=UserSettingsCallback(line_id=self.callback.line_id, action=UserSettingsAction.SET_REMINDER,
+            #                                       choice='drug').url
+            #         ),
+            #         PostbackTemplateAction(
+            #             label='量測血糖',
+            #             data=UserSettingsCallback(line_id=self.callback.line_id, action=UserSettingsAction.SET_REMINDER,
+            #                                       choice='bg').url
+            #         ),
+            #     ]
+            # ))
 
             # the reminder part
 
@@ -218,11 +220,14 @@ class LineManager(object):
                    "(2) 記錄生活📝: 可快速記錄血糖值或飲食內容，跟著Debby我的步驟來完成吧！\n\n" \
                    "(3) 我的日記📓: 您還可即時查詢最近五筆血糖或飲食的紀錄情形，也可以再修改喔!\n" \
                    "(詳細報表: http://m.metology.com.tw/ )\n\n" \
-                   "(4) 用藥提醒🔔:不要害怕忘記自己要吃藥或量血糖～由我來提醒您時間吧，請放心！\n\n" \
-                   "(5) 其他❔:您點進來這裡就是啦！記得幫Debby填一下回饋喔~\n" \
+                   "(4) 其他❔:您點進來這裡就是啦！記得幫Debby填一下回饋喔~\n" \
                    "(回饋連結: https://www.surveycake.com/s/Mv3Dl )\n\n" \
                    "您也可以在訊息欄內直接輸入您想跟我說的話哦！😚" \
                    "(例如數字,食物名稱,藥物名稱,或直接上傳照片)，會發現意想不到的驚喜喔❤❤^^"
+
+
+            ### temp remove reminder
+            # "(4) 用藥提醒🔔:不要害怕忘記自己要吃藥或量血糖～由我來提醒您時間吧，請放心！\n\n" \
 
             reply = TextSendMessage(text=text)
 

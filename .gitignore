@@ -16,9 +16,12 @@ debby/celerybeat\.pid
 debby/django
 # folder for all media 
 media/
+venv/
 # files
 *.xlsx
 
 debby/debby/settings\.env
 
 chat_table/
+
+debby/db\.sqlite3-journal

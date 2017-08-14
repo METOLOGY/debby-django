@@ -6,3 +6,4 @@ from .models import EventModel
 @admin.register(EventModel)
 class Eventdmin(admin.ModelAdmin):
     list_display = ['phrase', 'callback', 'action']
+    search_fields = ['phrase',]
