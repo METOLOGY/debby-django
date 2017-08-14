@@ -20,7 +20,7 @@ class SynonymModelManager(models.Manager):
     content_object = GenericForeignKey('content_type', 'object_id')
 
 
-class SynonymModel(models.Model):
+class SynonymModel(models.Model):c
     synonym = models.CharField(verbose_name="代稱", max_length=100)
 
     # Generic
@@ -268,5 +268,5 @@ class ICookIngredientModel(models.Model):
 
 
 class WikiFoodTranslateModel(models.Model):
-    english = models.CharField(verbose_name='en', max_length=30)
-    chinese = models.CharField(verbose_name='zh-tw', max_length=30, blank=True, default=True)
+    english = models.CharField(verbose_name='en', max_length=50)
+    chinese = models.CharField(verbose_name='zh-tw', max_length=50, blank=True, default=True)
