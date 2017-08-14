@@ -20,7 +20,7 @@ class SynonymModelManager(models.Manager):
     content_object = GenericForeignKey('content_type', 'object_id')
 
 
-class SynonymModel(models.Model):c
+class SynonymModel(models.Model):
     synonym = models.CharField(verbose_name="代稱", max_length=100)
 
     # Generic
