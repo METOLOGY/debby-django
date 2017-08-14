@@ -265,3 +265,8 @@ class ICookIngredientModel(models.Model):
     sodium = models.FloatField(verbose_name="鈉", null=True, blank=True, default=0.0)
 
     objects = ICookIngredientModelManager()
+
+
+class WikiFoodTranslateModel(models.Model):
+    english = models.CharField(verbose_name='en', max_length=30)
+    chinese = models.CharField(verbose_name='zh-tw', max_length=30, blank=True, default=True)
