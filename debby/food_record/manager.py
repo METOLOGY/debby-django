@@ -267,10 +267,10 @@ class FoodRecordManager(object):
         self.app_cache.data = data
         self.app_cache.commit()
 
-        if len(entities_sorted_by_score) <= 3:
-            reply = self.select_food_template(entities_sorted_by_score)
+        if len(entities_sorted_by_score_zh_tw) <= 3:
+            reply = self.select_food_template(entities_sorted_by_score_zh_tw)
         else:
-            reply = self.select_food_template(entities_sorted_by_score[0:3])
+            reply = self.select_food_template(entities_sorted_by_score_zh_tw[0:3])
         return reply
 
     def create_from_menu(self):
