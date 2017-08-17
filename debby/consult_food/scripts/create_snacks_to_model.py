@@ -62,6 +62,7 @@ def run():
                                                                  count_word=count_word,
                                                                  nutrition=nutrition_model
                                                                  )
+            taiwan_snack_model.synonyms.create(synonym=snack_name)
             for synonym in synonym_list:
                 taiwan_snack_model.synonyms.create(synonym=synonym)
 
