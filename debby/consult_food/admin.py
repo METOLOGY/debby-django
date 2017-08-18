@@ -3,7 +3,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 
-from .models import TaiwanSnackModel, SynonymModel, NutritionModel, FoodModel, ICookIngredientModel
+from .models import TaiwanSnackModel, SynonymModel, NutritionModel, FoodModel, ICookIngredientModel, ICookDishModel
 
 
 class SynonymModelInline(GenericTabularInline):
@@ -16,7 +16,7 @@ class NutritionModelInline(admin.StackedInline):
 
 @admin.register(NutritionModel)
 class NutritionModelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'six_group_portion_image_tag', 'nutrition_amount_image_tag')
+    list_display = ('id', 'name', 'nutrition_amount_image_tag', 'six_group_portion_image_tag')
 
     def six_group_portion_image_tag(self, obj):
         if obj.six_group_portion_image:
@@ -53,7 +53,7 @@ class TaiwanSnackFoodAdmin(admin.ModelAdmin):
         return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
 
     nutrition_link.allow_tags = True
-    nutrition_link.short_description = "營養呈現"
+    nutrition_link.short_description = "營養 model"
 
 
 @admin.register(FoodModel)
@@ -91,4 +91,47 @@ class ICookIngredientModelAdmin(admin.ModelAdmin):
     nutrition_link.short_description = "營養呈現"
 
     source_link.allow_tags = True
-    source_link.shot_description = "原連結"
+    source_link.short_description = "原連結"
+
+
+@admin.register(ICookDishModel)
+class ICookDishModelAdmin(admin.ModelAdmin):
+    inlines = [SynonymModelInline]
+    list_display = ('id', 'name', 'source_link',
+                    'nutrition_amount_image_tag', 'six_group_portion_image_tag', 'nutrition_link')
+
+    def source_link(self, obj):
+        source_id = obj.source_url.rsplit('/', 1)[-1]
+        return '<a href={}>ICook 編號:{}</a>'.format(obj.source_url, source_id)
+
+    def nutrition_link(self, obj):
+        if obj.nutrition:
+            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+            return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
+        else:
+            return ''
+
+    def six_group_portion_image_tag(self, obj):
+        nutrition = obj.nutrition
+        if nutrition.six_group_portion_image:
+            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+                nutrition.six_group_portion_image.url, nutrition.six_group_portion_image_preview.url))
+        else:
+            return ''
+
+    def nutrition_amount_image_tag(self, obj):
+        nutrition = obj.nutrition
+        if nutrition.nutrition_amount_image:
+            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+                nutrition.nutrition_amount_image.url, nutrition.nutrition_amount_image_preview.url))
+        else:
+            return ''
+
+    six_group_portion_image_tag.short_description = '六大類'
+    nutrition_amount_image_tag.short_description = "營養含量"
+
+    nutrition_link.allow_tags = True
+    nutrition_link.short_description = "營養 model"
+
+    source_link.allow_tags = True
+    source_link.short_description = "ICook 連結"
