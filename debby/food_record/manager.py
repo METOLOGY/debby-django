@@ -173,7 +173,7 @@ class FoodRecordManager(object):
                 host = cache.get("host_name")
                 url = temp.carousel.url
                 photo = "https://{}{}".format(host, url)
-            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+            time = temp.time.astimezone().strftime("%Y/%m/%d %H:%M:%S\n")
         else:  # may be old or back from my_diary
             temp = query[0]
             text = temp.note
@@ -181,7 +181,7 @@ class FoodRecordManager(object):
                 host = cache.get("host_name")
                 url = temp.carousel.url
                 photo = "https://{}{}".format(host, url)
-            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+            time = temp.time.astimezone().strftime("%Y/%m/%d %H:%M:%S\n")
 
         message = '{}\n{}{}'.format(data.food_name, time, text)
 
