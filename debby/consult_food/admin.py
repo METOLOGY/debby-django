@@ -16,21 +16,59 @@ class NutritionModelInline(admin.StackedInline):
 
 @admin.register(NutritionModel)
 class NutritionModelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'nutrition_amount_image_tag', 'six_group_portion_image_tag')
+    list_display = ('id', 'name', 'nutrition_amount_image_tag', 'six_group_portion_image_tag',
+                    'gram_tag', 'calories_tag', 'protein_tag', 'fat_tag', 'carbohydrates_tag',
+                    'fruit_amount_tag', 'vegetable_amount_tag',
+                    'grain_amount_tag', 'protein_food_amount_tag',
+                    'diary_amount_tag', 'oil_amount_tag',
+                    )
 
     def six_group_portion_image_tag(self, obj):
         if obj.six_group_portion_image:
-            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+            return mark_safe('<a href="{}"><img src="{}" width="150" height="150"/></a>'.format(
                 obj.six_group_portion_image.url, obj.six_group_portion_image_preview.url))
         else:
             return ''
 
     def nutrition_amount_image_tag(self, obj):
         if obj.nutrition_amount_image:
-            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+            return mark_safe('<a href="{}"><img src="{}" width="150" height="150"/></a>'.format(
                 obj.nutrition_amount_image.url, obj.nutrition_amount_image_preview.url))
         else:
             return ''
+
+    def gram_tag(self, obj):
+        return '{:.1f}'.format(obj.gram)
+
+    def calories_tag(self, obj):
+        return '{:.1f}'.format(obj.calories)
+
+    def protein_tag(self, obj):
+        return '{:.1f}'.format(obj.protein)
+
+    def fat_tag(self, obj):
+        return '{:.1f}'.format(obj.fat)
+
+    def carbohydrates_tag(self, obj):
+        return '{:.1f}'.format(obj.carbohydrates)
+
+    def fruit_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.fruit_amount)
+
+    def vegetable_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.vegetable_amount)
+
+    def grain_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.grain_amount)
+
+    def protein_food_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.protein_food_amount)
+
+    def diary_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.diary_amount)
+
+    def oil_amount_tag(self, obj):
+        return '{:.1f}'.format(obj.oil_amount)
 
     six_group_portion_image_tag.short_description = '六大類'
     nutrition_amount_image_tag.short_description = "營養含量"
@@ -49,7 +87,8 @@ class TaiwanSnackFoodAdmin(admin.ModelAdmin):
     synonym_fields.short_description = "代稱"
 
     def nutrition_link(self, obj):
-        url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+        url = urlresolvers.reverse("admin:consult_food_nutritionmodel_changelist")
+        url = "{}?id={}".format(url, obj.nutrition.id)
         return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
 
     nutrition_link.allow_tags = True
@@ -62,7 +101,8 @@ class FoodModelAdmin(admin.ModelAdmin):
     list_display = ('id', 'sample_name', 'list_synonyms', 'nutrition_link',)
 
     def nutrition_link(self, obj):
-        url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+        url = urlresolvers.reverse("admin:consult_food_nutritionmodel_changelist")
+        url = "{}?id={}".format(url, obj.nutrition.id)
         return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
 
     nutrition_link.allow_tags = True
@@ -82,7 +122,8 @@ class ICookIngredientModelAdmin(admin.ModelAdmin):
 
     def nutrition_link(self, obj):
         if obj.nutrition:
-            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_changelist")
+            url = "{}?id={}".format(url, obj.nutrition.id)
             return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
         else:
             return ''
@@ -106,7 +147,8 @@ class ICookDishModelAdmin(admin.ModelAdmin):
 
     def nutrition_link(self, obj):
         if obj.nutrition:
-            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_change", args=[obj.nutrition.id])
+            url = urlresolvers.reverse("admin:consult_food_nutritionmodel_changelist")
+            url = "{}?id={}".format(url, obj.nutrition.id)
             return '<a href="%s">%s: %s</a>' % (url, obj.nutrition.id, obj.nutrition.name)
         else:
             return ''
@@ -114,7 +156,7 @@ class ICookDishModelAdmin(admin.ModelAdmin):
     def six_group_portion_image_tag(self, obj):
         nutrition = obj.nutrition
         if nutrition.six_group_portion_image:
-            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+            return mark_safe('<a href="{}"><img src="{}" width="150" height="150"/></a>'.format(
                 nutrition.six_group_portion_image.url, nutrition.six_group_portion_image_preview.url))
         else:
             return ''
@@ -122,7 +164,7 @@ class ICookDishModelAdmin(admin.ModelAdmin):
     def nutrition_amount_image_tag(self, obj):
         nutrition = obj.nutrition
         if nutrition.nutrition_amount_image:
-            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+            return mark_safe('<a href="{}"><img src="{}" width="150" height="150"/></a>'.format(
                 nutrition.nutrition_amount_image.url, nutrition.nutrition_amount_image_preview.url))
         else:
             return ''
