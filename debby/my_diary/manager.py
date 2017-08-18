@@ -21,8 +21,8 @@ class MyDiaryManager(object):
     @staticmethod
     def confirm_template(line_id, old, new, action, record_id, record_type):
         if isinstance(old, datetime.datetime):
-            old_value = old.strftime("%Y/%m/%d %H:%M")
-            new_value = new.strftime("%Y/%m/%d %H:%M")
+            old_value = old.astimezone().strftime("%Y/%m/%d %H:%M")
+            new_value = new.astimezone().strftime("%Y/%m/%d %H:%M")
         else:
             old_value = old
             new_value = new

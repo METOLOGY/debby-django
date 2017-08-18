@@ -253,7 +253,7 @@ class BGRecordManager:
 
         elif self.callback.action == Action.CREATE_DRUG_RECORD or self.callback.action == Action.CREATE_INSULIN_RECORD:
             time = datetime.now()
-            show_time = time.strftime('%Y/%m/%d %H:%M')
+            show_time = time.astimezone().strftime('%Y/%m/%d %H:%M')
             data = BGData()
             data.record_time = time
             app_cache.save_data(data)
