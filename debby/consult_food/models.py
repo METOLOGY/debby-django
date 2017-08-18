@@ -90,7 +90,7 @@ class NutritionModel(models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
-    gram = models.FloatField(verbose_name="重量", blank=True)
+    gram = models.FloatField(verbose_name="重量")
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
@@ -250,10 +250,13 @@ class ICookIngredientModelManager(models.Manager):
     def search_by_synonym(self, name: str):
         return self.filter(synonyms__synonym=name)
 
+    def is_in_db_already(self, name: str, gram: float):
+        return self.filter(name=name, gram=gram).count()
+
 
 class ICookIngredientModel(models.Model):
-    name = models.CharField(verbose_name="食材名稱", max_length=100, unique=True)
-    nutrition = models.ForeignKey(NutritionModel, null=True, blank=True)
+    name = models.CharField(verbose_name="食材名稱", max_length=100)
+    nutrition = models.ForeignKey(NutritionModel)
     synonyms = GenericRelation(SynonymModel)
     source = models.TextField(default="TFDA")
 
@@ -265,6 +268,27 @@ class ICookIngredientModel(models.Model):
     sodium = models.FloatField(verbose_name="鈉", null=True, blank=True, default=0.0)
 
     objects = ICookIngredientModelManager()
+
+
+class ICookDishModelManager(models.Manager):
+    def is_in_db_already(self, source_url: str):
+        return self.filter(source_url=source_url).count()
+
+
+class ICookDishModel(models.Model):
+    name = models.CharField(verbose_name="菜餚名稱", max_length=50)
+    source_url = models.TextField()
+    count_word = models.CharField(max_length=20, blank=False)
+
+    nutrition = models.OneToOneField(NutritionModel, blank=False)
+
+    objects = ICookDishModelManager()
+
+
+class ICookDishIngredientModel(models.Model):
+    name = models.CharField(verbose_name="食材名稱", max_length=20)
+    gram = models.FloatField(verbose_name='克')
+    dish = models.ForeignKey('ICookDishModel', blank=False)
 
 
 class WikiFoodTranslateModel(models.Model):
