@@ -256,7 +256,7 @@ class ICookIngredientModelManager(models.Manager):
 
 class ICookIngredientModel(models.Model):
     name = models.CharField(verbose_name="食材名稱", max_length=100)
-    nutrition = models.ForeignKey(NutritionModel)
+    nutrition = models.ForeignKey(NutritionModel, null=True, blank=True)
     synonyms = GenericRelation(SynonymModel)
     source = models.TextField(default="TFDA")
 
