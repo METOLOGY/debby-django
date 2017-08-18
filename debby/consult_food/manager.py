@@ -7,7 +7,8 @@ from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel, NutritionModel
+from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel, NutritionModel, SynonymModel, \
+    ICookDishModel
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
 from line.constant import ConsultFoodAction as Action
@@ -78,15 +79,19 @@ class ConsultFoodManager(object):
         text = "每{}克".format(int(ingredient.nutrition.gram))
         return self.reply_nutrition(text, ingredient.nutrition)
 
+    def reply_i_cook_dish_content(self, dish: ICookDishModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
+        text = "每{}".format(dish.count_word)
+        return self.reply_nutrition(text, dish.nutrition)
+
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
         app_cache.commit()
         return TextSendMessage(text="請輸入食品名稱:")
 
-    def find_in_food_name_model(self):
-        queries = FoodModel.objects.search_by_name(self.callback.text)
+    def find_in_food_name_model(self, name: str):
+        queries = FoodModel.objects.search_by_name(name)
         if not queries:
-            queries = FoodModel.objects.search_by_synonyms(self.callback.text)
+            queries = FoodModel.objects.search_by_synonyms(name)
         if len(queries) > 20:
             queries = queries[:20]
         if len(queries) > 1:
@@ -152,9 +157,8 @@ class ConsultFoodManager(object):
             reply.append(template_send_message)
         return reply
 
-    def find_in_taiwan_snack(self):
+    def find_in_taiwan_snack(self, name: str):
         reply = None
-        name = self.callback.text
         queries = TaiwanSnackModel.objects.search_by_name(name)
         if not queries:
             queries = TaiwanSnackModel.objects.search_by_synonym(name)
@@ -170,9 +174,9 @@ class ConsultFoodManager(object):
 
         return reply
 
-    def find_in_i_cook_ingredient(self):
+    def find_in_i_cook_ingredient(self, name: str):
         reply = None
-        name = self.callback.text
+
         results = ICookIngredientModel.objects.search_by_name(name)
         if not results:
             results = ICookIngredientModel.objects.search_by_synonym(name)
@@ -181,16 +185,30 @@ class ConsultFoodManager(object):
             reply = self.reply_i_cook_ingredient_content(ingredient)
         return reply
 
+    def find_in_i_cook_dish(self, name: str):
+        reply = None
+
+        queries = ICookDishModel.objects.search_by_name(name)
+        if not queries:
+            queries = ICookDishModel.objects.search_by_synonym(name)
+        if queries:
+            dish = queries[0]
+            reply = self.reply_i_cook_dish_content(dish)
+        return reply
+
+
     def read(self, app_cache: AppCache):
         app_cache.delete()
+        name = self.callback.text
         find_order = [
             self.find_in_taiwan_snack,
+            self.find_in_i_cook_dish,
             self.find_in_food_name_model,
             self.find_in_i_cook_ingredient,
         ]
         reply = None
         for find_in in find_order:
-            reply = find_in()
+            reply = find_in(name)
             if reply:
                 break
         if not reply:

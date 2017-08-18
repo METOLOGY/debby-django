@@ -290,6 +290,12 @@ class ICookDishModelManager(models.Manager):
     def is_in_db_already(self, source_url: str):
         return self.filter(source_url=source_url).count()
 
+    def search_by_name(self, name: str):
+        return self.filter(name=name)
+
+    def search_by_synonym(self, name: str):
+        return self.filter(synonyms__synonym=name)
+
 
 class ICookDishModel(models.Model):
     name = models.CharField(verbose_name="菜餚名稱", max_length=50)
