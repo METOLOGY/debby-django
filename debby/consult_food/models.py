@@ -25,8 +25,13 @@ class SynonymModel(models.Model):
 
     # Generic
 
-    content_type = models.ForeignKey(ContentType, limit_choices_to={"model__in": ("FoodModel", "TaiwanSnackModel",
-                                                                                  "ICookIngredientModel")})
+    content_type = models.ForeignKey(ContentType,
+                                     limit_choices_to={
+                                         "model__in": ("FoodModel",
+                                                       "TaiwanSnackModel",
+                                                       "ICookIngredientModel",
+                                                       "ICookDishModel")
+                                     })
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
 
@@ -281,6 +286,8 @@ class ICookDishModel(models.Model):
     count_word = models.CharField(max_length=20, blank=False)
 
     nutrition = models.OneToOneField(NutritionModel, blank=False)
+
+    synonyms = GenericRelation(SynonymModel)
 
     objects = ICookDishModelManager()
 
