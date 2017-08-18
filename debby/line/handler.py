@@ -14,7 +14,7 @@ from linebot.models import TextSendMessage
 from bg_record.manager import BGRecordManager
 from chat.manager import ChatManager
 from consult_food.manager import ConsultFoodManager
-from consult_food.models import TaiwanSnackModel, ICookIngredientModel, FoodModel
+from consult_food.models import TaiwanSnackModel, ICookIngredientModel, FoodModel, SynonymModel
 from debby import settings
 from drug_ask.manager import DrugAskManager
 from food_record.manager import FoodRecordManager
@@ -50,19 +50,7 @@ class InputHandler(object):
 
     @staticmethod
     def is_answer_in_consult_food(name):
-        orders = [
-            TaiwanSnackModel.objects.search_by_name,
-            TaiwanSnackModel.objects.search_by_synonym,
-            FoodModel.objects.search_by_name,
-            FoodModel.objects.search_by_synonyms,
-            ICookIngredientModel.objects.search_by_name,
-            ICookIngredientModel.objects.search_by_synonym
-        ]
-        for order in orders:
-            queries = order(name)
-            if len(queries) >= 1:
-                return True
-        return False
+        return SynonymModel.objects.search_by_synonym(name).count()
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
