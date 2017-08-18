@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import NamedTuple
 
 from PIL import Image
@@ -113,7 +114,7 @@ class NutritionModel(models.Model):
                                                        upload_to="ConsultFood/nutrition_amount/",
                                                        blank=True)
 
-    def is_six_group_exist(self):
+    def is_six_group_valid(self):
         return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
                + self.diary_amount + self.oil_amount > 0
 
@@ -134,6 +135,16 @@ class NutritionModel(models.Model):
 
         img2.thumbnail((240, 240), Image.ANTIALIAS)
         img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
+
+    def is_calories_image_created(self):
+        directory = "../media/ConsultFood/nutrition_amount/"
+        file = Path('{}/{}.jpeg'.format(directory, self.id))
+        return file.is_file()
+
+    def is_six_group_image_created(self):
+        directory = "../media/ConsultFood/six_group_portion/"
+        file = Path('{}/{}.jpeg'.format(directory, self.id))
+        return file.is_file()
 
     def make_calories_image(self):
         carbohydrates_calories = self.carbohydrates * 4
@@ -166,8 +177,8 @@ class NutritionModel(models.Model):
                                                            'nutrition_amount_preview',
                                                            '{}.jpeg'.format(self.id))
 
-    def create_six_group(self):
-        if self.is_six_group_exist():
+    def make_six_group_image(self):
+        if self.is_six_group_valid():
             parameters = SixGroupParameters(grains=self.grain_amount,
                                             fruits=self.fruit_amount,
                                             vegetables=self.vegetable_amount,

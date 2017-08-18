@@ -140,8 +140,8 @@ def create_nutrition_model(nutrition) -> NutritionModel:
     if nutrition.is_valid():
         nutrition_model = NutritionModel.objects.create(**nutrition._asdict())
         nutrition_model.make_calories_image()
-        if nutrition_model.is_six_group_exist():
-            nutrition_model.create_six_group()
+        if nutrition_model.is_six_group_valid():
+            nutrition_model.make_six_group_image()
         nutrition_model.save()
         return nutrition_model
     else:
@@ -161,6 +161,15 @@ def try_add_dish_name_to_synonym_model(dish_model: ICookDishModel):
         dish_model.synonyms.create(synonym=dish_model.name)
 
 
+def try_make_img(dish_model: ICookDishModel):
+    nutrition = dish_model.nutrition
+    if not nutrition.is_calories_image_created():
+        nutrition.make_calories_image()
+    if not nutrition.is_six_group_image_created():
+        nutrition.make_six_group_image()
+    nutrition.save()
+
+
 def create_i_cook_dish_model(dish: Dish, nutrition_list: List[Nutrition]):
     status = False
     if ICookDishModel.objects.is_in_db_already(dish.source_url):
@@ -173,9 +182,9 @@ def create_i_cook_dish_model(dish: Dish, nutrition_list: List[Nutrition]):
                                                    source_url=dish.source_url,
                                                    count_word=count_word,
                                                    nutrition=nutrition_model)
-        try_add_relation_to_dish_ingredient_model(dish, dish_model)
         status = True
 
+    try_make_img(dish_model)
     try_add_relation_to_dish_ingredient_model(dish, dish_model)
     try_add_dish_name_to_synonym_model(dish_model)
 
