@@ -173,7 +173,7 @@ class FoodRecordManager(object):
                 host = cache.get("host_name")
                 url = temp.carousel.url
                 photo = "https://{}{}".format(host, url)
-            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+            time = temp.time.astimezone().strftime("%Y/%m/%d %H:%M:%S\n")
         else:  # may be old or back from my_diary
             temp = query[0]
             text = temp.note
@@ -181,7 +181,7 @@ class FoodRecordManager(object):
                 host = cache.get("host_name")
                 url = temp.carousel.url
                 photo = "https://{}{}".format(host, url)
-            time = temp.time.strftime("%Y/%m/%d %H:%M:%S\n")
+            time = temp.time.astimezone().strftime("%Y/%m/%d %H:%M:%S\n")
 
         message = '{}\n{}{}'.format(data.food_name, time, text)
 
@@ -267,10 +267,10 @@ class FoodRecordManager(object):
         self.app_cache.data = data
         self.app_cache.commit()
 
-        if len(entities_sorted_by_score) <= 3:
-            reply = self.select_food_template(entities_sorted_by_score)
+        if len(entities_sorted_by_score_zh_tw) <= 3:
+            reply = self.select_food_template(entities_sorted_by_score_zh_tw)
         else:
-            reply = self.select_food_template(entities_sorted_by_score[0:3])
+            reply = self.select_food_template(entities_sorted_by_score_zh_tw[0:3])
         return reply
 
     def create_from_menu(self):
