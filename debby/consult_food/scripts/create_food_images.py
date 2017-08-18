@@ -25,7 +25,7 @@ def save_img(img: Image, nutrition_id: int, type_name: str):
 
 
 def create_six_group(nutrition):
-    if nutrition.is_six_group_exist():
+    if nutrition.is_six_group_valid():
         parameters = SixGroupParameters(grains=nutrition.grain_amount,
                                         fruits=nutrition.fruit_amount,
                                         vegetables=nutrition.vegetable_amount,
@@ -60,7 +60,7 @@ def create_calories(nutrition):
 
 
 def save_to_nutrition(nutrition: NutritionModel):
-    if nutrition.is_six_group_exist():
+    if nutrition.is_six_group_valid():
         nutrition.six_group_portion_image = os.path.join('ConsultFood',
                                                          'six_group_portion',
                                                          '{}.jpeg'.format(nutrition.id))
