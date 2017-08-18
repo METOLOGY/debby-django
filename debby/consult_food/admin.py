@@ -19,12 +19,18 @@ class NutritionModelAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'six_group_portion_image_tag', 'nutrition_amount_image_tag')
 
     def six_group_portion_image_tag(self, obj):
-        return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
-            obj.six_group_portion_image.url, obj.six_group_portion_image_preview.url))
+        if obj.six_group_portion_image:
+            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+                obj.six_group_portion_image.url, obj.six_group_portion_image_preview.url))
+        else:
+            return ''
 
     def nutrition_amount_image_tag(self, obj):
-        return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
-            obj.nutrition_amount_image.url, obj.nutrition_amount_image_preview.url))
+        if obj.nutrition_amount_image:
+            return mark_safe('<a href="{}"><img src="{}" width="200" height="200"/></a>'.format(
+                obj.nutrition_amount_image.url, obj.nutrition_amount_image_preview.url))
+        else:
+            return ''
 
     six_group_portion_image_tag.short_description = '六大類'
     nutrition_amount_image_tag.short_description = "營養含量"

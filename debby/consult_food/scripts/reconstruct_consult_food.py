@@ -41,6 +41,7 @@ def create_fda_food_name_model():
         food_model = FoodModel.objects.create(**food)
         known_as_names = ws.cell(row=i, column=4).value.split(':')
         known_as_names = [s.rstrip().lstrip() for s in known_as_names]
+        food_model.synonyms.create(synonym=food_model.sample_name)
         for name in known_as_names:
             food_model.synonyms.create(synonym=name)
 
