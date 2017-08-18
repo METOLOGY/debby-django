@@ -40,4 +40,5 @@ def run():
             else:
                 print("fda name: ", fda_name)
                 fda_food = queries[0]
-                ICookIngredientModel.objects.get_or_create(name=name, nutrition=fda_food.nutrition, source="TFDA")
+                icook = ICookIngredientModel.objects.get_or_create(name=name, nutrition=fda_food.nutrition, source="TFDA")
+                icook.synonyms.create(synonym=name)
