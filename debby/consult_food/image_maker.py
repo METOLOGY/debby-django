@@ -4,6 +4,8 @@ from typing import NamedTuple, List, NewType, Tuple, Union
 
 from PIL import Image, ImageFont, ImageDraw
 
+from debby import settings
+
 
 class Point(NamedTuple):
     x: int
@@ -94,18 +96,19 @@ class SixGroupPortionMaker:
     default_each_meal_portion = list(map(lambda i: i / 3, default_daily_portion))
 
     def __init__(self):
-        self.img = self.open_element('../nutrition/bg_six_group.png', (1024, 1024))
-        oc = self.open_element('../nutrition/orange.png', (self.diameter, self.diameter))
-        o_half = self.open_element('../nutrition/o_half.png', (self.diameter, self.diameter))
+        nutrition_dir = os.path.join(settings.PROJECT_DIR, 'nutrition')
+        self.img = self.open_element(os.path.join(nutrition_dir, 'bg_six_group.png'), (1024, 1024))
+        oc = self.open_element(os.path.join(nutrition_dir, 'orange.png'), (self.diameter, self.diameter))
+        o_half = self.open_element(os.path.join(nutrition_dir, 'o_half.png'), (self.diameter, self.diameter))
         self.orange = ColorImg(circle=oc, half_circle=o_half)
-        lc = self.open_element('../nutrition/light_blue.png', (self.diameter, self.diameter))
-        l_half = self.open_element('../nutrition/l_half.png', (self.diameter, self.diameter))
+        lc = self.open_element(os.path.join(nutrition_dir, 'light_blue.png'), (self.diameter, self.diameter))
+        l_half = self.open_element(os.path.join(nutrition_dir, 'l_half.png'), (self.diameter, self.diameter))
         self.light_blue = ColorImg(circle=lc, half_circle=l_half)
-        bc = self.open_element('../nutrition/blue.png', (self.diameter, self.diameter))
-        b_half = self.open_element('../nutrition/b_half.png', (self.diameter, self.diameter))
+        bc = self.open_element(os.path.join(nutrition_dir, 'blue.png'), (self.diameter, self.diameter))
+        b_half = self.open_element(os.path.join(nutrition_dir, 'b_half.png'), (self.diameter, self.diameter))
         self.blue = ColorImg(circle=bc, half_circle=b_half)
-        self.empty = self.open_element('../nutrition/empty.png', (self.diameter, self.diameter))
-        self.fnt = ImageFont.truetype('../nutrition/ARCENA.ttf', 65)
+        self.empty = self.open_element(os.path.join(nutrition_dir, 'empty.png'), (self.diameter, self.diameter))
+        self.fnt = ImageFont.truetype(os.path.join(nutrition_dir, 'ARCENA.ttf'), 65)
         self.draw = ImageDraw.Draw(self.img)
         self.positions_info = self.make_positions_info()
         self.position_arrays = self.make_position_arrays(self.positions_info)
@@ -229,7 +232,7 @@ class CaloriesMaker:
         one_hundred_percentage_positions: List[Point]
         color: Tuple[int, int, int]
 
-    nutrition_path = '../nutrition'
+    nutrition_path = os.path.join(settings.PROJECT_DIR, 'nutrition')
     fnt_path = os.path.join(nutrition_path, 'msjhbd.ttc')
     word_properties = {
         WordProperties.carbohydrates_gram: FontProperties(

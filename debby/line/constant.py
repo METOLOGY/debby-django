@@ -11,7 +11,7 @@ class App(object):
 
 
 class Action(object):
-    pass
+    DEMO = 'DEMO'
 
 
 class BGRecordAction(Action):
@@ -53,6 +53,9 @@ class FoodRecordAction(Action):
     WAIT_FOR_USER_REPLY = 'WAIT_FOR_USER_REPLY'
     CHECK_BEFORE_CREATE = 'CHECK_BEFORE_CREATE'
     CANCEL_PHOTO = 'CANCEL_PHOTO'
+    ASK_IF_WANT_TO_RECORD = 'ASK_IF_WANT_TO_RECORD'
+    ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME = 'ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME'
+    CANCEL_RECORD = 'CANCEL_RECORD'
 
 
 class MyDiaryAction(Action):
@@ -129,3 +132,4 @@ class LineAction(Action):
     RECORD_START = 'RECORD_START'
     CONSULT_START = 'CONSULT_START'
     REPLY_INTRO = 'REPLY_INTRO'
+    OPEN_FUTURE_MODE = 'OPEN_FUTURE_MODE'
