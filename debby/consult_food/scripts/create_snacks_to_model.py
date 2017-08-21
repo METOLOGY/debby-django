@@ -1,7 +1,7 @@
 import openpyxl
 from openpyxl.worksheet import Worksheet
 
-from consult_food.models import NutritionModel, TaiwanSnackModel, Nutrition
+from consult_food.models import NutritionModel, TaiwanSnackModel, NutritionTuple
 
 
 # python manage.py runscript add_snacks_to_model --traceback
@@ -42,7 +42,7 @@ def run():
             grain_amount = ws.cell(row=row, column=11).value
             count_word = ws.cell(row=row, column=14).value
 
-            nutrition = Nutrition(
+            nutrition = NutritionTuple(
                 name=snack_name,
                 gram=gram,
                 calories=calc_calories(protein, fat, carbohydrates),

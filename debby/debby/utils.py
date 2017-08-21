@@ -1,9 +1,9 @@
 import json
 import math
-
 # find how many template needed
-from enum import Enum
 from typing import List, Union
+
+from django.core.cache import cache
 
 
 def get_each_card_num(choice_num: int) -> List[int]:
@@ -33,7 +33,9 @@ def save_to_json_file(file_path: str, data):
         json.dump(data, outfile, ensure_ascii=False, indent=4)
 
 
-class ChoiceEnum(Enum):
-    @classmethod
-    def choices(cls):
-        return tuple((x.name, x.value) for x in cls)
+def is_future_mode_on(line_id: str):
+    return cache.get(line_id + '_future')
+
+
+def is_demo_mode_on(line_id: str):
+    return cache.get(line_id + '_demo')
