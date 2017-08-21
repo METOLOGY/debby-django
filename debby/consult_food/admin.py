@@ -177,3 +177,20 @@ class ICookDishModelAdmin(admin.ModelAdmin):
 
     source_link.allow_tags = True
     source_link.short_description = "ICook 連結"
+
+
+@admin.register(SynonymModel)
+class SynonymModelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'synonym', 'content_type', 'object_id',
+                    'source_link')
+    search_fields = ('synonym',)
+
+    def source_link(self, obj):
+        nutrition = obj.content_object.nutrition
+        url = urlresolvers.reverse("admin:consult_food_nutritionmodel_changelist")
+        url = "{}?id={}".format(url, nutrition.id)
+
+        return '<a href="%s">%s: %s</a>' % (url, nutrition.id, nutrition.name)
+
+    source_link.allow_tags = True
+    source_link.short_description = "營養連結"
