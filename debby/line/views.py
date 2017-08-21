@@ -73,6 +73,24 @@ def is_using_api_ai_text_response(js: dict):
            js['result']['fulfillment']['messages'][0]['speech']
 
 
+def execute_command(line_id: str, text: str) -> str:
+    future_mode = cache.get(line_id + '_future')
+    reply = None
+    if text == ':future:' and not future_mode:
+        cache.set(line_id + '_future', True, 1200)
+        reply = "開啟未來模式，開始計時20分鐘"
+    elif text == ':future:' and future_mode:
+        cache.set(line_id + '_future', True, 1200)
+        reply = "延長未來模式，重新開始計時20分鐘"
+    elif text == ':close:' and future_mode:
+        cache.delete(line_id + '_future')
+        reply = "關閉未來模式"
+    elif text == ':demo:':
+        cache.set(line_id + '_demo', True, 600)
+        reply = "開始十分鐘的demo模式"
+    return reply
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event: MessageEvent):
     line_id = event.source.sender_id
@@ -81,17 +99,11 @@ def handle_message(event: MessageEvent):
     future mode setting
     """
     # cache.set(line_id + '_future', True, 1200)
-    future_mode = cache.get(line_id + '_future')
 
-    if text == ':future:' and not future_mode:
-        cache.set(line_id + '_future', True, 1200)
-        send_message = TextSendMessage(text="開啟未來模式，開始計時20分鐘")
-    elif text == ':future:' and future_mode:
-        cache.set(line_id + '_future', True, 1200)
-        send_message = TextSendMessage(text="延長未來模式，重新開始計時20分鐘")
-    elif text == ':close:' and future_mode:
-        cache.delete(line_id + '_future')
-        send_message = TextSendMessage(text="關閉未來模式")
+    special_commands = [':future:', ':close:', ':demo:']
+    if text in special_commands:
+        reply = execute_command(line_id, text)
+        send_message = TextSendMessage(text=reply)
     else:
         input_handler = InputHandler(line_id)
         send_message = input_handler.handle(event.message)

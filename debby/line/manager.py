@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from linebot.models import TemplateSendMessage, ButtonsTemplate, TextSendMessage, PostbackTemplateAction, \
     URITemplateAction, CarouselTemplate, CarouselColumn
 
@@ -258,7 +259,12 @@ class LineManager(object):
         return reply
 
     def open_future_mode(self):
-        pass
+        text = "體驗開始，請上傳您的食物照片"
+
+        cache.set(self.callback.line_id + '_future', True, 300)
+
+        reply = TextSendMessage(text=text)
+        return reply
 
     def handle(self):
         reply = self.registered_callback[self.callback.action]()
