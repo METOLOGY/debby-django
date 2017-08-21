@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import openpyxl
 
-from consult_food.models import ICookIngredientModel, NutritionModel, Nutrition
+from consult_food.models import ICookIngredientModel, NutritionModel, NutritionTuple
 
 
 class ICookOthers(NamedTuple):
@@ -63,13 +63,13 @@ def run():
             continue
         else:
             print('Create')
-            nutrition = Nutrition(name=other.name,
-                                  gram=other.gram,
-                                  calories=other.calories,
-                                  protein=other.protein,
-                                  fat=other.fat,
-                                  carbohydrates=other.carbohydrates)
-            if nutrition.is_valid():
+            nutrition = NutritionTuple(name=other.name,
+                                       gram=other.gram,
+                                       calories=other.calories,
+                                       protein=other.protein,
+                                       fat=other.fat,
+                                       carbohydrates=other.carbohydrates)
+            if nutrition.functions().is_valid():
                 nutrition_model = NutritionModel.objects.create(**nutrition._asdict())
                 nutrition_model.make_calories_image()
                 nutrition_model.save()

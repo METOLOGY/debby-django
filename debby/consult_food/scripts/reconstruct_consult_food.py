@@ -1,7 +1,7 @@
 import openpyxl
 from openpyxl.worksheet import Worksheet
 
-from consult_food.models import FoodModel, Nutrition, NutritionModel, TaiwanSnackModel, ICookIngredientModel
+from consult_food.models import FoodModel, NutritionTuple, NutritionModel, TaiwanSnackModel, ICookIngredientModel
 from consult_food.scripts import create_snacks_to_model, create_food_images, create_icook_ingredients
 
 
@@ -50,7 +50,7 @@ def create_fda_food_name_model():
         food_model.save()
 
 
-def get_nutrition(food_model: FoodModel) -> Nutrition:
+def get_nutrition(food_model: FoodModel) -> NutritionTuple:
     protein = food_model.crude_protein
     fat = food_model.crude_fat
     carbohydrates = food_model.carbohydrates
@@ -80,7 +80,7 @@ def get_nutrition(food_model: FoodModel) -> Nutrition:
     elif food_model.food_type in ['油脂類', '堅果及種子類']:
         oil_amount = food_model.modified_calorie / 45.0
 
-    return Nutrition(
+    return NutritionTuple(
         name=food_model.sample_name,
         gram=100,
         calories=calc_calories(protein, fat, carbohydrates),
