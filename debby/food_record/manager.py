@@ -59,17 +59,17 @@ class FoodRecordManager(object):
 
     def reply_to_record_detail_template(self):
         return TemplateSendMessage(
-            alt_text="您要繼續增加文字嗎?",
+            alt_text="您還有想增加甚麼文字嗎～",
             template=ButtonsTemplate(
                 title="記錄飲食",
                 text="您要繼續增加文字嗎?",
                 actions=[
                     PostbackTemplateAction(
-                        label="不, 我已輸入完畢!",
+                        label="沒有了，我都輸入好了！",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.CHECK_BEFORE_CREATE).url
                     ),
                     PostbackTemplateAction(
-                        label="取消紀錄",
+                        label="我想取消這個記錄...",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL).url
                     )
                 ]
@@ -77,18 +77,18 @@ class FoodRecordManager(object):
         )
 
     def reply_if_want_to_record_image(self):
-        message = "請問您是想要記錄飲食嗎?"
+        message = "請問您是想要記錄飲食嗎～😉😉"
         return TemplateSendMessage(
             alt_text=message,
             template=ButtonsTemplate(
                 text=message,
                 actions=[
                     PostbackTemplateAction(
-                        label="是，我要記錄此食物照片",
+                        label="對喔！我想留下這個食物的記錄",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY).url
                     ),
                     PostbackTemplateAction(
-                        label="否，我只是想聊個天",
+                        label="沒有啦～我只是想跟你聊聊天",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL_PHOTO).url
                     )
                 ]
@@ -284,7 +284,7 @@ class FoodRecordManager(object):
 
     def create_from_menu(self):
         print(Action.CREATE_FROM_MENU)
-        reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
+        reply = TextSendMessage(text='好的😚！請傳給我一張此次用餐食物的照片,或輸入文字:')
 
         # init cache again to clean other app's status and data
         self.app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
@@ -355,7 +355,7 @@ class FoodRecordManager(object):
                 self.app_cache.delete()
                 cache.delete(self.callback.line_id + '_future')
                 cache.delete(self.callback.line_id + '_demo')
-                reply = TextSendMessage(text="飲食記錄成功!")
+                reply = TextSendMessage(text="耶～～您的飲食記錄成功！🎉🎉🎉")
             else:
                 reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
 
