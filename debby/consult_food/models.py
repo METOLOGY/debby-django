@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import NamedTuple, Union
+from typing import NamedTuple, List, Union
 
 from PIL import Image
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -342,6 +342,18 @@ class ICookDishIngredientModel(models.Model):
     dish = models.ForeignKey('ICookDishModel', blank=False)
 
 
+class WikiFoodTranslateModelManager(models.Manager):
+    def translate_to_chinese(self, english_names: List[str]) -> List[str]:
+        food_names = []
+        for en in english_names:
+            queries = self.filter(english=en)
+            if queries.exists():
+                food_names.append(queries[0].chinese)
+        return food_names
+
+
 class WikiFoodTranslateModel(models.Model):
     english = models.CharField(verbose_name='en', max_length=100)
     chinese = models.CharField(verbose_name='zh-tw', max_length=100, blank=True, default=True)
+
+    objects = WikiFoodTranslateModelManager()

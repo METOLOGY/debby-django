@@ -29,14 +29,14 @@ class LineManager(object):
             thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/search.png',
             actions=[
                 PostbackTemplateAction(
-                    label='食物營養成份查詢',
+                    label='我想了解食物營養成分🍲',
                     data=ConsultFoodCallback(
                         line_id=self.callback.line_id,
                         action=ConsultFoodAction.READ_FROM_MENU
                     ).url
                 ),
                 PostbackTemplateAction(
-                    label='藥物查詢',
+                    label='我想要查藥物💊',
                     data=DrugAskCallback(
                         line_id=self.callback.line_id,
                         action=DrugAskAction.READ_FROM_MENU
@@ -52,7 +52,7 @@ class LineManager(object):
             thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/record.png',
             actions=[
                 PostbackTemplateAction(
-                    label='記錄血糖',
+                    label='幫我記錄血糖',
                     data=BGRecordCallback(
                         line_id=self.callback.line_id,
                         action=BGRecordAction.CREATE_FROM_MENU,
@@ -60,7 +60,7 @@ class LineManager(object):
                     ).url
                 ),
                 PostbackTemplateAction(
-                    label='記錄飲食',
+                    label='幫我記錄飲食',
                     data=FoodRecordCallback(
                         line_id=self.callback.line_id,
                         action=FoodRecordAction.CREATE_FROM_MENU,
@@ -86,18 +86,18 @@ class LineManager(object):
         # the diary part
         carousels.append(CarouselColumn(
             title="我的日記",
-            text="請選擇要檢視的記錄項目（最多五筆）",
+            text="請選擇要檢視的記錄項目",
             thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/summary.png',
             actions=[
                 PostbackTemplateAction(
-                    label="血糖紀錄",
-                    data=MyDiaryCallback(line_id=self.callback.line_id,
-                                         action=MyDiaryAction.BG_HISTORY).url
-                ),
-                PostbackTemplateAction(
-                    label="飲食紀錄",
+                    label="我的飲食記錄",
                     data=MyDiaryCallback(line_id=self.callback.line_id,
                                          action=MyDiaryAction.FOOD_HISTORY).url
+                ),
+                PostbackTemplateAction(
+                    label="我的血糖記錄",
+                    data=MyDiaryCallback(line_id=self.callback.line_id,
+                                         action=MyDiaryAction.BG_HISTORY).url
                 ),
             ]
         ))
@@ -165,7 +165,7 @@ class LineManager(object):
 
         # noinspection PyTypeChecker
         reply = [TemplateSendMessage(
-            alt_text='Debby says...',
+            alt_text='Debby 說...',
             template=CarouselTemplate(
                 columns=carousels
             )
@@ -240,7 +240,7 @@ class LineManager(object):
 
     def reply_intro(self):
         # emoji list: https://emojipedia.org
-        text = "您好！我的名字是Debby！😃 我是一位線上虛擬營養衛教師，希望可以幫助您管理日常生活中的大小事哦！👍先看一下如何和Debby溝通的影片吧:\n\n" \
+        text = "您好~~我的名字是Debby！😃 我是一位線上虛擬營養衛教師，希望可以幫助您管理日常生活中的大小事哦！👍先看一下如何和Debby溝通的影片吧:\n\n" \
                "https://www.youtube.com/watch?v=oOI2y-TlLN8&feature=youtu.be \n\n" \
                "您可於下方主選單內選擇: \n\n" \
                "(1) 搜尋相關資訊🔍: 如果您想瞭解食物的營養組成成分，我會依據六大類均衡原則，建議最適合您的攝取量哦！您也可以搜尋糖尿病用藥哦！\n\n" \

@@ -21,17 +21,17 @@ class BGRecordManager:
     before_ranges = [70, 80, 130, 250, 600]
     before_conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
                          "請注意是否有低血糖不適症情況發生",
-                         "Good!血糖控制的還不錯喔!",
+                         "Good!血糖控制的還不錯喔!記得繼續保持👍",
                          "血糖還是稍微偏高,要多注意喔!",
                          "注意是否有尿酮酸中毒,若有不適請盡速就醫!",
                          "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
     after_ranges = [70, 120, 160, 250, 600]
     after_conditions = ["您的血糖過低,請盡速進食! 有低血糖不適症請盡速就醫!",
-                         "吃飽了嗎?可以考慮再吃一些水果喔! ",
-                         "Good!飯後血糖落於正常值喔! ",
-                         "血糖還是稍微偏高,要多注意喔!",
-                         "血糖太高了! 請考慮立刻使用藥物控制! ",
-                         "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
+                        "吃飽了嗎?可以考慮再吃一些水果喔!",
+                        "Good!飯後血糖落於正常值喔!記得繼續保持👍",
+                        "血糖還是稍微偏高,要多注意喔!",
+                        "血糖太高了! 請考慮立刻使用藥物控制! ",
+                        "有高血糖滲透壓症狀疑慮,請盡速就醫!"]
 
     def __init__(self, callback: BGRecordCallback):
         self.callback = callback
@@ -74,9 +74,9 @@ class BGRecordManager:
 
     def reply_record_type(self, glucose_val) -> TemplateSendMessage:
         return TemplateSendMessage(
-            alt_text='餐前血糖還是飯後血糖呢？',
+            alt_text='那...是餐前還是飯後血糖呢😄？',
             template=ButtonsTemplate(
-                text='餐前血糖還是飯後血糖呢？',
+                text='那...是餐前還是飯後血糖呢😄？',
                 actions=[
                     PostbackTemplateAction(
                         label='餐前',
@@ -97,7 +97,7 @@ class BGRecordManager:
                         ).url
                     ),
                     PostbackTemplateAction(
-                        label='取消紀錄',
+                        label='我想取消...',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.SET_TYPE,
@@ -124,16 +124,16 @@ class BGRecordManager:
 
     @staticmethod
     def reply_please_enter_bg() -> TextSendMessage:
-        return TextSendMessage(text='請輸入血糖數字:')
+        return TextSendMessage(text='好的😚！請告訴我您的血糖數字:')
 
     def reply_confirm_record(self, input_text) -> TemplateSendMessage:
         return TemplateSendMessage(
-            alt_text='請問您是想要記錄血糖嗎？',
+            alt_text='請問您是想要記錄血糖嗎～😉😉',
             template=ButtonsTemplate(
-                text='請問您是想要記錄血糖嗎？',
+                text='請問您是想要記錄血糖嗎～😉😉',
                 actions=[
                     PostbackTemplateAction(
-                        label='是，我要記錄此血糖數字',
+                        label='對喔！我想留下這次的血糖數字！',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.CONFIRM_RECORD,
@@ -142,7 +142,7 @@ class BGRecordManager:
                         ).url
                     ),
                     PostbackTemplateAction(
-                        label='否，我只是想聊個天~',
+                        label='沒有啦！我只是想跟你聊聊天～',
                         data=BGRecordCallback(
                             line_id=self.callback.line_id,
                             action=Action.CONFIRM_RECORD,
@@ -309,7 +309,7 @@ class BGRecordManager:
                                               time=record_time,
                                               status=True)
 
-            reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
+            reply = TextSendMessage(text='耶～～您的血糖記錄成功啦！🎉🎉🎉！您可在我的日記裡，查看最近的紀錄！')
             app_cache.delete()
 
         return reply
