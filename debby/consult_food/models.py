@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from pathlib import Path
 from typing import NamedTuple
 
@@ -9,6 +10,7 @@ from django.db import models
 
 # Create your models here.
 from consult_food.image_maker import CaloriesParameters, CaloriesMaker, SixGroupParameters, SixGroupPortionMaker
+from debby import settings
 
 
 class SynonymModelManager(models.Manager):
@@ -42,7 +44,95 @@ class SynonymModel(models.Model):
         return "id: {}, synonym: {}".format(self.id, self.synonym)
 
 
-class Nutrition(NamedTuple):
+class ImageType(Enum):
+    CALORIES = 'nutrition_amount'
+    SIX_GROUP = 'six_group_portion'
+
+
+class NutritionMixin:
+    def __init__(self):
+        self.name = None
+        self.gram = None
+        self.calories = None
+        self.carbohydrates = None
+        self.fat = None
+        self.protein = None
+        self.grain_amount = None
+        self.fruit_amount = None
+        self.vegetable_amount = None
+        self.protein_food_amount = None
+        self.diary_amount = None
+        self.oil_amount = None
+
+    def is_valid(self):
+        return self.gram is not None and \
+               self.calories is not None and \
+               self.protein is not None and \
+               self.fat is not None and \
+               self.carbohydrates is not None
+
+    def is_six_group_valid(self):
+        return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
+               + self.diary_amount + self.oil_amount > 0
+
+    @staticmethod
+    def save_img(img: Image, nutrition_id: int, image_type: ImageType):
+        media_dir = os.path.join(settings.PROJECT_DIR, 'media')
+        directory = os.path.join(media_dir, "ConsultFood")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        directory = os.path.join(media_dir, "ConsultFood", image_type.value)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        img2 = img.convert('RGB')
+        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
+
+        directory = os.path.join(media_dir, "ConsultFood", image_type.value + "_preview")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        img2.thumbnail((240, 240), Image.ANTIALIAS)
+        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
+
+    def make_calories_image(self):
+        carbohydrates_calories = self.carbohydrates * 4
+        fat_calories = self.fat * 9
+        protein_calories = self.protein * 4
+        total = carbohydrates_calories + fat_calories + protein_calories
+        if total != 0:
+            carbohydrates_percentages = carbohydrates_calories / total * 100
+            fat_percentages = fat_calories / total * 100
+            protein_percentages = protein_calories / total * 100
+        else:
+            carbohydrates_percentages = 0
+            fat_percentages = 0
+            protein_percentages = 0
+        parameters = CaloriesParameters(sample_name=self.name,
+                                        calories=self.calories,
+                                        carbohydrates_grams=self.carbohydrates,
+                                        carbohydrates_percentages=carbohydrates_percentages,
+                                        fat_grams=self.fat,
+                                        fat_percentages=fat_percentages,
+                                        protein_grams=self.protein,
+                                        protein_percentages=protein_percentages)
+        maker = CaloriesMaker()
+        maker.make_img(parameters)
+        return maker.img
+
+    def make_six_group_image(self):
+        if self.is_six_group_valid():
+            parameters = SixGroupParameters(grains=self.grain_amount,
+                                            fruits=self.fruit_amount,
+                                            vegetables=self.vegetable_amount,
+                                            protein_foods=self.protein_food_amount,
+                                            diaries=self.diary_amount,
+                                            oil=self.oil_amount)
+            maker = SixGroupPortionMaker()
+            maker.make_img(parameters)
+            return maker.img
+
+
+class NutritionTuple(NamedTuple):
     name: str
     # nutrition
     gram: float
@@ -58,35 +148,28 @@ class Nutrition(NamedTuple):
     diary_amount: float = 0.0
     oil_amount: float = 0.0
 
-    def is_valid(self):
-        return self.gram is not None and \
-               self.calories is not None and \
-               self.protein is not None and \
-               self.fat is not None and \
-               self.carbohydrates is not None
+    def functions(self):
+        return NutritionFunctions(self)
 
 
-class NutritionModelManager(models.Manager):
-    #  TODO: Experimental. It seems nonsense
-    def is_nutrition_already_exist(self, nutrition: Nutrition):
-        q = self.filter(
-            name=nutrition.name,
-            gram=nutrition.gram,
-            calories=nutrition.calories,
-            protein=nutrition.protein,
-            fat=nutrition.fat,
-            carbohydrates=nutrition.carbohydrates,
-            fruit_amount=nutrition.fruit_amount,
-            vegetable_amount=nutrition.vegetable_amount,
-            grain_amount=nutrition.grain_amount,
-            protein_food_amount=nutrition.protein_food_amount,
-            diary_amount=nutrition.diary_amount,
-            oil_amount=nutrition.oil_amount
-        )
-        return q.count() > 0
+class NutritionFunctions(NutritionMixin):
+    def __init__(self, nutrition_data: NutritionTuple):
+        super().__init__()
+        self.name = nutrition_data.name
+        self.gram = nutrition_data.gram
+        self.calories = nutrition_data.calories
+        self.carbohydrates = nutrition_data.carbohydrates
+        self.fat = nutrition_data.fat
+        self.protein = nutrition_data.protein
+        self.grain_amount = nutrition_data.grain_amount
+        self.fruit_amount = nutrition_data.fruit_amount
+        self.vegetable_amount = nutrition_data.vegetable_amount
+        self.protein_food_amount = nutrition_data.protein_food_amount
+        self.diary_amount = nutrition_data.diary_amount
+        self.oil_amount = nutrition_data.oil_amount
 
 
-class NutritionModel(models.Model):
+class NutritionModel(NutritionMixin, models.Model):
     # six groups
     name = models.CharField(max_length=30, verbose_name="名稱", default="")
     fruit_amount = models.FloatField(verbose_name="水果類", default=0.0)
@@ -114,89 +197,36 @@ class NutritionModel(models.Model):
                                                        upload_to="ConsultFood/nutrition_amount/",
                                                        blank=True)
 
-    def is_six_group_valid(self):
-        return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
-               + self.diary_amount + self.oil_amount > 0
-
-    @staticmethod
-    def save_img(img: Image, nutrition_id: int, type_name: str):
-        directory = "../media/ConsultFood"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        directory = "../media/ConsultFood/" + type_name
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        img2 = img.convert('RGB')
-        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
-
-        directory = "../media/ConsultFood/" + type_name + "_preview"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        img2.thumbnail((240, 240), Image.ANTIALIAS)
-        img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
-
     def is_calories_image_created(self):
-        directory = "../media/ConsultFood/nutrition_amount/"
+        directory = "../media/ConsultFood/" + ImageType.CALORIES.value
         file = Path('{}/{}.jpeg'.format(directory, self.id))
         return file.is_file()
 
     def is_six_group_image_created(self):
-        directory = "../media/ConsultFood/six_group_portion/"
+        directory = "../media/ConsultFood/" + ImageType.SIX_GROUP.value
         file = Path('{}/{}.jpeg'.format(directory, self.id))
         return file.is_file()
 
-    def make_calories_image(self):
-        carbohydrates_calories = self.carbohydrates * 4
-        fat_calories = self.fat * 9
-        protein_calories = self.protein * 4
-        total = carbohydrates_calories + fat_calories + protein_calories
-        if total != 0:
-            carbohydrates_percentages = carbohydrates_calories / total * 100
-            fat_percentages = fat_calories / total * 100
-            protein_percentages = protein_calories / total * 100
-        else:
-            carbohydrates_percentages = 0
-            fat_percentages = 0
-            protein_percentages = 0
-        parameters = CaloriesParameters(sample_name=self.name,
-                                        calories=self.calories,
-                                        carbohydrates_grams=self.carbohydrates,
-                                        carbohydrates_percentages=carbohydrates_percentages,
-                                        fat_grams=self.fat,
-                                        fat_percentages=fat_percentages,
-                                        protein_grams=self.protein,
-                                        protein_percentages=protein_percentages)
-        maker = CaloriesMaker()
-        maker.make_img(parameters)
-        self.save_img(maker.img, self.id, 'nutrition_amount')
+    def make_and_save_calories_image(self):
+        img = self.make_calories_image()
+        self.save_img(img, self.id, ImageType.CALORIES)
         self.nutrition_amount_image = os.path.join('ConsultFood',
-                                                   'nutrition_amount',
+                                                   ImageType.CALORIES.value,
                                                    '{}.jpeg'.format(self.id))
         self.nutrition_amount_image_preview = os.path.join('ConsultFood',
-                                                           'nutrition_amount_preview',
+                                                           ImageType.CALORIES + '_preview',
                                                            '{}.jpeg'.format(self.id))
 
-    def make_six_group_image(self):
-        if self.is_six_group_valid():
-            parameters = SixGroupParameters(grains=self.grain_amount,
-                                            fruits=self.fruit_amount,
-                                            vegetables=self.vegetable_amount,
-                                            protein_foods=self.protein_food_amount,
-                                            diaries=self.diary_amount,
-                                            oil=self.oil_amount)
-            maker = SixGroupPortionMaker()
-            maker.make_img(parameters)
-            self.save_img(maker.img, self.id, 'six_group_portion')
+    def make_and_save_six_group_image(self):
+        img = self.make_six_group_image()
+        self.save_img(img, self.id, ImageType.SIX_GROUP)
 
-            self.six_group_portion_image = os.path.join('ConsultFood',
-                                                        'six_group_portion',
-                                                        '{}.jpeg'.format(self.id))
-            self.six_group_portion_image_preview = os.path.join('ConsultFood',
-                                                                'six_group_portion_preview',
-                                                                '{}.jpeg'.format(self.id))
-
-    objects = NutritionModelManager()
+        self.six_group_portion_image = os.path.join('ConsultFood',
+                                                    ImageType.SIX_GROUP.value,
+                                                    '{}.jpeg'.format(self.id))
+        self.six_group_portion_image_preview = os.path.join('ConsultFood',
+                                                            ImageType.SIX_GROUP + '_preview',
+                                                            '{}.jpeg'.format(self.id))
 
     def __str__(self):
         return "id: {}, name: {}".format(self.id, self.name)

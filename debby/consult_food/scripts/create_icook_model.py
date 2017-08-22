@@ -2,7 +2,7 @@ from typing import NamedTuple, Optional, List
 
 from django.contrib.contenttypes.models import ContentType
 
-from consult_food.models import SynonymModel, NutritionModel, ICookIngredientModel, ICookDishModel, Nutrition
+from consult_food.models import SynonymModel, NutritionModel, ICookIngredientModel, ICookDishModel, NutritionTuple
 from debby.utils import load_from_json_file
 
 
@@ -58,7 +58,7 @@ def find_by_same_gram(name, gram):
         return ICookIngredientModel.objects.get(name=name, gram=gram)
 
 
-def calculate_ingredient_nutrition(ingredient: Ingredient, similar_nutrition_model: NutritionModel) -> Nutrition:
+def calculate_ingredient_nutrition(ingredient: Ingredient, similar_nutrition_model: NutritionModel) -> NutritionTuple:
     name = ingredient.name
     ratio = ingredient.gram / similar_nutrition_model.gram
     gram = ingredient.gram
@@ -72,18 +72,18 @@ def calculate_ingredient_nutrition(ingredient: Ingredient, similar_nutrition_mod
     protein_food_amount = similar_nutrition_model.protein_food_amount * ratio
     diary_amount = similar_nutrition_model.diary_amount * ratio
     oil_amount = similar_nutrition_model.oil_amount * ratio
-    nutrition = Nutrition(name=name, gram=gram, calories=calories, protein=protein, fat=fat,
-                          carbohydrates=carbohydrates,
-                          fruit_amount=fruit_amount,
-                          vegetable_amount=vegetable_amount,
-                          grain_amount=grain_amount,
-                          protein_food_amount=protein_food_amount,
-                          diary_amount=diary_amount,
-                          oil_amount=oil_amount)
+    nutrition = NutritionTuple(name=name, gram=gram, calories=calories, protein=protein, fat=fat,
+                               carbohydrates=carbohydrates,
+                               fruit_amount=fruit_amount,
+                               vegetable_amount=vegetable_amount,
+                               grain_amount=grain_amount,
+                               protein_food_amount=protein_food_amount,
+                               diary_amount=diary_amount,
+                               oil_amount=oil_amount)
     return nutrition
 
 
-def create_ingredient_model(ingredient: Ingredient, nutrition: Nutrition):
+def create_ingredient_model(ingredient: Ingredient, nutrition: NutritionTuple):
     source = "ICook"
     nutrition_model = NutritionModel.objects.create(**nutrition._asdict())
     ingredient_model = ICookIngredientModel.objects.create(name=ingredient.name,
@@ -97,7 +97,7 @@ def create_ingredient_model(ingredient: Ingredient, nutrition: Nutrition):
     ingredient_model.synonyms.create(synonym=ingredient.name)
 
 
-def calculate_dish_nutrition(dish_name: str, nutrition_list: List[Nutrition]) -> Nutrition:
+def calculate_dish_nutrition(dish_name: str, nutrition_list: List[NutritionTuple]) -> NutritionTuple:
     gram = 0.0
     calories = 0.0
     protein = 0.0
@@ -125,19 +125,19 @@ def calculate_dish_nutrition(dish_name: str, nutrition_list: List[Nutrition]) ->
         diary_amount += nutrition.diary_amount
         oil_amount += nutrition.oil_amount
 
-    nutrition = Nutrition(name=name, gram=gram, calories=calories, protein=protein, fat=fat,
-                          carbohydrates=carbohydrates,
-                          fruit_amount=fruit_amount,
-                          vegetable_amount=vegetable_amount,
-                          grain_amount=grain_amount,
-                          protein_food_amount=protein_food_amount,
-                          diary_amount=diary_amount,
-                          oil_amount=oil_amount)
+    nutrition = NutritionTuple(name=name, gram=gram, calories=calories, protein=protein, fat=fat,
+                               carbohydrates=carbohydrates,
+                               fruit_amount=fruit_amount,
+                               vegetable_amount=vegetable_amount,
+                               grain_amount=grain_amount,
+                               protein_food_amount=protein_food_amount,
+                               diary_amount=diary_amount,
+                               oil_amount=oil_amount)
     return nutrition
 
 
 def create_nutrition_model(nutrition) -> NutritionModel:
-    if nutrition.is_valid():
+    if nutrition.functions().is_valid():
         nutrition_model = NutritionModel.objects.create(**nutrition._asdict())
         nutrition_model.make_calories_image()
         if nutrition_model.is_six_group_valid():
@@ -170,7 +170,7 @@ def try_make_img(dish_model: ICookDishModel):
     nutrition.save()
 
 
-def create_i_cook_dish_model(dish: Dish, nutrition_list: List[Nutrition]):
+def create_i_cook_dish_model(dish: Dish, nutrition_list: List[NutritionTuple]):
     status = False
     if ICookDishModel.objects.is_in_db_already(dish.source_url):
         dish_model = ICookDishModel.objects.get(source_url=dish.source_url)
@@ -191,7 +191,7 @@ def create_i_cook_dish_model(dish: Dish, nutrition_list: List[Nutrition]):
     return status
 
 
-def get_nutrition_list_from_ingredients(ingredients: List[Ingredient]) -> Optional[List[Nutrition]]:
+def get_nutrition_list_from_ingredients(ingredients: List[Ingredient]) -> Optional[List[NutritionTuple]]:
     nutrition_list = []
     for ingredient in ingredients:
         print('ingredient: %s' % ingredient.name)
