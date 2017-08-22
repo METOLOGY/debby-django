@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
 from PIL import Image
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -49,29 +49,18 @@ class ImageType(Enum):
     SIX_GROUP = 'six_group_portion'
 
 
-class NutritionMixin:
-    def __init__(self):
-        self.name = None
-        self.gram = None
-        self.calories = None
-        self.carbohydrates = None
-        self.fat = None
-        self.protein = None
-        self.grain_amount = None
-        self.fruit_amount = None
-        self.vegetable_amount = None
-        self.protein_food_amount = None
-        self.diary_amount = None
-        self.oil_amount = None
+NutritionExtended = Union['NutritionTuple', 'NutritionModel']
 
-    def is_valid(self):
+
+class NutritionMixin:
+    def is_valid(self: NutritionExtended):
         return self.gram is not None and \
                self.calories is not None and \
                self.protein is not None and \
                self.fat is not None and \
                self.carbohydrates is not None
 
-    def is_six_group_valid(self):
+    def is_six_group_valid(self: NutritionExtended):
         return self.fruit_amount + self.vegetable_amount + self.grain_amount + self.protein_food_amount \
                + self.diary_amount + self.oil_amount > 0
 
@@ -94,7 +83,7 @@ class NutritionMixin:
         img2.thumbnail((240, 240), Image.ANTIALIAS)
         img2.save('{}/{}.jpeg'.format(directory, nutrition_id), quality=95)
 
-    def make_calories_image(self):
+    def make_calories_image(self: NutritionExtended):
         carbohydrates_calories = self.carbohydrates * 4
         fat_calories = self.fat * 9
         protein_calories = self.protein * 4
@@ -119,7 +108,7 @@ class NutritionMixin:
         maker.make_img(parameters)
         return maker.img
 
-    def make_six_group_image(self):
+    def make_six_group_image(self: NutritionExtended):
         if self.is_six_group_valid():
             parameters = SixGroupParameters(grains=self.grain_amount,
                                             fruits=self.fruit_amount,
