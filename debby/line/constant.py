@@ -43,6 +43,7 @@ class DrugAskAction(Action):
 
 
 class FoodRecordAction(Action):
+    START = 'START'
     CREATE = 'CREATE'
     UPDATE = 'UPDATE'
     CANCEL = 'CANCEL'
@@ -56,6 +57,7 @@ class FoodRecordAction(Action):
     ASK_IF_WANT_TO_RECORD = 'ASK_IF_WANT_TO_RECORD'
     ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME = 'ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME'
     CANCEL_RECORD = 'CANCEL_RECORD'
+    REPLY_THANKS = 'REPLY_THANKS'
 
 
 class MyDiaryAction(Action):

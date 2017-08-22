@@ -10,11 +10,10 @@ import requests
 from PIL import Image
 from django.core.cache import cache
 from django.core.files import File
-from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, ImageSendMessage, \
-    MessageTemplateAction
+from linebot.models import SendMessage, TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import WikiFoodTranslateModel
+from consult_food.models import WikiFoodTranslateModel, SynonymModel
 from debby import settings, utils
 from food_record.models import FoodModel, TempImageModel, FoodRecognitionModel
 from line.callback import FoodRecordCallback, MyDiaryCallback
@@ -29,6 +28,7 @@ class FoodRecordManager(object):
         self.image_reader = ImageReader()
         self.registered_actions = {
             Action.CREATE_FROM_MENU: self.create_from_menu,
+            Action.START: self.wait_for_user_reply,
             Action.WAIT_FOR_USER_REPLY: self.wait_for_user_reply,
             Action.DIRECT_UPLOAD_IMAGE: self.direct_upload_image,
             Action.CHECK_BEFORE_CREATE: self.check_before_create,
@@ -37,7 +37,8 @@ class FoodRecordManager(object):
             Action.CANCEL_PHOTO: self.cancel_photo,
             Action.ASK_IF_WANT_TO_RECORD: self.ask_if_want_to_record,
             Action.ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME: self.ask_if_want_to_record_with_unknown_name,
-            Action.CANCEL_RECORD: self.cancel_record
+            Action.CANCEL_RECORD: self.cancel_record,
+            Action.REPLY_THANKS: self.reply_thanks,
         }
         self.app_cache = AppCache(self.callback.line_id)
 
@@ -85,7 +86,7 @@ class FoodRecordManager(object):
                 actions=[
                     PostbackTemplateAction(
                         label="是，我要記錄此食物照片",
-                        data=FoodRecordCallback(self.callback.line_id, action=Action.WAIT_FOR_USER_REPLY).url
+                        data=FoodRecordCallback(self.callback.line_id, action=Action.START).url
                     ),
                     PostbackTemplateAction(
                         label="否，我只是想聊個天",
@@ -219,7 +220,37 @@ class FoodRecordManager(object):
         )
         return reply
 
+    def reply_is_this_your_meal(self, english_name: str):
+        # TODO: implement translate to chinese
+        # name = self.translate_to_chinese(english_name)
+        name = english_name
+
+        message = "Debby 猜他是 {}".format(name)
+        text = TextSendMessage(text=message)
+
+        message = "還是這其實是您的餐點，您想要記錄這次的飲食內容?"
+
+        is_record_food = TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=[PostbackTemplateAction(label="是",
+                                                data=FoodRecordCallback(
+                                                    self.callback.line_id,
+                                                    action=Action.START).url),
+                         PostbackTemplateAction(label="否",
+                                                data=FoodRecordCallback(
+                                                    self.callback.line_id,
+                                                    action=Action.REPLY_THANKS
+                                                ).url)
+                         ]
+            )
+        )
+
+        return [text, is_record_food]
+
     def ask_vision_api(self):
+        print('ASK_VISION_API')
         data = FoodData()
         data.image_id = self.callback.image_id
         # google vision api start here.
@@ -260,13 +291,9 @@ class FoodRecordManager(object):
         entities_sorted_by_score = sorted(vision_data['webEntities'], key=lambda x: x['score'], reverse=True)
         entities_sorted_by_score = [x for x in entities_sorted_by_score if 'description' in x]
 
-        entities_sorted_by_score_zh_tw = []
-        for ent in entities_sorted_by_score:
-            try:
-                obj = WikiFoodTranslateModel.objects.get(english=ent)
-                entities_sorted_by_score_zh_tw.append(obj.chinese['description'])
-            except WikiFoodTranslateModel.DoesNotExist:
-                pass
+        english_names = [e['description'] for e in entities_sorted_by_score]
+
+        food_names = WikiFoodTranslateModel.objects.translate_to_chinese(english_names)
 
         data.food_recognition_pk = food_recognition.id
         self.app_cache.data = data
@@ -274,12 +301,15 @@ class FoodRecordManager(object):
 
         # TODO: demo mode
         if utils.is_demo_mode_on(self.callback.line_id):
-            reply = self.select_food_template(['潛艇堡', '沙拉', '可頌麵包'])
+            return self.select_food_template(['潛艇堡', '沙拉', '可頌麵包'])
+
+        if not food_names:
+            return self.reply_is_this_your_meal(english_names[0])
+
+        if len(food_names) <= 3:
+            reply = self.select_food_template(food_names)
         else:
-            if len(entities_sorted_by_score_zh_tw) <= 3:
-                reply = self.select_food_template(entities_sorted_by_score_zh_tw)
-            else:
-                reply = self.select_food_template(entities_sorted_by_score_zh_tw[0:3])
+            reply = self.select_food_template(food_names[0:3])
         return reply
 
     def create_from_menu(self):
@@ -287,14 +317,17 @@ class FoodRecordManager(object):
         reply = TextSendMessage(text='請上傳一張此次用餐食物的照片,或輸入文字:')
 
         # init cache again to clean other app's status and data
-        self.app_cache.set_next_action(self.callback.app, action=Action.WAIT_FOR_USER_REPLY)
+        self.app_cache.set_next_action(self.callback.app, action=Action.START)
         data = FoodData()
         self.app_cache.data = data
         self.app_cache.commit()
         return reply
 
     def wait_for_user_reply(self):
-        print(Action.WAIT_FOR_USER_REPLY)
+        if self.callback.action == Action.START:
+            print(Action.START)
+        else:
+            print(Action.WAIT_FOR_USER_REPLY)
         data = FoodData()
         data.setup_data(self.app_cache.data)
 
@@ -353,8 +386,7 @@ class FoodRecordManager(object):
                 temp = query[0]
                 self.record_food(temp, self.app_cache.data)
                 self.app_cache.delete()
-                cache.delete(self.callback.line_id + '_future')
-                cache.delete(self.callback.line_id + '_demo')
+                self.close_future_mode()
                 reply = TextSendMessage(text="飲食記錄成功!")
             else:
                 reply = TextSendMessage(text="可能隔太久沒有動作囉, 再重新記錄一次看看?")
@@ -369,6 +401,7 @@ class FoodRecordManager(object):
         reply = TextSendMessage(text="記錄取消！您可再從主選單，或直接在對話框上傳一張食物照片就可以記錄飲食囉！")
         self.delete_temp(self.app_cache.data.record_id) if self.callback.temp_record_id else None
         self.app_cache.delete()
+        self.close_future_mode()
         return reply
 
     def cancel_photo(self):
@@ -377,36 +410,57 @@ class FoodRecordManager(object):
         self.app_cache.delete()
         return reply
 
+    @staticmethod
+    def reply_images(synonym_model: SynonymModel):
+        nutrition = synonym_model.content_object.nutrition
+        count_word = utils.get_count_word(synonym_model.content_object)
+        return utils.reply_nutrition(count_word, nutrition)
+
+    # TODO: demo mode
+    @staticmethod
+    def reply_demo_images():
+        reply = []
+        text_message = TextSendMessage(text="每一份")
+        reply.append(text_message)
+
+        url = 'media/ConsultFood/nutrition_amount/demo.jpeg'
+        preview_url = 'media/ConsultFood/nutrition_amount_preview/demo.jpeg'
+
+        # host = cache.get("host_name")
+        host = 'debby.metology.com.tw/'
+        photo = "https://{}/{}".format(host, url)
+        preview_photo = "https://{}/{}".format(host, preview_url)
+        calories = ImageSendMessage(original_content_url=photo,
+                                    preview_image_url=preview_photo)
+        reply.append(calories)
+
+        url = 'media/ConsultFood/six_group_portion/demo.jpeg'
+        preview_url = 'media/ConsultFood/six_group_portion_preview/demo.jpeg'
+
+        # host = cache.get("host_name")
+        host = 'debby.metology.com.tw/'
+        photo = "https://{}/{}".format(host, url)
+        preview_photo = "https://{}/{}".format(host, preview_url)
+        six_group = ImageSendMessage(original_content_url=photo,
+                                     preview_image_url=preview_photo)
+        reply.append(six_group)
+        return reply
+
     def ask_if_want_to_record(self):
         print(Action.ASK_IF_WANT_TO_RECORD)
         reply = list()
 
-        # TODO: 之後要補上非 demo 時的流程
+        food_name = self.callback.food_name
+        queryset = SynonymModel.objects.filter(synonym=food_name)
+        image_messages = []
+        if queryset.exists():
+            image_messages = self.reply_images(queryset[0])
+
+        # TODO: demo mode
         if utils.is_demo_mode_on(self.callback.line_id):
-            text_message = TextSendMessage(text="每一份")
-            reply.append(text_message)
+            image_messages = self.reply_demo_images()
 
-            url = 'media/ConsultFood/nutrition_amount/demo.jpeg'
-            preview_url = 'media/ConsultFood/nutrition_amount_preview/demo.jpeg'
-
-            # host = cache.get("host_name")
-            host = 'debby.metology.com.tw/'
-            photo = "https://{}/{}".format(host, url)
-            preview_photo = "https://{}/{}".format(host, preview_url)
-            calories = ImageSendMessage(original_content_url=photo,
-                                        preview_image_url=preview_photo)
-            reply.append(calories)
-
-            url = 'media/ConsultFood/six_group_portion/demo.jpeg'
-            preview_url = 'media/ConsultFood/six_group_portion_preview/demo.jpeg'
-
-            # host = cache.get("host_name")
-            host = 'debby.metology.com.tw/'
-            photo = "https://{}/{}".format(host, url)
-            preview_photo = "https://{}/{}".format(host, preview_url)
-            six_group = ImageSendMessage(original_content_url=photo,
-                                         preview_image_url=preview_photo)
-            reply.append(six_group)
+        reply += image_messages
 
         question = TemplateSendMessage(
             alt_text='您是否要為此餐點做飲食紀錄呢?',
@@ -416,7 +470,7 @@ class FoodRecordManager(object):
                     PostbackTemplateAction(
                         label='是',
                         data=FoodRecordCallback(self.callback.line_id,
-                                                action=Action.WAIT_FOR_USER_REPLY,
+                                                action=Action.START,
                                                 food_name=self.callback.food_name).url
                     ),
                     PostbackTemplateAction(
@@ -432,14 +486,43 @@ class FoodRecordManager(object):
 
         return reply
 
-    # TODO: 補上 好的Debby會盡量學習! 您是否要為此餐點做飲食紀錄呢? 的邏輯
     def ask_if_want_to_record_with_unknown_name(self):
-        pass
+        print(Action.ASK_IF_WANT_TO_RECORD_WITH_UNKNOWN_NAME)
+        message = "好的Debby會盡量學習! 您是否要為此餐點做飲食紀錄呢?"
+        question = TemplateSendMessage(
+            alt_text=message,
+            template=ButtonsTemplate(
+                text=message,
+                actions=[
+                    PostbackTemplateAction(
+                        label='是',
+                        data=FoodRecordCallback(self.callback.line_id,
+                                                action=Action.START,
+                                                food_name=self.callback.food_name).url
+                    ),
+                    PostbackTemplateAction(
+                        label='否',
+                        data=FoodRecordCallback(self.callback.line_id,
+                                                action=Action.REPLY_THANKS).url
+                    )
+                ]
+            )
+        )
+        return question
 
-    def cancel_record(self):
+    def close_future_mode(self):
         cache.delete(self.callback.line_id + '_future')
         cache.delete(self.callback.line_id + '_demo')
+
+    def cancel_record(self):
+        print(Action.CANCEL_RECORD)
+        self.close_future_mode()
         return TextSendMessage(text='好的，希望 Debby 有幫助到您^^')
+
+    def reply_thanks(self):
+        print(Action.REPLY_THANKS)
+        self.close_future_mode()
+        return TextSendMessage(text='希望你能喜歡新功能^^')
 
     def handle(self) -> Union[SendMessage, None]:
         self.app_cache.set_expired_time(seconds=60 * 5)  # set expired time to 5 minutes.
