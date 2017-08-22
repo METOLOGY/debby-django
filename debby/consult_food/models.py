@@ -207,6 +207,14 @@ class NutritionModel(NutritionMixin, models.Model):
         file = Path('{}/{}.jpeg'.format(directory, self.id))
         return file.is_file()
 
+    def delete_six_group_image(self):
+        directory = "../media/ConsultFood/" + ImageType.SIX_GROUP.value
+        file = Path('{}/{}.jpeg'.format(directory, self.id))
+        if file.is_file():
+            file.unlink()
+            self.six_group_portion_image = ''
+            self.six_group_portion_image_preview = ''
+
     def make_and_save_calories_image(self):
         img = self.make_calories_image()
         self.save_img(img, self.id, ImageType.CALORIES)
