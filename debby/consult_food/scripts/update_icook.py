@@ -51,7 +51,7 @@ def run():
 
     for raw_dish in raw_dishes:
         ingredients = [Ingredient(**i) for i in raw_dish['ingredients']]
-        dish = Dish(**raw_dishes)
+        dish = Dish(**raw_dish)
         dish = dish._replace(ingredients=ingredients)
 
         print('Dish: %s' % dish.name)
