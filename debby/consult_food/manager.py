@@ -44,7 +44,7 @@ class ConsultFoodManager(object):
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
         app_cache.commit()
-        return TextSendMessage(text="請輸入食品名稱:")
+        return TextSendMessage(text="好的😚！請告訴我食品的名稱:")
 
     def find_in_food_name_model(self, name: str):
         queries = FoodModel.objects.search_by_name(name)
