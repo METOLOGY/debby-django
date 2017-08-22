@@ -211,7 +211,7 @@ class NutritionModel(NutritionMixin, models.Model):
                                                    ImageType.CALORIES.value,
                                                    '{}.jpeg'.format(self.id))
         self.nutrition_amount_image_preview = os.path.join('ConsultFood',
-                                                           ImageType.CALORIES + '_preview',
+                                                           ImageType.CALORIES.value + '_preview',
                                                            '{}.jpeg'.format(self.id))
 
     def make_and_save_six_group_image(self):
@@ -222,7 +222,7 @@ class NutritionModel(NutritionMixin, models.Model):
                                                     ImageType.SIX_GROUP.value,
                                                     '{}.jpeg'.format(self.id))
         self.six_group_portion_image_preview = os.path.join('ConsultFood',
-                                                            ImageType.SIX_GROUP + '_preview',
+                                                            ImageType.SIX_GROUP.value + '_preview',
                                                             '{}.jpeg'.format(self.id))
 
     def __str__(self):
