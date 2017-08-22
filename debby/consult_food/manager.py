@@ -7,8 +7,8 @@ from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel, NutritionModel, SynonymModel, \
-    ICookDishModel
+from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel, ICookDishModel
+from debby import utils
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
 from line.constant import ConsultFoodAction as Action
@@ -26,34 +26,9 @@ class ConsultFoodManager(object):
         }
 
     @staticmethod
-    def reply_nutrition(text: str, nutrition: NutritionModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
-        reply = list()
-
-        text_message = TextSendMessage(text=text)
-        reply.append(text_message)
-
-        url = nutrition.nutrition_amount_image.url
-        preview_url = nutrition.nutrition_amount_image_preview.url
-
-        host = cache.get("host_name")
-        photo = "https://{}{}".format(host, url)
-        preview_photo = "https://{}{}".format(host, preview_url)
-        calories = ImageSendMessage(original_content_url=photo,
-                                    preview_image_url=preview_photo)
-        reply.append(calories)
-
-        if nutrition.is_six_group_valid():
-            url = nutrition.six_group_portion_image.url
-            preview_url = nutrition.six_group_portion_image_preview.url
-
-            host = cache.get("host_name")
-            photo = "https://{}{}".format(host, url)
-            preview_photo = "https://{}{}".format(host, preview_url)
-            six_group = ImageSendMessage(original_content_url=photo,
-                                         preview_image_url=preview_photo)
-            reply.append(six_group)
-
-        return reply
+    def reply_food_nutrition(content_model):
+        count_word = utils.get_count_word(content_model)
+        return utils.reply_nutrition(count_word, content_model.nutrition)
 
     @staticmethod
     def reply_content(url: str, preview_url: str) -> List[Union[TextSendMessage, ImageSendMessage]]:
@@ -65,23 +40,6 @@ class ConsultFoodManager(object):
                                     preview_image_url=preview_photo)
 
         return [text, calories]
-
-    def reply_fda_content(self, food: FoodModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
-        text = "每{}克".format(int(food.nutrition.gram))
-        return self.reply_nutrition(text, food.nutrition)
-
-    def reply_snack_content(self, snack: TaiwanSnackModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
-        text = "每{}".format(snack.count_word)
-        return self.reply_nutrition(text, snack.nutrition)
-
-    def reply_i_cook_ingredient_content(self, ingredient: ICookIngredientModel) -> \
-            List[Union[TextSendMessage, ImageSendMessage]]:
-        text = "每{}克".format(int(ingredient.nutrition.gram))
-        return self.reply_nutrition(text, ingredient.nutrition)
-
-    def reply_i_cook_dish_content(self, dish: ICookDishModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
-        text = "每{}".format(dish.count_word)
-        return self.reply_nutrition(text, dish.nutrition)
 
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
@@ -98,7 +56,7 @@ class ConsultFoodManager(object):
             reply = self.ask_which_one(queries)
         elif len(queries) == 1:
             food = queries[0]
-            reply = self.reply_fda_content(food)
+            reply = self.reply_food_nutrition(food)
         else:
             reply = None
         return reply
@@ -168,7 +126,7 @@ class ConsultFoodManager(object):
         else:
             if len(queries) == 1:
                 snack = queries[0]
-                reply = self.reply_snack_content(snack)
+                reply = self.reply_food_nutrition(snack)
             elif len(queries) > 1:
                 reply = self.ask_which_one(queries)
 
@@ -182,7 +140,7 @@ class ConsultFoodManager(object):
             results = ICookIngredientModel.objects.search_by_synonym(name)
         if results:
             ingredient = results[0]
-            reply = self.reply_i_cook_ingredient_content(ingredient)
+            reply = self.reply_food_nutrition(ingredient)
         return reply
 
     def find_in_i_cook_dish(self, name: str):
@@ -193,9 +151,8 @@ class ConsultFoodManager(object):
             queries = ICookDishModel.objects.search_by_synonym(name)
         if queries:
             dish = queries[0]
-            reply = self.reply_i_cook_dish_content(dish)
+            reply = self.reply_food_nutrition(dish)
         return reply
-
 
     def read(self, app_cache: AppCache):
         app_cache.delete()
@@ -217,11 +174,11 @@ class ConsultFoodManager(object):
 
     def wait_food_name_choice(self, app_cache: AppCache):
         food = FoodModel.objects.get(pk=self.callback.food_id)
-        return self.reply_fda_content(food)
+        return self.reply_food_nutrition(food)
 
     def wait_snack_food_name_choice(self, app_cache: AppCache):
         snack = TaiwanSnackModel.objects.get(pk=self.callback.food_id)
-        return self.reply_snack_content(snack)
+        return self.reply_food_nutrition(snack)
 
     def handle(self) -> SendMessage:
         app_cache = AppCache(self.callback.line_id)
