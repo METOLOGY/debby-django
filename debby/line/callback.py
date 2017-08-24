@@ -88,7 +88,7 @@ class BGRecordCallback(DerivedAppCallback):
         return self.data.get('choice')
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.data.get('text')
 
     @property
