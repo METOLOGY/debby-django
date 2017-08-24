@@ -51,6 +51,7 @@ class ApiAiData(object):
     def is_action_incomplete(self) -> bool:
         return self._response['result']['actionIncomplete']
 
+
 class InputHandler(object):
     def __init__(self, line_id: str):
         self.line_id = line_id
@@ -63,6 +64,7 @@ class InputHandler(object):
             "food.ask": self.reply_food_ask,
             "smalltalk": self.reply_text_response,
             'record.bg': self.handle_bg_record,
+            "record.food": self.handle_food_record,
         }
         self.ai_data = None  # type: ApiAiData
 
@@ -104,6 +106,10 @@ class InputHandler(object):
             request.query = self.text
             response = request.getresponse()
             self.ai_data = ApiAiData(response)
+
+            if self.ai_data.is_action_incomplete:
+                return self.reply_text_response()
+
             action = self.ai_data.action
             registered_action = self.find_registered_actions(action)
             if action != "input.unknown":
@@ -207,8 +213,6 @@ class InputHandler(object):
             return None
 
     def handle_bg_record(self):
-        if self.ai_data.is_action_incomplete:
-            return self.reply_text_response()
         number = self.ai_data.parameters["number"]
         bg_record_time = self.ai_data.parameters['bg-record-time']
 
@@ -224,6 +228,11 @@ class InputHandler(object):
                                          action=BGRecordAction.SET_TYPE,
                                          choice=choice,
                                          glucose_val=glucose_val)
+        return CallbackHandler(callback_data).handle()
+
+    def handle_food_record(self):
+        callback_data = FoodRecordCallback(self.line_id,
+                                           action=FoodRecordAction.CREATE_FROM_MENU)
         return CallbackHandler(callback_data).handle()
 
 
