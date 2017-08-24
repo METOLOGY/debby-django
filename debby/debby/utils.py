@@ -3,10 +3,11 @@ import math
 # find how many template needed
 from typing import List, Union
 
+import yaml
 from django.core.cache import cache
 from linebot.models import ImageSendMessage, TextSendMessage
 
-from consult_food.models import NutritionModel, SynonymModel, FoodModel, TaiwanSnackModel, ICookIngredientModel, \
+from consult_food.models import NutritionModel, FoodModel, TaiwanSnackModel, ICookIngredientModel, \
     ICookDishModel
 
 
@@ -84,3 +85,9 @@ def get_count_word(content_model: object):
         return "每{}克".format(int(content_model.nutrition.gram))
     elif isinstance(content_model, ICookDishModel):
         return "每{}".format(content_model.count_word)
+
+
+def to_number(text: str) -> Union[int, float]:
+    number = yaml.load(text)
+    if isinstance(number, (int, float)):
+        return number

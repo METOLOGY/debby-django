@@ -98,7 +98,7 @@ def handle_message(event: MessageEvent):
     """
     future mode setting
     """
-    # cache.set(line_id + '_future', True, 1200)
+    cache.set(line_id + '_future', True, 1200)
 
     special_commands = [':future:', ':close:', ':demo:']
     if text in special_commands:
