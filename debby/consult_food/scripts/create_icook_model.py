@@ -31,7 +31,7 @@ def find_in_i_cook_ingredient_model(name: str) -> Optional[NutritionModel]:
 
 
 def find_in_synonym_model(name: str) -> Optional[NutritionModel]:
-    models = SynonymModel.objects.search_by_synonym(name)
+    models = SynonymModel.objects.search_by_synonyms(name)
     content_type = ContentType.objects.get_for_model(ICookIngredientModel)
     models = models.exclude(content_type__id=content_type.id)
     if models.count() == 0:

@@ -61,7 +61,7 @@ class InputHandler(object):
         self.api_ai = self.setup_api_ai()
 
         self.registered_actions = {
-            "food.ask": self.reply_food_ask,
+            "ask.food": self.handle_food_ask,
             "smalltalk": self.reply_text_response,
             'record.bg': self.handle_bg_record,
             "record.food": self.handle_food_record,
@@ -99,8 +99,7 @@ class InputHandler(object):
                                 text=self.text)
             return CallbackHandler(callback).handle()
 
-        future_mode = cache.get(self.line_id + '_future')
-        if self.text not in special_case and future_mode:
+        if self.text not in special_case:
             request = self.api_ai.text_request()
             request.session_id = self.line_id
             request.query = self.text
@@ -153,11 +152,8 @@ class InputHandler(object):
 
         # Debby can't understand what user saying.
         else:
-            if future_mode:
-                send_message = self.reply_text_response()
-                return send_message
-            else:
-                return TextSendMessage(text='抱歉！能請您在描述的精確一點嗎？盡量以單詞為主喔~')
+            send_message = self.reply_text_response()
+            return send_message
 
     def handle_image(self, image_id):
         app_cache = AppCache(self.line_id)
@@ -182,6 +178,15 @@ class InputHandler(object):
         callback = Callback(**data_dict) if data_dict.get("line_id") else Callback(line_id=self.line_id, **data_dict)
         return CallbackHandler(callback).handle()
 
+    def find_registered_actions(self, action: str):
+        first_split_action_name = action.split('.')[0]
+        if action in self.registered_actions:
+            return self.registered_actions[action]
+        elif first_split_action_name in self.registered_actions:
+            return self.registered_actions[first_split_action_name]
+        else:
+            return None
+
     def handle(self, message: Message):
         if isinstance(message, TextMessage):
             self.text = message.text
@@ -195,24 +200,21 @@ class InputHandler(object):
         text = self.ai_data.response_text
         return TextSendMessage(text=text)
 
-    def reply_food_ask(self):
-        print('reply_food_ask')
+    """
+    Handle api.ai actions
+    """
+
+    def handle_food_ask(self):
+        print('handle_food_ask')
         food_name = self.ai_data.parameters['food_name'][0]
         callback_data = ConsultFoodCallback(self.line_id,
                                             action=ConsultFoodAction.READ,
                                             text=food_name)
-        return CallbackHandler(callback_data).handle()
-
-    def find_registered_actions(self, action: str):
-        first_split_action_name = action.split('.')[0]
-        if action in self.registered_actions:
-            return self.registered_actions[action]
-        elif first_split_action_name in self.registered_actions:
-            return self.registered_actions[first_split_action_name]
-        else:
-            return None
+        reply = CallbackHandler(callback_data).handle()
+        return reply
 
     def handle_bg_record(self):
+        print('handle_bg_record')
         number = self.ai_data.parameters["number"]
         bg_record_time = self.ai_data.parameters['bg-record-time']
 
@@ -231,9 +233,14 @@ class InputHandler(object):
         return CallbackHandler(callback_data).handle()
 
     def handle_food_record(self):
+        print('handle_food_record')
         callback_data = FoodRecordCallback(self.line_id,
                                            action=FoodRecordAction.CREATE_FROM_MENU)
         return CallbackHandler(callback_data).handle()
+
+    """
+    Handle api.ai actions end
+    """
 
 
 class CallbackHandler(object):
