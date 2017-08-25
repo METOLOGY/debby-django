@@ -7,7 +7,7 @@ from debby.utils import load_from_json_file
 def is_name_exist(name: str):
     orders = [
         TaiwanSnackModel.objects.search_by_name,
-        TaiwanSnackModel.objects.search_by_synonym,
+        TaiwanSnackModel.objects.search_by_synonyms,
         FoodModel.objects.search_by_name,
         FoodModel.objects.search_by_synonyms
     ]

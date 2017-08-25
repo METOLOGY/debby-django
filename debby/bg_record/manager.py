@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from linebot.models import ButtonsTemplate
 from linebot.models import PostbackTemplateAction
@@ -35,30 +36,28 @@ class BGRecordManager:
 
     def __init__(self, callback: BGRecordCallback):
         self.callback = callback
+        self.app_cache = AppCache(self.callback.line_id)
+        self.registered_actions = {
+            Action.CREATE_FROM_MENU: self.create_from_menu,
+            Action.CREATE_FROM_VALUE: self.create_from_value,
+            Action.CONFIRM_RECORD: self.confirm_record,
+            Action.SET_TYPE: self.set_type,
+            Action.CREATE_DRUG_RECORD: self.create_record,
+            Action.CREATE_INSULIN_RECORD: self.create_record,
+            Action.CREATE_DRUG_RECORD_CANCEL: self.create_cancel,
+            Action.CREATE_DRUG_RECORD_CONFIRM: self.create_drug_record_confirm,
+            Action.CREATE_INSULIN_RECORD_CONFIRM: self.create_insulin_record_confirm,
+        }
 
-    def is_input_a_bg_value(self):
-        """
-        Check the int input from user is a blood glucose value or not.
-        We defined the blood value is between 20 to 999
-        :return: boolean
-        """
-        return self.callback.text.isdigit() and 20 < int(self.callback.text) < 999
+    """
+    Reply functions
+    """
 
     @staticmethod
     def reply_bg_range_not_right():
         return TextSendMessage(text='您輸入的血糖範圍好像怪怪的，請確認血糖範圍在20 ~ 999之間～')
 
-    @staticmethod
-    def get_range_index(ranges: list, value: float):
-        ind = 0
-        for ind, r in enumerate(ranges):
-            if value <= r:
-                break
-            elif ind == len(ranges) - 1:
-                ind += 1
-        return ind
-
-    def reply_by_check_value(self, choice: str, value: int) -> TextSendMessage:
+    def reply_value_condition_by_check_value(self, choice: str, value: int) -> TextSendMessage:
         value = float(value)
         message = None
         if choice == 'before':
@@ -68,9 +67,6 @@ class BGRecordManager:
             ind = self.get_range_index(self.after_ranges, value)
             message = self.after_conditions[ind]
         return TextSendMessage(text=message)
-
-    # def reply_reminder(self) -> TemplateSendMessage:
-    #     return self.reminder_message
 
     def reply_record_type(self, glucose_val) -> TemplateSendMessage:
         return TemplateSendMessage(
@@ -115,13 +111,6 @@ class BGRecordManager:
     def reply_record_invalid():
         return TextSendMessage(text='請輸入數字才能紀錄血糖哦！')
 
-    # def reply_to_user_choice(self) -> TextSendMessage:
-    #     choice = self.callback.choice
-    #     if choice == 'true':
-    #         return TextSendMessage(text='請輸入血糖數字:')
-    #     elif choice == 'false':
-    #         return TextSendMessage(text='好，要隨時注意自己的血糖狀況哦！')
-
     @staticmethod
     def reply_please_enter_bg() -> TextSendMessage:
         return TextSendMessage(text='好的😚！請告訴我您的血糖數字:')
@@ -154,162 +143,232 @@ class BGRecordManager:
             )
         )
 
-    def handle(self) -> SendMessage:
-        reply = TextSendMessage(text='BG_RECORD ERROR!')
-        app_cache = AppCache(self.callback.line_id)
+    @staticmethod
+    def reply_ok_dont_record() -> TextSendMessage:
+        message = "Okay, 這次就不幫你記錄囉！"
+        return TextSendMessage(text=message)
 
-        if self.callback.action == Action.CREATE_FROM_MENU:
-            # init cache again to clean other app's status and data
-            app_cache.set_next_action(self.callback.app, action=Action.CREATE_FROM_VALUE)
-            app_cache.commit()
-            reply = self.reply_please_enter_bg()
-
-        elif self.callback.action == Action.CREATE_FROM_VALUE:
-            print(self.callback.text.isdigit())
-            if self.callback.text.isdigit() and self.is_input_a_bg_value():
-                reply = self.reply_confirm_record(self.callback.text)
-
-            elif self.callback.text.isdigit() and self.is_input_a_bg_value() is False:
-                reply = [
-                    self.reply_bg_range_not_right(),
-                    self.reply_please_enter_bg(),
+    def reply_check_user_intent_to_save(self, show_time: str, confirm_action: str, cancel_action: str):
+        return TemplateSendMessage(
+            alt_text='您是否確定儲存這次紀錄？',
+            template=ButtonsTemplate(
+                text='您是否確定儲存這次紀錄: {}？'.format(show_time),
+                actions=[
+                    PostbackTemplateAction(
+                        label='確定',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=confirm_action
+                        ).url
+                    ),
+                    PostbackTemplateAction(
+                        label='取消',
+                        data=BGRecordCallback(
+                            line_id=self.callback.line_id,
+                            action=cancel_action
+                        ).url
+                    )
                 ]
-            else:
-                reply = [
-                    self.reply_record_invalid(),
-                    self.reply_please_enter_bg()
-                ]
-
-        elif self.callback.action == Action.CONFIRM_RECORD:
-            if self.callback.choice == 'yes':
-
-                glucose_val = int(self.callback.text)
-
-                reply = self.reply_record_type(glucose_val)
-            elif self.callback.choice == 'no':
-                app_cache.delete()
-
-                # to chat manager
-                # TODO: 這裡有點笨
-                callback = ChatCallback(line_id=self.callback.line_id,
-                                        text=self.callback.text)
-
-                reply = ChatManager(callback).handle()
-
-        elif self.callback.action == Action.SET_TYPE:
-            if self.callback.choice == 'cancel':
-                reply = TextSendMessage(text="Okay, 這次就不幫你記錄囉！")
-            else:
-                user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-                record = BGModel.objects.create(user=user,
-                                                type=self.callback.choice,
-                                                glucose_val=self.callback.glucose_val)
-
-                reply_common = [
-                    self.reply_record_success(),
-                    self.reply_by_check_value(self.callback.choice, record.glucose_val)
-                ]
-
-                if hasattr(app_cache.data, 'reminder_id'):
-                    id_ = app_cache.data.reminder_id
-
-                    # repeated code here
-                    # TODO: figure out solutions for app communication without looping import.
-                    reminder = UserReminder.objects.get(id=id_)
-                    reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
-                    time = []
-                    for re in reminders:
-                        time.append(re.time)
-                    time = sorted(time)
-                    index = time.index(reminder.time)
-                    next_reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type,
-                                                                 time=time[index + 1])
-                    next_reminder = next_reminders[0] if next_reminders else None
-
-                    type_ = reminder.type
-                    type_zh = ''
-                    if type_ == 'bg':
-                        type_zh = '血糖'
-                    elif type_ == 'insulin':
-                        type_zh = '胰島素'
-                    elif type_ == 'drug':
-                        type_zh = '藥物'
-
-                    if next_reminder is not None:
-                        reply = reply_common + [
-                            TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
-                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                        ]
-                    else:
-                        reply = reply_common + [
-                            TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
-                            TextSendMessage(text='您可至"我的設定"中調整提醒時間')
-                        ]
-                else:
-                    reply = reply_common
-
-                    # clear cache
-            app_cache.delete()
-
-        elif self.callback.action == Action.CREATE_DRUG_RECORD or self.callback.action == Action.CREATE_INSULIN_RECORD:
-            time = datetime.now()
-            show_time = time.astimezone().strftime('%Y/%m/%d %H:%M')
-            data = BGData()
-            data.record_time = time
-            app_cache.save_data(data)
-
-            if self.callback.action == Action.CREATE_DRUG_RECORD:
-                confirm_action = Action.CREATE_DRUG_RECORD_CONFIRM
-                cancel_action = Action.CREATE_DRUG_RECORD_CANCEL
-            else:
-                confirm_action = Action.CREATE_INSULIN_RECORD_CONFIRM
-                cancel_action = Action.CREATE_INSULIN_RECORD_CANCEL
-
-            reply = TemplateSendMessage(
-                alt_text='您是否確定儲存這次紀錄？',
-                template=ButtonsTemplate(
-                    text='您是否確定儲存這次紀錄: {}？'.format(show_time),
-                    actions=[
-                        PostbackTemplateAction(
-                            label='確定',
-                            data=BGRecordCallback(
-                                line_id=self.callback.line_id,
-                                action=confirm_action
-                            ).url
-                        ),
-                        PostbackTemplateAction(
-                            label='取消',
-                            data=BGRecordCallback(
-                                line_id=self.callback.line_id,
-                                action=cancel_action
-                            ).url
-                        )
-                    ]
-                )
             )
+        )
 
-        elif self.callback.action == Action.CREATE_DRUG_RECORD_CANCEL or self.callback.action == Action.CREATE_INSULIN_RECORD_CANCEL:
-            reply = TextSendMessage(text='好的！您可再從主選單記錄服用藥物的時間喔！')
-            app_cache.delete()
+    """
+    Reply end
+    """
 
-        elif self.callback.action == Action.CREATE_DRUG_RECORD_CONFIRM:
-            record_time = app_cache.data.record_time
+    """
+    Helper functions
+    """
+
+    def is_input_a_bg_value(self):
+        """
+        Check the int input from user is a blood glucose value or not.
+        We defined the blood value is between 20 to 999
+        :return: boolean
+        """
+        return self.callback.text.isdigit() and 20 < int(self.callback.text) < 999
+
+    @staticmethod
+    def get_range_index(ranges: list, value: float):
+        ind = 0
+        for ind, r in enumerate(ranges):
+            if value <= r:
+                break
+            elif ind == len(ranges) - 1:
+                ind += 1
+        return ind
+
+    def setup_reminder(self):
+        id_ = self.app_cache.data.reminder_id
+
+        # repeated code here
+        # TODO: figure out solutions for app communication without looping import.
+        reminder = UserReminder.objects.get(id=id_)
+        reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type)
+        time = []
+        for re in reminders:
+            time.append(re.time)
+        time = sorted(time)
+        index = time.index(reminder.time)
+        next_reminders = UserReminder.objects.filter(user=reminder.user, type=reminder.type,
+                                                     time=time[index + 1])
+        next_reminder = next_reminders[0] if next_reminders else None
+
+        type_ = reminder.type
+        type_zh = ''
+        if type_ == 'bg':
+            type_zh = '血糖'
+        elif type_ == 'insulin':
+            type_zh = '胰島素'
+        elif type_ == 'drug':
+            type_zh = '藥物'
+
+        if next_reminder is not None:
+            reply = [
+                TextSendMessage(text='下一次量測{}提醒時間是: {}'.format(type_zh, next_reminder.time)),
+                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+            ]
+        else:
+            reply = [
+                TextSendMessage(text='您今日已沒有下一次的提醒項目!'),
+                TextSendMessage(text='您可至"我的設定"中調整提醒時間')
+            ]
+        return reply
+
+    @staticmethod
+    def get_next_action(action: str):
+        if action == Action.CREATE_DRUG_RECORD:
+            confirm_action = Action.CREATE_DRUG_RECORD_CONFIRM
+            cancel_action = Action.CREATE_DRUG_RECORD_CANCEL
+        else:
+            confirm_action = Action.CREATE_INSULIN_RECORD_CONFIRM
+            cancel_action = Action.CREATE_INSULIN_RECORD_CANCEL
+        return confirm_action, cancel_action
+
+    """
+    Helper functions end
+    """
+
+    """
+    Registered functions
+    """
+
+    def create_from_menu(self):
+        print(Action.CREATE_FROM_MENU)
+        # init cache again to clean other app's status and data
+        self.app_cache.set_next_action(self.callback.app, action=Action.CREATE_FROM_VALUE)
+        self.app_cache.commit()
+        reply = self.reply_please_enter_bg()
+        return reply
+
+    def create_from_value(self):
+        print(Action.CREATE_FROM_VALUE)
+        if self.callback.text.isdigit() and self.is_input_a_bg_value():
+            reply = self.reply_confirm_record(self.callback.text)
+        elif self.callback.text.isdigit() and not self.is_input_a_bg_value():
+            reply = [
+                self.reply_bg_range_not_right(),
+                self.reply_please_enter_bg()
+            ]
+        else:
+            reply = [
+                self.reply_record_invalid(),
+                self.reply_please_enter_bg()
+            ]
+        return reply
+
+    def confirm_record(self):
+        print(Action.CONFIRM_RECORD)
+        if self.callback.choice == 'yes':
+            glucose_val = int(self.callback.text)
+            return self.reply_record_type(glucose_val)
+        elif self.callback.choice == 'no':
+            self.app_cache.delete()
+            callback = ChatCallback(self.callback.line_id,
+                                    text=self.callback.text)
+            return ChatManager(callback).handle()
+
+    def set_type(self):
+        print(Action.SET_TYPE)
+        if self.callback.choice == 'cancel':
+            reply = self.reply_ok_dont_record()
+        else:
             user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-            DrugIntakeModel.objects.create(user=user,
-                                           time=record_time,
-                                           status=True)
+            record = BGModel.objects.create(user=user,
+                                            type=self.callback.choice,
+                                            glucose_val=self.callback.glucose_val)
 
-            reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
-            app_cache.delete()
+            reply_common = [
+                self.reply_record_success(),
+                self.reply_value_condition_by_check_value(self.callback.choice, record.glucose_val)
+            ]
 
-        elif self.callback.action == Action.CREATE_INSULIN_RECORD_CONFIRM:
-            record_time = app_cache.data.record_time
-            user = CustomUserModel.objects.get(line_id=self.callback.line_id)
-            InsulinIntakeModel.objects.create(user=user,
-                                              time=record_time,
-                                              status=True)
+            if hasattr(self.app_cache.data, 'reminder_id'):
+                reminder_replies = self.setup_reminder()
+                reply = reply_common + reminder_replies
+            else:
+                reply = reply_common
 
-            reply = TextSendMessage(text='耶～～您的血糖記錄成功啦！🎉🎉🎉！您可在我的日記裡，查看最近的紀錄！')
-            app_cache.delete()
+        self.app_cache.delete()
 
         return reply
+
+    def create_record(self):
+        if self.callback.action == Action.CREATE_INSULIN_RECORD:
+            print(Action.CREATE_INSULIN_RECORD)
+        elif self.callback.action == Action.CREATE_DRUG_RECORD:
+            print(Action.CREATE_DRUG_RECORD)
+
+        time = datetime.now()
+        show_time = time.astimezone().strftime('%Y/%m/%d %H:%M')
+        data = BGData()
+        data.record_time = time
+        self.app_cache.save_data(data)
+
+        [confirm_action, cancel_action] = self.get_next_action(self.callback.action)
+
+        return self.reply_check_user_intent_to_save(show_time, confirm_action, cancel_action)
+
+    def create_cancel(self):
+        message = ''
+        if self.callback.action == Action.CREATE_INSULIN_RECORD_CANCEL:
+            print(Action.CREATE_INSULIN_RECORD_CANCEL)
+            message = '好的！您可再從主選單記錄服用藥物的時間喔！'
+
+        elif self.callback.action == Action.CREATE_DRUG_RECORD_CANCEL:
+            print(Action.CREATE_DRUG_RECORD_CANCEL)
+            message = '好的！您可再從主選單選擇記錄血糖的時間喔！'
+
+        self.app_cache.delete()
+        return TextSendMessage(text=message)
+
+    def create_drug_record_confirm(self):
+        print(Action.CREATE_DRUG_RECORD_CONFIRM)
+        record_time = self.app_cache.data.record_time
+        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+        DrugIntakeModel.objects.create(user=user,
+                                       time=record_time,
+                                       status=True)
+
+        self.app_cache.delete()
+        reply = TextSendMessage(text='紀錄成功！您可在我的日記裡，查看最近的紀錄！')
+        return reply
+
+    def create_insulin_record_confirm(self):
+        print(Action.CREATE_INSULIN_RECORD_CONFIRM)
+        record_time = self.app_cache.data.record_time
+        user = CustomUserModel.objects.get(line_id=self.callback.line_id)
+        InsulinIntakeModel.objects.create(user=user,
+                                          time=record_time,
+                                          status=True)
+
+        self.app_cache.delete()
+        reply = TextSendMessage(text='耶～～您的血糖記錄成功啦！🎉🎉🎉！您可在我的日記裡，查看最近的紀錄！')
+        return reply
+
+    """
+    Registered functions end
+    """
+
+    def handle(self) -> Optional[SendMessage]:
+        return self.registered_actions[self.callback.action]()

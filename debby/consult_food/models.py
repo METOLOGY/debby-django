@@ -234,7 +234,10 @@ class FoodModelManager(models.Manager):
         return self.filter(sample_name=name)
 
     def search_by_synonyms(self, name: str):
-        return self.filter(synonyms__synonym=name)
+        f = self.filter(synonyms__synonym=name)
+        if not f:
+            f = self.filter(synonyms__synonym__contains=name)
+        return f
 
 
 class FoodModel(models.Model):
@@ -264,8 +267,11 @@ class TaiwanSnackModelManager(models.Manager):
     def search_by_name(self, name: str):
         return self.filter(name=name)
 
-    def search_by_synonym(self, name: str):
-        return self.filter(synonyms__synonym=name)
+    def search_by_synonyms(self, name: str):
+        f = self.filter(synonyms__synonym=name)
+        if not f:
+            f = self.filter(synonyms__synonym__contains=name)
+        return f
 
 
 class TaiwanSnackModel(models.Model):
@@ -290,8 +296,11 @@ class ICookIngredientModelManager(models.Manager):
     def search_by_name(self, name: str):
         return self.filter(name=name)
 
-    def search_by_synonym(self, name: str):
-        return self.filter(synonyms__synonym=name)
+    def search_by_synonyms(self, name: str):
+        f = self.filter(synonyms__synonym=name)
+        if not f:
+            f = self.filter(synonyms__synonym__contains=name)
+        return f
 
     def is_in_db_already(self, name: str, gram: float):
         return self.filter(name=name, gram=gram).count()
@@ -320,8 +329,11 @@ class ICookDishModelManager(models.Manager):
     def search_by_name(self, name: str):
         return self.filter(name=name)
 
-    def search_by_synonym(self, name: str):
-        return self.filter(synonyms__synonym=name)
+    def search_by_synonyms(self, name: str):
+        f = self.filter(synonyms__synonym=name)
+        if not f:
+            f = self.filter(synonyms__synonym__contains=name)
+        return f
 
 
 class ICookDishModel(models.Model):
