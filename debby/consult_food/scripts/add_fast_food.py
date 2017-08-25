@@ -12,7 +12,7 @@ django.setup()
 def run():
     from consult_food.models import FoodModel, NutritionModel, NutritionTuple
     chat_table_dir = os.path.join(settings.PROJECT_DIR, 'chat_table')
-    file_path = os.path.join(chat_table_dir, '速食整理.csv')
+    file_path = os.path.join(chat_table_dir, 'fast_food.csv')
 
     with open(file_path, encoding='utf-8') as file:
         reader = csv.DictReader(file)
