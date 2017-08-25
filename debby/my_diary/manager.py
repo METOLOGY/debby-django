@@ -296,7 +296,7 @@ class MyDiaryManager(object):
                     photo = "https://{}{}".format(host, url)
 
                     if record.food_name:
-                        message = "食物名稱: {}\n".format(record.food_name) + \
+                        message = "食物名稱： {}\n".format(record.food_name) + \
                                   "紀錄內容： {}".format(note)
                     else:
                         message = "紀錄內容： {}".format(note)
