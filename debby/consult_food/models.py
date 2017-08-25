@@ -33,7 +33,8 @@ class SynonymModel(models.Model):
                                          "model__in": ("TFDAModel",
                                                        "TaiwanSnackModel",
                                                        "ICookIngredientModel",
-                                                       "ICookDishModel")
+                                                       "ICookDishModel",
+                                                       "FoodModel")
                                      })
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
@@ -376,3 +377,5 @@ class FoodModel(models.Model):
     nutrition = models.OneToOneField(NutritionModel)
     source = models.TextField(verbose_name="來源", default="")
     count_word = models.CharField(verbose_name="量詞", max_length=20, default="")
+
+    synonyms = GenericRelation(SynonymModel)
