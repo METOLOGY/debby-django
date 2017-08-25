@@ -33,6 +33,7 @@ def run():
             food_model.count_word = row['count_word']
             food_model.source = row['source']
             food_model.nutrition = nutrition_model
+            food_model.synonyms.create(synonym=food_model.name)
             food_model.save()
 
 

@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import TFDAModel, TaiwanSnackModel, ICookIngredientModel, ICookDishModel
+from consult_food.models import TFDAModel, TaiwanSnackModel, ICookIngredientModel, ICookDishModel, FoodModel
 from debby import utils
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
@@ -30,36 +30,10 @@ class ConsultFoodManager(object):
         count_word = utils.get_count_word(content_model)
         return utils.reply_nutrition(count_word, content_model.nutrition)
 
-    @staticmethod
-    def reply_content(url: str, preview_url: str) -> List[Union[TextSendMessage, ImageSendMessage]]:
-        text = TextSendMessage(text="每100克")
-        host = cache.get("host_name")
-        photo = "https://{}{}".format(host, url)
-        preview_photo = "https://{}{}".format(host, preview_url)
-        calories = ImageSendMessage(original_content_url=photo,
-                                    preview_image_url=preview_photo)
-
-        return [text, calories]
-
     def read_from_menu(self, app_cache: AppCache) -> TextSendMessage:
         app_cache.set_next_action(self.callback.app, action=Action.READ)
         app_cache.commit()
         return TextSendMessage(text="好的😚！請告訴我食品的名稱:")
-
-    def find_in_food_name_model(self, name: str):
-        queries = TFDAModel.objects.search_by_name(name)
-        if not queries:
-            queries = TFDAModel.objects.search_by_synonyms(name)
-        if len(queries) > 20:
-            queries = queries[:20]
-        if len(queries) > 1:
-            reply = self.ask_which_one(queries)
-        elif len(queries) == 1:
-            food = queries[0]
-            reply = self.reply_food_nutrition(food)
-        else:
-            reply = None
-        return reply
 
     def ask_which_one(self, queries: QuerySet) -> List[TemplateSendMessage]:
         card_num_list = get_each_card_num(len(queries))
@@ -115,6 +89,21 @@ class ConsultFoodManager(object):
             reply.append(template_send_message)
         return reply
 
+    def find_in_tfda_model(self, name: str):
+        queries = TFDAModel.objects.search_by_name(name)
+        if not queries:
+            queries = TFDAModel.objects.search_by_synonyms(name)
+        if len(queries) > 20:
+            queries = queries[:20]
+        if len(queries) > 1:
+            reply = self.ask_which_one(queries)
+        elif len(queries) == 1:
+            food = queries[0]
+            reply = self.reply_food_nutrition(food)
+        else:
+            reply = None
+        return reply
+
     def find_in_taiwan_snack(self, name: str):
         reply = None
         queries = TaiwanSnackModel.objects.search_by_name(name)
@@ -154,6 +143,15 @@ class ConsultFoodManager(object):
             reply = self.reply_food_nutrition(dish)
         return reply
 
+    def find_in_food_model(self, name: str):
+        reply = None
+
+        queries = FoodModel.objects.filter(name=name)
+        if queries:
+            food = queries[0]
+            reply = self.reply_food_nutrition(food)
+        return reply
+
     def read(self, app_cache: AppCache):
         print(Action.READ)
         app_cache.delete()
@@ -161,8 +159,9 @@ class ConsultFoodManager(object):
         find_order = [
             self.find_in_taiwan_snack,
             self.find_in_i_cook_dish,
-            self.find_in_food_name_model,
+            self.find_in_tfda_model,
             self.find_in_i_cook_ingredient,
+            self.find_in_food_model,
         ]
         reply = None
         for find_in in find_order:

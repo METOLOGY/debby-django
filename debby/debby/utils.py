@@ -8,7 +8,7 @@ from django.core.cache import cache
 from linebot.models import ImageSendMessage, TextSendMessage
 
 from consult_food.models import NutritionModel, TFDAModel, TaiwanSnackModel, ICookIngredientModel, \
-    ICookDishModel
+    ICookDishModel, FoodModel
 
 
 def get_each_card_num(choice_num: int) -> List[int]:
@@ -89,6 +89,8 @@ def get_count_word(content_model: object):
     elif isinstance(content_model, ICookIngredientModel):
         return "每{}克{}".format(int(content_model.nutrition.gram), content_model.nutrition.name)
     elif isinstance(content_model, ICookDishModel):
+        return "每{}{}".format(content_model.count_word, content_model.nutrition.name)
+    elif isinstance(content_model, FoodModel):
         return "每{}{}".format(content_model.count_word, content_model.nutrition.name)
 
 
