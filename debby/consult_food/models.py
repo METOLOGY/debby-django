@@ -168,7 +168,7 @@ class NutritionModel(NutritionMixin, models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
-    gram = models.FloatField(verbose_name="重量")
+    gram = models.FloatField(verbose_name="重量", blank=True)
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
@@ -369,3 +369,10 @@ class WikiFoodTranslateModel(models.Model):
     chinese = models.CharField(verbose_name='zh-tw', max_length=100, blank=True, default=True)
 
     objects = WikiFoodTranslateModelManager()
+
+
+class FoodModel(models.Model):
+    name = models.CharField(verbose_name="食物名稱", max_length=20)
+    nutrition = models.OneToOneField(NutritionModel)
+    source = models.TextField(verbose_name="來源", default="")
+    count_word = models.CharField(verbose_name="量詞", max_length=20, default="")
