@@ -46,6 +46,11 @@ def is_demo_mode_on(line_id: str):
     return cache.get(line_id + '_demo')
 
 
+def get_image_url(url: str):
+    host = cache.get("host_name")
+    return "https://{}{}".format(host, url)
+
+
 def reply_nutrition(count_word: str, nutrition: NutritionModel) -> List[Union[TextSendMessage, ImageSendMessage]]:
     reply = list()
 
