@@ -67,7 +67,7 @@ def reply_nutrition(count_word: str, nutrition: NutritionModel) -> List[Union[Te
                                 preview_image_url=preview_photo)
     reply.append(calories)
 
-    if nutrition.is_six_group_valid():
+    if nutrition.is_six_group_valid() and nutrition.six_group_portion_image:
         url = nutrition.six_group_portion_image.url
         preview_url = nutrition.six_group_portion_image_preview.url
 
