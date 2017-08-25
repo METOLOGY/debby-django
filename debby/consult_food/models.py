@@ -168,7 +168,7 @@ class NutritionModel(NutritionMixin, models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
-    gram = models.FloatField(verbose_name="重量", blank=True)
+    gram = models.FloatField(verbose_name="重量", blank=True, null=True)
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
