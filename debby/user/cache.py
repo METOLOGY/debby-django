@@ -5,6 +5,8 @@ from typing import TypeVar
 from django.core.cache import cache
 from django.db.models import QuerySet
 
+from food_record.models import FoodModel, TempImageModel
+
 
 class AppCache(object):
     def __init__(self, line_id: str):
@@ -72,6 +74,8 @@ class FoodData(CacheData):
     record_id: int = 0
     food_name: str = ''
     food_recognition_pk = ''
+    food_model: FoodModel = None
+    temp_image_model: TempImageModel = None
 
 
 class DrugAskData(CacheData):
