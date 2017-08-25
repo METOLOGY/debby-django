@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from linebot.models import SendMessage, PostbackTemplateAction, TemplateSendMessage, ButtonsTemplate, ImageSendMessage
 from linebot.models import TextSendMessage
 
-from consult_food.models import FoodModel, TaiwanSnackModel, ICookIngredientModel, ICookDishModel
+from consult_food.models import TFDAModel, TaiwanSnackModel, ICookIngredientModel, ICookDishModel
 from debby import utils
 from debby.utils import get_each_card_num
 from line.callback import ConsultFoodCallback
@@ -47,9 +47,9 @@ class ConsultFoodManager(object):
         return TextSendMessage(text="好的😚！請告訴我食品的名稱:")
 
     def find_in_food_name_model(self, name: str):
-        queries = FoodModel.objects.search_by_name(name)
+        queries = TFDAModel.objects.search_by_name(name)
         if not queries:
-            queries = FoodModel.objects.search_by_synonyms(name)
+            queries = TFDAModel.objects.search_by_synonyms(name)
         if len(queries) > 20:
             queries = queries[:20]
         if len(queries) > 1:
@@ -93,7 +93,7 @@ class ConsultFoodManager(object):
                             ).url
                         )
                     )
-                elif isinstance(query, FoodModel):
+                elif isinstance(query, TFDAModel):
                     actions.append(
                         PostbackTemplateAction(
                             label=query.sample_name,
@@ -174,7 +174,7 @@ class ConsultFoodManager(object):
         return reply
 
     def wait_food_name_choice(self, app_cache: AppCache):
-        food = FoodModel.objects.get(pk=self.callback.food_id)
+        food = TFDAModel.objects.get(pk=self.callback.food_id)
         return self.reply_food_nutrition(food)
 
     def wait_snack_food_name_choice(self, app_cache: AppCache):

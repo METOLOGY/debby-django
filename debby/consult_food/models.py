@@ -30,7 +30,7 @@ class SynonymModel(models.Model):
 
     content_type = models.ForeignKey(ContentType,
                                      limit_choices_to={
-                                         "model__in": ("FoodModel",
+                                         "model__in": ("TFDAModel",
                                                        "TaiwanSnackModel",
                                                        "ICookIngredientModel",
                                                        "ICookDishModel")
@@ -240,7 +240,7 @@ class FoodModelManager(models.Manager):
         return f
 
 
-class FoodModel(models.Model):
+class TFDAModel(models.Model):
     integration_number = models.CharField(verbose_name="整合編號", max_length=20)
     food_type = models.CharField(verbose_name="食物分類", max_length=20)
     sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, unique=True)

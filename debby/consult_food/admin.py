@@ -3,7 +3,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 
-from .models import TaiwanSnackModel, SynonymModel, NutritionModel, FoodModel, ICookIngredientModel, ICookDishModel
+from .models import TaiwanSnackModel, SynonymModel, NutritionModel, TFDAModel, ICookIngredientModel, ICookDishModel
 
 
 class SynonymModelInline(GenericTabularInline):
@@ -95,7 +95,7 @@ class TaiwanSnackFoodAdmin(admin.ModelAdmin):
     nutrition_link.short_description = "營養 model"
 
 
-@admin.register(FoodModel)
+@admin.register(TFDAModel)
 class FoodModelAdmin(admin.ModelAdmin):
     inlines = [SynonymModelInline]
     list_display = ('id', 'sample_name', 'list_synonyms', 'nutrition_link',)

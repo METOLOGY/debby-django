@@ -1,7 +1,7 @@
 import openpyxl
 from openpyxl.worksheet import Worksheet
 
-from consult_food.models import FoodModel, NutritionTuple, NutritionModel, TaiwanSnackModel, ICookIngredientModel
+from consult_food.models import TFDAModel, NutritionTuple, NutritionModel, TaiwanSnackModel, ICookIngredientModel
 from consult_food.scripts import create_snacks_to_model, create_food_images, create_icook_ingredients
 
 
@@ -38,7 +38,7 @@ def create_fda_food_name_model():
             food['crude_fat'] = 0
 
         food.update((k, v) for k, v in food.items() if v is not None)  # remove none key value pairs
-        food_model = FoodModel.objects.create(**food)
+        food_model = TFDAModel.objects.create(**food)
         known_as_names = ws.cell(row=i, column=4).value.split(':')
         known_as_names = [s.rstrip().lstrip() for s in known_as_names]
         food_model.synonyms.create(synonym=food_model.sample_name)
@@ -50,7 +50,7 @@ def create_fda_food_name_model():
         food_model.save()
 
 
-def get_nutrition(food_model: FoodModel) -> NutritionTuple:
+def get_nutrition(food_model: TFDAModel) -> NutritionTuple:
     protein = food_model.crude_protein
     fat = food_model.crude_fat
     carbohydrates = food_model.carbohydrates
@@ -101,7 +101,7 @@ def calc_calories(protein: float, fat: float, carbohydrates: float):
 
 
 def delete_all_models():
-    FoodModel.objects.all().delete()
+    TFDAModel.objects.all().delete()
     TaiwanSnackModel.objects.all().delete()
     ICookIngredientModel.objects.all().delete()
     NutritionModel.objects.all().delete()

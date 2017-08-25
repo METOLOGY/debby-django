@@ -124,7 +124,7 @@ def handle_image(event: MessageEvent):
 
     # Save to log model.
     # TODO: input_text should be provided as image saved path. ex '/media/XXX.jpg'
-    # food = FoodModel.objects.last(line_id=line_id)
+    # food = TFDAModel.objects.last(line_id=line_id)
     UserLogModel.objects.save_to_log(line_id=line_id, input_text='images', send_message=send_message)
 
     # return to Line Server

@@ -3,7 +3,7 @@ import os
 from PIL import Image
 
 from consult_food.image_maker import SixGroupPortionMaker, SixGroupParameters, CaloriesParameters, CaloriesMaker
-from consult_food.models import TaiwanSnackModel, NutritionModel, FoodModel
+from consult_food.models import TaiwanSnackModel, NutritionModel, TFDAModel
 
 
 def save_img(img: Image, nutrition_id: int, type_name: str):
@@ -98,7 +98,7 @@ def run():
         else:
             print('no nutrition')
 
-    queries = FoodModel.objects.all()
+    queries = TFDAModel.objects.all()
     for food in queries:
         print("food id:{}, ".format(food.id))
         if food.nutrition:

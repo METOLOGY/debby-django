@@ -7,7 +7,7 @@ import yaml
 from django.core.cache import cache
 from linebot.models import ImageSendMessage, TextSendMessage
 
-from consult_food.models import NutritionModel, FoodModel, TaiwanSnackModel, ICookIngredientModel, \
+from consult_food.models import NutritionModel, TFDAModel, TaiwanSnackModel, ICookIngredientModel, \
     ICookDishModel
 
 
@@ -82,7 +82,7 @@ def reply_nutrition(count_word: str, nutrition: NutritionModel) -> List[Union[Te
 
 
 def get_count_word(content_model: object):
-    if isinstance(content_model, FoodModel):
+    if isinstance(content_model, TFDAModel):
         return "每{}克{}".format(int(content_model.nutrition.gram), content_model.nutrition.name)
     elif isinstance(content_model, TaiwanSnackModel):
         return "每{}{}".format(content_model.count_word, content_model.nutrition.name)
