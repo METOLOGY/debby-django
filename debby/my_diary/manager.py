@@ -295,7 +295,12 @@ class MyDiaryManager(object):
 
                     photo = "https://{}{}".format(host, url)
 
-                    message = "紀錄內容： {}".format(note)
+                    if record.food_name:
+                        message = "食物名稱: {}\n".format(record.food_name) + \
+                                  "紀錄內容： {}".format(note)
+                    else:
+                        message = "紀錄內容： {}".format(note)
+
                     carousels.append(CarouselColumn(
                         title="紀錄時間: {}".format(time),
                         text=message,
@@ -328,7 +333,7 @@ class MyDiaryManager(object):
                         )
                     ),
                     TextSendMessage("更完整血糖故事請至: http://m.metology.com.tw/")
-                    ]
+                ]
 
         elif self.callback.action == Action.DELETE:
             type_ = self.callback.record_type

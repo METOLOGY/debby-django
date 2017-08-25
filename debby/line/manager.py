@@ -106,7 +106,7 @@ class LineManager(object):
         carousels.append(CarouselColumn(
             title="人工智慧營養師Beta!",
             text="快來上傳你的食物照片試試看~",
-            thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/beta.png',
+            thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/robot.png',
             actions=[
                 PostbackTemplateAction(
                     label="來嘗鮮!",
