@@ -78,18 +78,18 @@ class FoodRecordManager(object):
         )
 
     def reply_if_want_to_record_image(self):
-        message = "請問您是想要記錄飲食嗎～😉😉"
+        message = "請問您是想要記錄飲食嗎～\n😉😉"
         return TemplateSendMessage(
             alt_text=message,
             template=ButtonsTemplate(
                 text=message,
                 actions=[
                     PostbackTemplateAction(
-                        label="對喔！我想留下這個食物的記錄",
+                        label="我想記錄這個食物",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.START).url
                     ),
                     PostbackTemplateAction(
-                        label="沒有啦～我只是想跟你聊聊天",
+                        label="我只是想跟你聊聊天~",
                         data=FoodRecordCallback(self.callback.line_id, action=Action.CANCEL_PHOTO).url
                     )
                 ]
@@ -405,7 +405,7 @@ class FoodRecordManager(object):
         return reply
 
     def cancel_photo(self):
-        reply = TextSendMessage(text="哎呀抱歉~Debby不太懂您的意思~還是您想要從主選單開始呢？")
+        reply = TextSendMessage(text="好呀，你應該不是想聊聊這張照片對吧? 我們來聊聊天吧!")
         self.delete_temp(self.app_cache.data.record_id) if self.callback.temp_record_id else None
         self.app_cache.delete()
         return reply

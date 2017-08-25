@@ -119,7 +119,7 @@ class ConsultFoodManager(object):
         reply = None
         queries = TaiwanSnackModel.objects.search_by_name(name)
         if not queries:
-            queries = TaiwanSnackModel.objects.search_by_synonym(name)
+            queries = TaiwanSnackModel.objects.search_by_synonyms(name)
 
         if not queries:
             reply = None
@@ -137,7 +137,7 @@ class ConsultFoodManager(object):
 
         results = ICookIngredientModel.objects.search_by_name(name)
         if not results:
-            results = ICookIngredientModel.objects.search_by_synonym(name)
+            results = ICookIngredientModel.objects.search_by_synonyms(name)
         if results:
             ingredient = results[0]
             reply = self.reply_food_nutrition(ingredient)
@@ -148,13 +148,14 @@ class ConsultFoodManager(object):
 
         queries = ICookDishModel.objects.search_by_name(name)
         if not queries:
-            queries = ICookDishModel.objects.search_by_synonym(name)
+            queries = ICookDishModel.objects.search_by_synonyms(name)
         if queries:
             dish = queries[0]
             reply = self.reply_food_nutrition(dish)
         return reply
 
     def read(self, app_cache: AppCache):
+        print(Action.READ)
         app_cache.delete()
         name = self.callback.text
         find_order = [
@@ -169,7 +170,7 @@ class ConsultFoodManager(object):
             if reply:
                 break
         if not reply:
-            reply = TextSendMessage(text="Debby 找不到您輸入的食物喔，試試其他的?")
+            reply = TextSendMessage(text="Debby 找不到您輸入的食物{}，試試其他的?".format(name))
         return reply
 
     def wait_food_name_choice(self, app_cache: AppCache):
