@@ -31,7 +31,7 @@ class FoodModel(models.Model):
     calories = models.IntegerField(null=True, blank=True)
     gi_value = models.IntegerField(null=True, blank=True)
     food_name = models.CharField(max_length=50)
-    note = models.CharField(max_length=200)
+    note = models.TextField(default="", blank=True)
     time = models.DateTimeField(auto_now_add=True)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
@@ -88,7 +88,8 @@ class TempImageModel(models.Model):
     food_image_upload = models.ImageField(upload_to=user_id_path)
     time = models.DateTimeField(auto_now_add=True)  # may be modified from my_diary
     create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
-    note = models.CharField(max_length=200)
+    note = models.TextField(default="", blank=True)
+    food_name = models.CharField(max_length=100, default="", blank=True)
     carousel = models.ImageField()
     food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
 
