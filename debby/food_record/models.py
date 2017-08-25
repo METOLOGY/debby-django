@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from io import BytesIO
 
 from PIL import Image
@@ -12,11 +11,7 @@ from user.models import CustomUserModel
 
 
 def user_id_path(instance, filename):
-    date = datetime.today().date()
-    file_type = filename.split('.')[1]
-    today_image_count = len(FoodModel.objects.filter(time__date=date)) + 1  # add one for the new one
-    return '{}/{}'.format(instance.user.line_id,
-                          instance.user.line_id + '_' + str(date) + '_' + str(today_image_count) + '.' + file_type)
+    return '{}/{}'.format(instance.user.line_id, filename)
 
 
 class FoodRecognitionModel(models.Model):
@@ -31,7 +26,7 @@ class FoodModel(models.Model):
     calories = models.IntegerField(null=True, blank=True)
     gi_value = models.IntegerField(null=True, blank=True)
     food_name = models.CharField(max_length=50)
-    note = models.CharField(max_length=200)
+    note = models.TextField(default="", blank=True)
     time = models.DateTimeField(auto_now_add=True)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     carousel = models.ImageField()
@@ -83,19 +78,33 @@ class FoodModel(models.Model):
         # clone from GCP example: https://cloud.google.com/vision/docs/detecting-web?hl=zh-tw#vision-web-detection-gcs-python
         # modify to fit food_record model.
 
+
+class TempImageModelManager(models.Manager):
+    def try_delete_and_create(self, user: CustomUserModel):
+        queries = self.filter(user=user)
+        if queries.exists():
+            queries.delete()
+
+        return self.create(user=user)
+
+
 class TempImageModel(models.Model):
     user = models.ForeignKey(CustomUserModel)
     food_image_upload = models.ImageField(upload_to=user_id_path)
     time = models.DateTimeField(auto_now_add=True)  # may be modified from my_diary
     create_time = models.DateTimeField(auto_now_add=True, editable=False)  # temp create time won't be modified
-    note = models.CharField(max_length=200)
+    note = models.TextField(default="", blank=True)
+    food_name = models.CharField(max_length=100, default="", blank=True)
     carousel = models.ImageField()
     food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
 
-    def delete(self, *args, **kwargs):
-        # object is being removed from db, remove the file from storage first
-        self.food_image_upload.delete()
-        return super(TempImageModel, self).delete(*args, **kwargs)
+    objects = TempImageModelManager()
+
+    def add_note(self, text: str):
+        if self.note:
+            self.note = "\n".join([self.note, text])
+        else:
+            self.note = text
 
     def make_carousel(self):
         """
