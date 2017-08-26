@@ -26,4 +26,5 @@ def robohon(request):
         request.query = json_data['context']
         response = request.getresponse()
         ai_data = ApiAiData(response)
+        s.bind(address)
         s.sendto('{"@STEP": "0", "@SPEECH": "{}", "@MOTIONID": "general"}'.format(ai_data.response_text).encode('utf-8'), address)
