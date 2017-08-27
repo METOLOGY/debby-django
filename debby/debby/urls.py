@@ -20,7 +20,6 @@ from django.conf.urls import include
 
 from debby import settings
 from line.views import callback
-from robohon.views import robohon
 
 urlpatterns = [
     url(r'^grappelli/', include('grappelli.urls')),  # grappelli URLS
@@ -28,5 +27,4 @@ urlpatterns = [
     url(r'^jet/dashboard/', include('jet.dashboard.urls', 'jet-dashboard')),
     url(r'^admin/', admin.site.urls),
     url(r'^callback/', callback, name='line-callback'),
-    url(r'^robohon/', robohon, name='robohon-callback')
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
