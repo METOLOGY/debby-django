@@ -33,7 +33,7 @@ class FoodModel(models.Model):
     food_recognition = models.ForeignKey(FoodRecognitionModel, null=True)
 
     # def save(self, *args, **kwargs):
-    #     super(FoodModel, self).save(*args, **kwargs)
+    #     super(TFDAModel, self).save(*args, **kwargs)
 
     def make_carousel(self):
         """

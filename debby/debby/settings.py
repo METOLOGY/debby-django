@@ -79,6 +79,7 @@ BUILD_APPS = [
     'chat.apps.ChatConfig',
     'consult_food.apps.ConsultFoodConfig',
     'reminder.apps.ReminderConfig',
+    'robohon.apps.RobohonConfig',
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS

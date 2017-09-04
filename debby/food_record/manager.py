@@ -85,7 +85,7 @@ class FoodRecordManager(object):
         )
 
     def reply_modify_or_save_record(self, url: str, food_name: str, time: str, note: str, record_id: int):
-        message = '{}\n{}{}'.format(food_name,time, note)
+        message = '{}\n{}{}'.format(food_name, time, note) if food_name else '{}{}'.format(time, note)
         if len(message) > 60:
             message = message[:50] + "..."
 
@@ -465,6 +465,8 @@ class FoodRecordManager(object):
         food_name = self.callback.food_name
         if temp_image_model.food_name:
             food_name = temp_image_model.food_name
+        if not food_name:
+            food_name = ""
 
         time = temp_image_model.time.astimezone().strftime("%Y/%m/%d %H:%M:%S\n")
 
@@ -495,6 +497,8 @@ class FoodRecordManager(object):
                                  carousel=temp_image_model.carousel,
                                  time=temp_image_model.time)
 
+        self.app_cache.delete()
+        self.close_future_mode()
         return TextSendMessage(text="耶～～您的飲食記錄成功！🎉🎉🎉")
 
     def cancel(self):

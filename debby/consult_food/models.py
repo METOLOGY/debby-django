@@ -30,10 +30,11 @@ class SynonymModel(models.Model):
 
     content_type = models.ForeignKey(ContentType,
                                      limit_choices_to={
-                                         "model__in": ("FoodModel",
+                                         "model__in": ("TFDAModel",
                                                        "TaiwanSnackModel",
                                                        "ICookIngredientModel",
-                                                       "ICookDishModel")
+                                                       "ICookDishModel",
+                                                       "FoodModel")
                                      })
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
@@ -168,7 +169,7 @@ class NutritionModel(NutritionMixin, models.Model):
     diary_amount = models.FloatField(verbose_name="低脂乳品類", default=0.0)
     oil_amount = models.FloatField(verbose_name="油脂與堅果種子類", default=0.0)
     # nutrition
-    gram = models.FloatField(verbose_name="重量")
+    gram = models.FloatField(verbose_name="重量", blank=True, null=True)
     calories = models.FloatField(verbose_name="熱量")
     protein = models.FloatField(verbose_name="蛋白質")
     fat = models.FloatField(verbose_name="脂質")
@@ -240,7 +241,7 @@ class FoodModelManager(models.Manager):
         return f
 
 
-class FoodModel(models.Model):
+class TFDAModel(models.Model):
     integration_number = models.CharField(verbose_name="整合編號", max_length=20)
     food_type = models.CharField(verbose_name="食物分類", max_length=20)
     sample_name = models.CharField(verbose_name="樣品名稱", max_length=100, unique=True)
@@ -369,3 +370,12 @@ class WikiFoodTranslateModel(models.Model):
     chinese = models.CharField(verbose_name='zh-tw', max_length=100, blank=True, default=True)
 
     objects = WikiFoodTranslateModelManager()
+
+
+class FoodModel(models.Model):
+    name = models.CharField(verbose_name="食物名稱", max_length=20)
+    nutrition = models.OneToOneField(NutritionModel)
+    source = models.TextField(verbose_name="來源", default="")
+    count_word = models.CharField(verbose_name="量詞", max_length=20, default="")
+
+    synonyms = GenericRelation(SynonymModel)
