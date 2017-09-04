@@ -5,8 +5,8 @@ from typing import Union
 from urllib.parse import parse_qsl
 
 import apiai
-from django.core.cache import cache
-from linebot.models import ImageMessage
+from chatbase import MessageSet, base_message
+from linebot.models import ImageMessage, TemplateSendMessage
 from linebot.models import Message
 from linebot.models import SendMessage
 from linebot.models import TextMessage
@@ -40,6 +40,10 @@ class ApiAiData(object):
         return self._response['result']['action']
 
     @property
+    def intent(self) -> str:
+        return self._response['result']['metadata']['intentName']
+
+    @property
     def response_text(self) -> str:
         return self._response['result']['fulfillment']['messages'][0]['speech']
 
@@ -50,6 +54,10 @@ class ApiAiData(object):
     @property
     def is_action_incomplete(self) -> bool:
         return self._response['result']['actionIncomplete']
+
+    @property
+    def is_unknown_intent(self) -> bool:
+        return self.intent == 'Debby.unknown'
 
 
 class InputHandler(object):
@@ -62,11 +70,15 @@ class InputHandler(object):
 
         self.registered_actions = {
             "ask.food": self.handle_food_ask,
-            "smalltalk": self.reply_text_response,
+            "smalltalk": self.reply_api_ai_text_response,
             'record.bg': self.handle_bg_record,
             "record.food": self.handle_food_record,
         }
         self.ai_data = None  # type: ApiAiData
+        self.chatbase_set = MessageSet(api_key=settings.CHATBASE_AGENT_KEY,
+                                       platform='Line',
+                                       version='1',
+                                       user_id=line_id)
 
     @staticmethod
     def setup_api_ai():
@@ -76,6 +88,40 @@ class InputHandler(object):
     @staticmethod
     def is_answer_in_consult_food(name):
         return SynonymModel.objects.search_by_synonym(name).count()
+
+    def send_to_chat_base(self, send_message: SendMessage, intent: str= ""):
+        if not self.ai_data:
+            user_msg = self.chatbase_set.new_message(intent=intent,
+                                                     message=self.text)  # type: base_message.Message
+        else:
+            user_msg = self.chatbase_set.new_message(intent=self.ai_data.intent,
+                                                     message=self.text)  # type: base_message.Message
+            if self.ai_data.is_unknown_intent:
+                user_msg.set_as_not_handled()
+        if isinstance(send_message, TextSendMessage):
+            bot_reply = self.chatbase_set.new_message(message=send_message.text)  # type: base_message.Message
+            bot_reply.set_as_type_agent()
+        elif isinstance(send_message, TemplateSendMessage):
+            bot_reply = self.chatbase_set.new_message(
+                message=send_message.as_json_string())  # type: base_message.Message
+            bot_reply.set_as_type_agent()
+
+        elif isinstance(send_message, list):
+            for message in send_message:
+                if isinstance(message, TextSendMessage):
+                    bot_reply = self.chatbase_set.new_message(
+                        message=message.text)  # type: base_message.Message
+                    bot_reply.set_as_type_agent()
+                if isinstance(message, TemplateSendMessage):
+                    bot_reply = self.chatbase_set.new_message(
+                        message=message.as_json_string())  # type: base_message.Message
+                    bot_reply.set_as_type_agent()
+        else:
+            print(type(send_message))
+            raise ValueError('not implement error')
+
+        resp = self.chatbase_set.send()
+        print(resp)
 
     def find_best_answer_for_text(self) -> SendMessage:
         """
@@ -97,7 +143,8 @@ class InputHandler(object):
                                 app=app_cache.app,
                                 action=app_cache.action,
                                 text=self.text)
-            return CallbackHandler(callback).handle()
+            send_message = CallbackHandler(callback).handle()
+            return send_message
 
         if self.text not in special_case:
             request = self.api_ai.text_request()
@@ -107,9 +154,11 @@ class InputHandler(object):
             self.ai_data = ApiAiData(response)
 
             if self.ai_data.is_action_incomplete:
-                return self.reply_text_response()
+                send_message = self.reply_api_ai_text_response()
+                return send_message
 
             action = self.ai_data.action
+
             registered_action = self.find_registered_actions(action)
             if action != "input.unknown":
                 if registered_action:
@@ -142,17 +191,19 @@ class InputHandler(object):
                                            action=BGRecordAction.CREATE_FROM_VALUE,
                                            text=self.text)
 
-            return CallbackHandler(bg_callback).handle()
+            send_message = CallbackHandler(bg_callback).handle()
+            return send_message
 
         elif self.is_answer_in_consult_food(self.text):
             callback = ConsultFoodCallback(line_id=self.line_id,
                                            action=ConsultFoodAction.READ,
                                            text=self.text)
-            return CallbackHandler(callback).handle()
+            send_message = CallbackHandler(callback).handle()
+            return send_message
 
         # Debby can't understand what user saying.
         else:
-            send_message = self.reply_text_response()
+            send_message = self.reply_api_ai_text_response()
             return send_message
 
     def handle_image(self, image_id):
@@ -176,7 +227,10 @@ class InputHandler(object):
     def handle_postback(self, data):
         data_dict = dict(parse_qsl(data))
         callback = Callback(**data_dict) if data_dict.get("line_id") else Callback(line_id=self.line_id, **data_dict)
-        return CallbackHandler(callback).handle()
+        send_message = CallbackHandler(callback).handle()
+        intent = callback.app + '-' + callback.action
+        self.send_to_chat_base(send_message, intent)
+        return send_message
 
     def find_registered_actions(self, action: str):
         first_split_action_name = action.split('.')[0]
@@ -190,13 +244,17 @@ class InputHandler(object):
     def handle(self, message: Message):
         if isinstance(message, TextMessage):
             self.text = message.text
-            return self.find_best_answer_for_text()
+            send_message = self.find_best_answer_for_text()
+            self.send_to_chat_base(send_message)
+            return send_message
 
         elif isinstance(message, ImageMessage):
-            return self.handle_image(message.id)
+            send_message = self.handle_image(message.id)
+            self.send_to_chat_base(send_message)
+            return send_message
 
-    def reply_text_response(self):
-        print('reply_text_response')
+    def reply_api_ai_text_response(self):
+        print('reply_api_ai_text_response')
         text = self.ai_data.response_text
         return TextSendMessage(text=text)
 
