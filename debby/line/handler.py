@@ -5,7 +5,7 @@ from typing import Union
 from urllib.parse import parse_qsl
 
 import apiai
-from chatbase import MessageSet, base_message
+from chatbase import MessageSet, base_message, MessageTypes
 from linebot.models import ImageMessage, TemplateSendMessage
 from linebot.models import Message
 from linebot.models import SendMessage
@@ -93,6 +93,14 @@ class InputHandler(object):
         if isinstance(send_message, TextSendMessage):
             bot_reply = self.chatbase_set.new_message(message=send_message.text)  # type: base_message.Message
             bot_reply.set_as_type_agent()
+            not_handled_situations = ['Debby 找不到', '您輸入的血糖範圍好像怪怪的', '我猜你不是要輸入血糖齁！', '我猜你不是要輸入血糖齁！']
+
+            for s in not_handled_situations:
+                if send_message.text.startswith(s):
+                    user_message = self.chatbase_set.messages[0]   # type: base_message.Message
+                    if user_message.type == MessageTypes.USER:
+                        user_message.set_as_not_handled()
+
         elif isinstance(send_message, TemplateSendMessage):
             bot_reply = self.chatbase_set.new_message(
                 message=send_message.as_json_string())  # type: base_message.Message
