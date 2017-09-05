@@ -1,4 +1,5 @@
 apiai==1.2.3
+chatbase==0.2
 behave==1.2.5
 celery==4.0.2
 decorator==4.0.11

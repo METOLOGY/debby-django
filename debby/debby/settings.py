@@ -78,8 +78,7 @@ BUILD_APPS = [
     'drug_ask.apps.DrugAskConfig',
     'chat.apps.ChatConfig',
     'consult_food.apps.ConsultFoodConfig',
-    'reminder.apps.ReminderConfig',
-    'robohon.apps.RobohonConfig',
+    'reminder.apps.ReminderConfig'
 ]
 
 INSTALLED_APPS = THIRD_PARTY_APPS + BUILD_APPS + DJANGO_APPS
@@ -206,3 +205,5 @@ Q_CLUSTER = {
 
 GOOGLE_VISION_KEY = env('GOOGLE_VISION_KEY')
 CLIENT_ACCESS_TOKEN = env('CLIENT_ACCESS_TOKEN')
+
+CHATBASE_AGENT_KEY = env('CHATBASE_AGENT_KEY')
