@@ -157,11 +157,11 @@ class ConsultFoodManager(object):
         app_cache.delete()
         name = self.callback.text
         find_order = [
+            self.find_in_tfda_model,
+            self.find_in_food_model,
             self.find_in_taiwan_snack,
             self.find_in_i_cook_dish,
-            self.find_in_tfda_model,
             self.find_in_i_cook_ingredient,
-            self.find_in_food_model,
         ]
         reply = None
         for find_in in find_order:
