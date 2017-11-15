@@ -22,6 +22,26 @@ class LineManager(object):
     def main_start(self):
         carousels = list()
 
+        # future mode beta part
+        carousels.append(CarouselColumn(
+            title="人工智慧營養師Beta!",
+            text="快來上傳你的食物照片試試看~",
+            thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/robot.png',
+            actions=[
+                PostbackTemplateAction(
+                    label="來嘗鮮!",
+                    data=LineCallback(line_id=self.callback.line_id,
+                                      action=LineAction.OPEN_FUTURE_MODE).url
+                ),
+                PostbackTemplateAction(
+                    label="去玩玩!",
+                    data=LineCallback(line_id=self.callback.line_id,
+                                      action=LineAction.OPEN_FUTURE_MODE).url
+                )
+            ]
+        ))
+
+
         # the search part
         carousels.append(CarouselColumn(
             title="搜尋相關資訊",
@@ -102,24 +122,6 @@ class LineManager(object):
             ]
         ))
 
-        # future mode beta part
-        carousels.append(CarouselColumn(
-            title="人工智慧營養師Beta!",
-            text="快來上傳你的食物照片試試看~",
-            thumbnail_image_url='https://debby.metology.com.tw/media/carousel-thumb/robot.png',
-            actions=[
-                PostbackTemplateAction(
-                    label="來嘗鮮!",
-                    data=LineCallback(line_id=self.callback.line_id,
-                                      action=LineAction.OPEN_FUTURE_MODE).url
-                ),
-                PostbackTemplateAction(
-                    label="去玩玩!",
-                    data=LineCallback(line_id=self.callback.line_id,
-                                      action=LineAction.OPEN_FUTURE_MODE).url
-                )
-            ]
-        ))
 
         # the reminder part
 
